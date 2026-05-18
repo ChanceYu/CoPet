@@ -20,13 +20,18 @@ export type InputState =
   | { kind: "idle" }
   | { kind: "looking"; direction: "left" | "right" }
   | { kind: "tilting" }
-  | { kind: "happy" };
+  | { kind: "happy" }
+  | { kind: "surprised" }
+  | { kind: "petted" }
+  | { kind: "pettedSlow" };
 
 export type EmotionState =
   | { kind: "none" }
   | { kind: "loadingBubble" }
   | { kind: "sparkle" }
-  | { kind: "smoke" };
+  | { kind: "smoke" }
+  | { kind: "heart" }
+  | { kind: "questionMark" };
 
 export type MotionState =
   | { kind: "anchored" }
@@ -40,7 +45,7 @@ export type PetLayers = {
   emotion: EmotionState;
 };
 
-export type EmotionOverlayId = "loading-bubble" | "sparkle" | "smoke";
+export type EmotionOverlayId = "loading-bubble" | "sparkle" | "smoke" | "heart" | "question-mark";
 
 export type ComposedView = {
   bodySpriteRow: PetStateId;
@@ -81,6 +86,13 @@ function inputSpriteRow(state: InputState): PetStateId {
       return "waiting";
     case "happy":
       return "jumping";
+    // Reuse the wave frames for the brief "surprised" reaction on double-click / drag-land.
+    case "surprised":
+      return "waving";
+    case "petted":
+      return "jumping";
+    case "pettedSlow":
+      return "waiting";
     case "idle":
       return "idle";
   }
@@ -100,6 +112,10 @@ function emotionId(state: Exclude<EmotionState, { kind: "none" }>): EmotionOverl
       return "sparkle";
     case "smoke":
       return "smoke";
+    case "heart":
+      return "heart";
+    case "questionMark":
+      return "question-mark";
   }
 }
 

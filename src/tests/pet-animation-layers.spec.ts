@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { createAppHarness, pethover } from "./app-harness";
+import { composeLayers } from "../lib/petAnimation";
 
 test("idle backend state renders idle sprite row and no emotion overlay", async ({
   browser,
@@ -193,4 +194,52 @@ test("reduced motion still renders emotion overlay element", async ({ browser })
     ],
   });
   await expect(page.locator('[data-testid="pet-emotion-overlay"]')).toBeVisible();
+});
+
+// ---------- Unit tests for new input/emotion variants ----------
+
+test("composeLayers maps surprised → waving with no overlay by default", () => {
+  const view = composeLayers({
+    base: { kind: "blink" },
+    agent: { kind: "none" },
+    input: { kind: "surprised" },
+    motion: { kind: "anchored" },
+    emotion: { kind: "none" },
+  });
+  expect(view.bodySpriteRow).toBe("waving");
+});
+
+test("composeLayers maps petted → jumping", () => {
+  const view = composeLayers({
+    base: { kind: "blink" },
+    agent: { kind: "none" },
+    input: { kind: "petted" },
+    motion: { kind: "anchored" },
+    emotion: { kind: "heart" },
+  });
+  expect(view.bodySpriteRow).toBe("jumping");
+  expect(view.emotionOverlay).toBe("heart");
+});
+
+test("composeLayers maps pettedSlow → waiting", () => {
+  const view = composeLayers({
+    base: { kind: "blink" },
+    agent: { kind: "none" },
+    input: { kind: "pettedSlow" },
+    motion: { kind: "anchored" },
+    emotion: { kind: "heart" },
+  });
+  expect(view.bodySpriteRow).toBe("waiting");
+  expect(view.emotionOverlay).toBe("heart");
+});
+
+test("composeLayers maps questionMark overlay through", () => {
+  const view = composeLayers({
+    base: { kind: "blink" },
+    agent: { kind: "none" },
+    input: { kind: "surprised" },
+    motion: { kind: "anchored" },
+    emotion: { kind: "questionMark" },
+  });
+  expect(view.emotionOverlay).toBe("question-mark");
 });
