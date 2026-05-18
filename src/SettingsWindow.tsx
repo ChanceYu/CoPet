@@ -1,6 +1,7 @@
+import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Info, PawPrint, Plug, Settings2, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 
 import pethoverLogoUrl from "./assets/logo.png";
@@ -57,6 +58,18 @@ export function SettingsWindow() {
 
   const [activeSection, setActiveSection] =
     useState<SettingsSectionId>("pets");
+
+  useEffect(() => {
+    let dispose: (() => void) | undefined;
+    void listen<SettingsSectionId>("pethover-navigate-to-section", (event) => {
+      setActiveSection(event.payload);
+    }).then((cleanup) => {
+      dispose = cleanup;
+    });
+    return () => {
+      dispose?.();
+    };
+  }, []);
 
   const appState = loadState.status === "ready" ? loadState.data : null;
   const t = useMemo(
