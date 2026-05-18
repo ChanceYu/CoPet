@@ -26,9 +26,11 @@ export type UseLayeredPetStateResult = {
 export function useLayeredPetState(): UseLayeredPetStateResult {
   const { petState, agentMessages } = useAppData();
   const agent = useAgentState({ petState, agentMessages });
-  const input = useInteractionState();
-  const motion = useMotionState();
-  const emotion = useEmotionState(agent, input.state as InputState);
+  const interaction = useInteractionState();
+  const motion = useMotionState({
+    onDragLand: () => interaction.notifyDragLand(),
+  });
+  const emotion = useEmotionState(agent, interaction.state as InputState);
 
   const agentActivityRef = useRef(Date.now());
   if (agent.kind !== "none") {
@@ -37,7 +39,7 @@ export function useLayeredPetState(): UseLayeredPetStateResult {
 
   const lastActivityAtMs = Math.max(
     agentActivityRef.current,
-    input.lastActivityAtMs,
+    interaction.lastActivityAtMs,
     motion.lastActivityAtMs,
   );
 
@@ -47,11 +49,11 @@ export function useLayeredPetState(): UseLayeredPetStateResult {
     () => ({
       base,
       agent,
-      input: input.state as InputState,
+      input: interaction.state as InputState,
       motion: motion.state as MotionState,
       emotion,
     }),
-    [base, agent, input.state, motion.state, emotion],
+    [base, agent, interaction.state, motion.state, emotion],
   );
 
   const composed = useMemo(() => composeLayers(layers), [layers]);
@@ -59,7 +61,7 @@ export function useLayeredPetState(): UseLayeredPetStateResult {
   return {
     layers,
     composed,
-    bindInput: () => input.handlers,
+    bindInput: () => interaction.handlers,
     bindMotion: () => motion.handlers,
   };
 }

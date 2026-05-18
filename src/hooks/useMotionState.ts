@@ -8,6 +8,8 @@ import {
   pointerMoveJitterThreshold,
 } from "../lib/petWindowUi";
 
+const DRAG_LAND_THRESHOLD_PX = 200;
+
 export type MotionHandlers = {
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
 };
@@ -19,11 +21,17 @@ export type UseMotionStateResult = {
   lastActivityAtMs: number;
 };
 
-export function useMotionState(): UseMotionStateResult {
+export function useMotionState(opts?: { onDragLand?: () => void }): UseMotionStateResult {
   const [state, setState] = useState<MotionState>({ kind: "anchored" });
   const [lastActivityAtMs, setLastActivityAtMs] = useState(() => Date.now());
   const dragPointerRef = useRef<{ lastClientX: number } | null>(null);
   const nativeDragRef = useRef<{ lastX: number | null }>({ lastX: null });
+  const dragDistanceRef = useRef(0);
+  const onDragLandRef = useRef(opts?.onDragLand);
+
+  useEffect(() => {
+    onDragLandRef.current = opts?.onDragLand;
+  }, [opts?.onDragLand]);
 
   const notifyActivity = useCallback(() => {
     setLastActivityAtMs(Date.now());
@@ -36,6 +44,7 @@ export function useMotionState(): UseMotionStateResult {
       }
       dragPointerRef.current = { lastClientX: event.clientX };
       nativeDragRef.current = { lastX: null };
+      dragDistanceRef.current = 0;
       notifyActivity();
       void getCurrentWebviewWindow().startDragging();
     },
@@ -53,6 +62,7 @@ export function useMotionState(): UseMotionStateResult {
       if (Math.abs(delta) < pointerMoveJitterThreshold) {
         return;
       }
+      dragDistanceRef.current += Math.abs(delta);
       setState({
         kind: "dragging",
         direction: delta > 0 ? "right" : "left",
@@ -60,9 +70,14 @@ export function useMotionState(): UseMotionStateResult {
     };
 
     const endDrag = () => {
+      const total = dragDistanceRef.current;
+      dragDistanceRef.current = 0;
       dragPointerRef.current = null;
       nativeDragRef.current = { lastX: null };
       setState({ kind: "anchored" });
+      if (total >= DRAG_LAND_THRESHOLD_PX) {
+        onDragLandRef.current?.();
+      }
     };
 
     window.addEventListener("pointermove", handlePointerMove);
@@ -96,6 +111,7 @@ export function useMotionState(): UseMotionStateResult {
         if (Math.abs(delta) < nativeMoveJitterThreshold) {
           return;
         }
+        dragDistanceRef.current += Math.abs(delta);
         setState({
           kind: "dragging",
           direction: delta > 0 ? "right" : "left",

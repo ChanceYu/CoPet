@@ -262,3 +262,58 @@ test("double-click does not contaminate rapid-click history", async ({ browser }
   // discriminate via emotion overlay: petted shows heart, happy shows nothing.
   await expect(spriteFrame).not.toHaveAttribute("data-emotion", "heart");
 });
+
+test("drag-land after ≥200px movement triggers surprised + sparkle", async ({ browser }) => {
+  const harness = await createAppHarness(browser, {
+    state: {
+      currentPetId: pethover.id,
+      pets: [pethover],
+      onboardingComplete: false,
+    },
+  });
+  const page = await harness.openPage("pet");
+  const spriteFrame = page.locator(".pet-sprite-frame");
+  const sprite = page.locator(".pet-sprite");
+
+  await spriteFrame.dispatchEvent("pointerdown", {
+    button: 0, clientX: 50, clientY: 50, pointerId: 1, pointerType: "mouse", isPrimary: true, detail: 1,
+  });
+  await page.evaluate(() => {
+    window.dispatchEvent(new PointerEvent("pointermove", { clientX: 300, clientY: 50, pointerId: 1 } as PointerEventInit));
+  });
+  await page.evaluate(() => {
+    window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 1 } as PointerEventInit));
+  });
+
+  await expect(sprite).toHaveAttribute("data-pet-state", "waving");
+  await expect(spriteFrame).toHaveAttribute("data-emotion", "sparkle");
+});
+
+test("double-click surprised yields question-mark; drag-land surprised yields sparkle", async ({ browser }) => {
+  const harness = await createAppHarness(browser, {
+    state: {
+      currentPetId: pethover.id,
+      pets: [pethover],
+      onboardingComplete: false,
+    },
+  });
+  const page = await harness.openPage("pet");
+  const spriteFrame = page.locator(".pet-sprite-frame");
+
+  await spriteFrame.dispatchEvent("click", { button: 0, detail: 2 });
+  await expect(spriteFrame).toHaveAttribute("data-emotion", "question-mark");
+
+  // Wait for surprised to fully clear before testing drag-land
+  await page.waitForTimeout(1100);
+
+  await spriteFrame.dispatchEvent("pointerdown", {
+    button: 0, clientX: 50, clientY: 50, pointerId: 2, pointerType: "mouse", isPrimary: true, detail: 1,
+  });
+  await page.evaluate(() => {
+    window.dispatchEvent(new PointerEvent("pointermove", { clientX: 300, clientY: 50, pointerId: 2 } as PointerEventInit));
+  });
+  await page.evaluate(() => {
+    window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 2 } as PointerEventInit));
+  });
+  await expect(spriteFrame).toHaveAttribute("data-emotion", "sparkle");
+});

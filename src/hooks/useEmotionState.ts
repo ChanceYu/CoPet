@@ -4,7 +4,7 @@ import type { AgentState, EmotionState, InputState } from "../lib/petAnimation";
 
 const SPARKLE_DURATION_MS = 600;
 const SMOKE_DURATION_MS = 800;
-const QUESTION_MARK_DURATION_MS = 800;
+const SURPRISED_OVERLAY_DURATION_MS = 800;
 // Keep in sync with PETTED_SLOW_DURATION_MS in src/hooks/useInteractionState.ts.
 const HEART_PETTED_SLOW_DURATION_MS = 1500;
 // Keep in sync with PETTED_DURATION_MS in src/hooks/useInteractionState.ts.
@@ -81,16 +81,18 @@ export function useEmotionState(agent: AgentState, input: InputState): EmotionSt
     if (input.kind === "surprised" && previousInputKind !== "surprised") {
       // Do not preempt a persistent agent overlay (loadingBubble).
       // Transient overlays (sparkle, smoke) will time out on their own; replacing
-      // them with questionMark for a brief interaction acknowledgment is OK.
+      // them with questionMark/sparkle for a brief interaction acknowledgment is OK.
       if (emotionStateRef.current.kind === "loadingBubble") {
         return;
       }
       clearTimer();
-      setState({ kind: "questionMark" });
+      const overlayKind: EmotionState["kind"] =
+        input.source === "drag" ? "sparkle" : "questionMark";
+      setState({ kind: overlayKind });
       timerRef.current = window.setTimeout(() => {
         timerRef.current = null;
         setState({ kind: "none" });
-      }, QUESTION_MARK_DURATION_MS);
+      }, SURPRISED_OVERLAY_DURATION_MS);
       return;
     }
 

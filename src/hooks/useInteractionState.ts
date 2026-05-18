@@ -30,6 +30,7 @@ export type UseInteractionStateResult = {
   state: InputState;
   handlers: InteractionHandlers;
   notifyActivity: () => void;
+  notifyDragLand: () => void;
   lastActivityAtMs: number;
 };
 
@@ -122,21 +123,28 @@ export function useInteractionState(): UseInteractionStateResult {
     setState((current) => (current.kind === "happy" ? current : { kind: "idle" }));
   }, [clearTimer]);
 
-  const triggerSurprised = useCallback(() => {
-    const now = Date.now();
-    if (now - surprisedLastFiredRef.current < SURPRISED_DEDUPE_WINDOW_MS) {
-      return;
-    }
-    surprisedLastFiredRef.current = now;
-    clearTimer("happy");
-    clearTimer("surprised");
-    setState({ kind: "surprised" });
-    notifyActivity();
-    timersRef.current.surprised = window.setTimeout(() => {
-      timersRef.current.surprised = null;
-      setState({ kind: "idle" });
-    }, SURPRISED_DURATION_MS);
-  }, [clearTimer, notifyActivity]);
+  const triggerSurprised = useCallback(
+    (source: "click" | "drag" = "click") => {
+      const now = Date.now();
+      if (now - surprisedLastFiredRef.current < SURPRISED_DEDUPE_WINDOW_MS) {
+        return;
+      }
+      surprisedLastFiredRef.current = now;
+      clearTimer("happy");
+      clearTimer("surprised");
+      setState({ kind: "surprised", source });
+      notifyActivity();
+      timersRef.current.surprised = window.setTimeout(() => {
+        timersRef.current.surprised = null;
+        setState({ kind: "idle" });
+      }, SURPRISED_DURATION_MS);
+    },
+    [clearTimer, notifyActivity],
+  );
+
+  const notifyDragLand = useCallback(() => {
+    triggerSurprised("drag");
+  }, [triggerSurprised]);
 
   const onClick = useCallback(
     (event: ReactMouseEvent<HTMLElement>) => {
@@ -243,6 +251,7 @@ export function useInteractionState(): UseInteractionStateResult {
       onPointerDownHold,
     },
     notifyActivity,
+    notifyDragLand,
     lastActivityAtMs,
   };
 }

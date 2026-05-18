@@ -21,7 +21,7 @@ export type InputState =
   | { kind: "looking"; direction: "left" | "right" }
   | { kind: "tilting" }
   | { kind: "happy" }
-  | { kind: "surprised" }
+  | { kind: "surprised"; source?: "click" | "drag" }
   | { kind: "petted" }
   | { kind: "pettedSlow" };
 
