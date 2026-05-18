@@ -317,3 +317,29 @@ test("double-click surprised yields question-mark; drag-land surprised yields sp
   });
   await expect(spriteFrame).toHaveAttribute("data-emotion", "sparkle");
 });
+
+test("a second double-click within cooldown is a no-op", async ({ browser }) => {
+  const harness = await createAppHarness(browser, {
+    state: {
+      currentPetId: pethover.id,
+      pets: [pethover],
+      onboardingComplete: false,
+    },
+  });
+  const page = await harness.openPage("pet");
+  const spriteFrame = page.locator(".pet-sprite-frame");
+  const sprite = page.locator(".pet-sprite");
+
+  await spriteFrame.dispatchEvent("click", { button: 0, detail: 2 });
+  await expect(sprite).toHaveAttribute("data-pet-state", "waving");
+  await page.waitForTimeout(200);
+
+  // Wait for surprised to auto-clear (800ms total, 200ms elapsed, need 600ms more)
+  await page.waitForTimeout(700);
+  await expect(sprite).toHaveAttribute("data-pet-state", "idle");
+
+  // Now within doubleClick cooldown window (1500ms), a second double-click should not retrigger
+  await spriteFrame.dispatchEvent("click", { button: 0, detail: 2 });
+  await page.waitForTimeout(100);
+  await expect(sprite).toHaveAttribute("data-pet-state", "idle");
+});

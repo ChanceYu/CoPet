@@ -7,7 +7,6 @@ const HAPPY_DURATION_MS = 600;
 const LOOK_RESET_MS = 400;
 const TILT_AFTER_HOVER_MS = 1_000;
 const SURPRISED_DURATION_MS = 800;
-const SURPRISED_DEDUPE_WINDOW_MS = 250;
 const LONG_PRESS_THRESHOLD_MS = 800;
 // Keep in sync with HEART_PETTED_SLOW_DURATION_MS in src/hooks/useEmotionState.ts.
 const PETTED_SLOW_DURATION_MS = 1500;
@@ -16,6 +15,16 @@ const RAPID_CLICK_WINDOW_MS = 1500;
 const RAPID_CLICK_THRESHOLD = 3;
 // Keep in sync with HEART_PETTED_DURATION_MS in src/hooks/useEmotionState.ts.
 const PETTED_DURATION_MS = 900;
+
+const COOLDOWNS_MS = {
+  singleClick: 600,
+  doubleClick: 1500,
+  petted: 3000,
+  // Deliberately shorter than PETTED_SLOW_DURATION_MS (1500ms): re-entering
+  // pettedSlow mid-animation just resets the existing timer — same visual effect.
+  pettedSlow: 1000,
+  dragLand: 600,
+} as const;
 
 export type InteractionHandlers = {
   onPointerEnter: (event: ReactPointerEvent<HTMLElement>) => void;
@@ -54,9 +63,23 @@ export function useInteractionState(): UseInteractionStateResult {
     pettedSlow: null,
     petted: null,
   });
-  const surprisedLastFiredRef = useRef(0);
+  const cooldownRef = useRef<{ [K in keyof typeof COOLDOWNS_MS]: number }>({
+    singleClick: 0,
+    doubleClick: 0,
+    petted: 0,
+    pettedSlow: 0,
+    dragLand: 0,
+  });
   const clickHistoryRef = useRef<number[]>([]);
   const pointerDownPosRef = useRef<{ x: number; y: number } | null>(null);
+
+  const isCoolingDown = useCallback((key: keyof typeof COOLDOWNS_MS): boolean => {
+    return Date.now() < cooldownRef.current[key];
+  }, []);
+
+  const startCooldown = useCallback((key: keyof typeof COOLDOWNS_MS) => {
+    cooldownRef.current[key] = Date.now() + COOLDOWNS_MS[key];
+  }, []);
 
   const clearTimer = useCallback((key: "look" | "happy" | "tilt" | "surprised" | "longPress" | "pettedSlow" | "petted") => {
     const id = timersRef.current[key];
@@ -125,11 +148,6 @@ export function useInteractionState(): UseInteractionStateResult {
 
   const triggerSurprised = useCallback(
     (source: "click" | "drag" = "click") => {
-      const now = Date.now();
-      if (now - surprisedLastFiredRef.current < SURPRISED_DEDUPE_WINDOW_MS) {
-        return;
-      }
-      surprisedLastFiredRef.current = now;
       clearTimer("happy");
       clearTimer("surprised");
       setState({ kind: "surprised", source });
@@ -143,8 +161,10 @@ export function useInteractionState(): UseInteractionStateResult {
   );
 
   const notifyDragLand = useCallback(() => {
+    if (isCoolingDown("dragLand")) return;
+    startCooldown("dragLand");
     triggerSurprised("drag");
-  }, [triggerSurprised]);
+  }, [isCoolingDown, startCooldown, triggerSurprised]);
 
   const onClick = useCallback(
     (event: ReactMouseEvent<HTMLElement>) => {
@@ -153,10 +173,14 @@ export function useInteractionState(): UseInteractionStateResult {
         // appended a stale timestamp; clear it so the next legitimate single
         // clicks accumulate from zero.
         clickHistoryRef.current = [];
+        if (isCoolingDown("doubleClick")) return;
+        startCooldown("doubleClick");
         triggerSurprised();
         return;
       }
 
+      // Append to history BEFORE any cooldown checks — rapid-click escalation
+      // requires counting all clicks even when the singleClick reaction is cooling.
       const now = Date.now();
       clickHistoryRef.current = [
         ...clickHistoryRef.current.filter((t) => now - t <= RAPID_CLICK_WINDOW_MS),
@@ -164,7 +188,10 @@ export function useInteractionState(): UseInteractionStateResult {
       ];
 
       if (clickHistoryRef.current.length >= RAPID_CLICK_THRESHOLD) {
-        clickHistoryRef.current = []; // reset so the next click is a fresh happy
+        // Reset history regardless of cooldown so the next sequence starts fresh.
+        clickHistoryRef.current = [];
+        if (isCoolingDown("petted")) return;
+        startCooldown("petted");
         clearTimer("happy");
         clearTimer("petted");
         setState({ kind: "petted" });
@@ -176,6 +203,8 @@ export function useInteractionState(): UseInteractionStateResult {
         return;
       }
 
+      if (isCoolingDown("singleClick")) return;
+      startCooldown("singleClick");
       clearTimer("happy");
       clearTimer("tilt");
       setState({ kind: "happy" });
@@ -185,14 +214,16 @@ export function useInteractionState(): UseInteractionStateResult {
         setState({ kind: "idle" });
       }, HAPPY_DURATION_MS);
     },
-    [clearTimer, notifyActivity, triggerSurprised],
+    [clearTimer, isCoolingDown, notifyActivity, startCooldown, triggerSurprised],
   );
 
   const onDoubleClick = useCallback(
     (_event: ReactMouseEvent<HTMLElement>) => {
+      if (isCoolingDown("doubleClick")) return;
+      startCooldown("doubleClick");
       triggerSurprised();
     },
-    [triggerSurprised],
+    [isCoolingDown, startCooldown, triggerSurprised],
   );
 
   const onPointerDownHold = useCallback(
@@ -203,6 +234,8 @@ export function useInteractionState(): UseInteractionStateResult {
       timersRef.current.longPress = window.setTimeout(() => {
         timersRef.current.longPress = null;
         pointerDownPosRef.current = null;
+        if (isCoolingDown("pettedSlow")) return;
+        startCooldown("pettedSlow");
         clearTimer("pettedSlow");
         setState({ kind: "pettedSlow" });
         notifyActivity();
@@ -212,7 +245,7 @@ export function useInteractionState(): UseInteractionStateResult {
         }, PETTED_SLOW_DURATION_MS);
       }, LONG_PRESS_THRESHOLD_MS);
     },
-    [clearTimer, notifyActivity],
+    [clearTimer, isCoolingDown, notifyActivity, startCooldown],
   );
 
   useEffect(() => {
