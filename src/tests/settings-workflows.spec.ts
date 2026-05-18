@@ -391,3 +391,21 @@ test("importing a local pet folder accepts png spritesheet fallback", async ({
     }),
   );
 });
+
+test("Codex chip shows trust disclosure when installed", async ({ browser }) => {
+  const harness = await createAppHarness(browser, {
+    adapters: [
+      {
+        ...codexAdapter,
+        installed: true,
+        healthy: true,
+      },
+    ],
+  });
+  const page = await harness.openPage("settings");
+  await page.getByRole("tab", { name: "Agents" }).click();
+  await expect(page.getByTestId("codex-trust-disclosure")).toBeVisible();
+  await expect(page.getByTestId("codex-trust-disclosure")).toContainText(
+    "/hooks",
+  );
+});

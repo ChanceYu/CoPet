@@ -47,31 +47,39 @@ export function SettingsAgentsSection({
       <div className="adapter-chip-grid">
         {adapters.map((adapter) => {
           const iconUrl = agentIconUrl(adapter.id);
+          const showCodexTrustNote =
+            adapter.id === "codex" && adapter.installed;
           return (
-            <label
-              className="adapter-chip"
-              data-disabled={adapterBusyId === adapter.id}
-              key={adapter.id}
-            >
-              <Switch
-                aria-label={adapter.displayName}
-                checked={adapter.installed}
-                disabled={adapterBusyId === adapter.id}
-                onCheckedChange={(checked) =>
-                  void handleAdapterChange(adapter, checked)
-                }
-              />
-              {iconUrl ? (
-                <img
-                  alt=""
-                  aria-hidden="true"
-                  className="adapter-chip-logo"
-                  draggable={false}
-                  src={iconUrl}
+            <div className="adapter-chip-wrapper" key={adapter.id}>
+              <label
+                className="adapter-chip"
+                data-disabled={adapterBusyId === adapter.id}
+              >
+                <Switch
+                  aria-label={adapter.displayName}
+                  checked={adapter.installed}
+                  disabled={adapterBusyId === adapter.id}
+                  onCheckedChange={(checked) =>
+                    void handleAdapterChange(adapter, checked)
+                  }
                 />
+                {iconUrl ? (
+                  <img
+                    alt=""
+                    aria-hidden="true"
+                    className="adapter-chip-logo"
+                    draggable={false}
+                    src={iconUrl}
+                  />
+                ) : null}
+                <span>{adapter.displayName}</span>
+              </label>
+              {showCodexTrustNote ? (
+                <p className="adapter-chip-disclosure" data-testid="codex-trust-disclosure">
+                  {t("codexTrustDisclosure")}
+                </p>
               ) : null}
-              <span>{adapter.displayName}</span>
-            </label>
+            </div>
           );
         })}
       </div>
