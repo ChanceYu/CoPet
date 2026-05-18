@@ -89,6 +89,22 @@ fn codex_install_writes_hooks_json_and_enables_hooks_feature() {
 }
 
 #[test]
+fn codex_install_omits_notification_event_unknown_to_codex() {
+    let temp = tempfile::tempdir().unwrap();
+    let home = temp.path().join("home");
+    let root = temp.path().join(".pethover");
+    let manager = manager_with_fake_agents(&root, &home);
+
+    manager.install("codex").unwrap();
+    let hooks = fs::read_to_string(home.join(".codex/hooks.json")).unwrap();
+
+    assert!(!hooks.contains("\"Notification\""), "Codex does not recognize Notification; hooks.json must omit it: {hooks}");
+    for event in ["UserPromptSubmit", "PreToolUse", "PostToolUse", "PermissionRequest", "Stop"] {
+        assert!(hooks.contains(&format!("\"{event}\"")), "missing expected event {event}: {hooks}");
+    }
+}
+
+#[test]
 fn codex_helper_bypasses_loopback_proxy_when_posting_runtime_events() {
     let _guard = PROXY_ENV_LOCK.lock().unwrap();
     let temp = tempfile::tempdir().unwrap();

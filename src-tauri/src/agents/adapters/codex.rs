@@ -38,11 +38,6 @@ const EVENTS: &[HookEvent] = &[
         kind: "permission.waiting",
     },
     HookEvent {
-        cli_event: "Notification",
-        matcher: None,
-        kind: "permission.waiting",
-    },
-    HookEvent {
         cli_event: "Stop",
         matcher: None,
         kind: "session.stop",
