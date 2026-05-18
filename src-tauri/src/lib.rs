@@ -26,7 +26,7 @@ use tauri::{
 #[cfg(target_os = "macos")]
 use tauri_nspanel::WebviewWindowExt;
 use window_placement::{
-    apply_pet_window_size, install_pet_window_z_order_guard,
+    apply_pet_window_size, install_pet_window_z_order_guard, keep_pet_window_on_top,
     pet_window_event_needs_z_order_reassertion, prepare_settings_window_for_interaction,
     schedule_pet_window_z_order_reassertions,
 };
@@ -248,7 +248,15 @@ fn toggle_pet_window_visibility(app: tauri::AppHandle) -> Result<bool, String> {
     if visible {
         window.hide().map_err(|error| error.to_string())?;
     } else {
-        window.show().map_err(|error| error.to_string())?;
+        // Re-apply the full z-order policy synchronously instead of a plain
+        // tauri show call. [NSWindow makeKeyAndOrderFront:] does not reliably
+        // land an NSPanel onto another app's fullscreen Space; the panel
+        // needs its CanJoinAllSpaces collection behavior and screen-saver
+        // level re-asserted, plus orderFrontRegardless, before the user
+        // sees it. The async reassertion guard scheduled below would do
+        // this eventually, but the first delay-0 tick still trampolines
+        // through run_on_main_thread which is too late.
+        keep_pet_window_on_top(&window).map_err(|error| error.to_string())?;
         schedule_pet_window_z_order_reassertions(&app);
     }
     let state = ConfigStore::from_home()

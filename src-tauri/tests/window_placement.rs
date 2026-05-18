@@ -290,4 +290,27 @@ mod subject {
 
         assert!(!set_pet_window_size.contains("resize_pet_window_from_center"));
     }
+
+    #[test]
+    fn toggle_pet_window_visibility_reasserts_policy_synchronously_on_show() {
+        let source = include_str!("../src/lib.rs");
+        let show_branch = source
+            .split("fn toggle_pet_window_visibility")
+            .nth(1)
+            .and_then(|rest| rest.split("} else {").nth(1))
+            .and_then(|rest| rest.split('}').next())
+            .expect("toggle_pet_window_visibility show branch should exist");
+
+        assert!(
+            show_branch.contains("keep_pet_window_on_top"),
+            "show path must re-apply the z-order policy synchronously so the pet \
+             window lands on the current Space (including another app's fullscreen \
+             Space) instead of relying on async reassertion"
+        );
+        assert!(
+            !show_branch.contains("window.show()"),
+            "plain window.show() does not put NSPanel on another app's fullscreen \
+             Space; use keep_pet_window_on_top instead"
+        );
+    }
 }
