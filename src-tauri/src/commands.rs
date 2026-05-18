@@ -1,4 +1,8 @@
-use crate::window_placement::place_window_bottom_right;
+use crate::config_store::ConfigStore;
+use crate::refresh_tray_menu;
+use crate::window_placement::{
+    keep_pet_window_on_top, place_window_bottom_right, schedule_pet_window_z_order_reassertions,
+};
 use tauri::Manager;
 
 #[tauri::command]
@@ -6,5 +10,18 @@ pub fn reset_pet_window_position(app: tauri::AppHandle) -> Result<(), String> {
     let window = app
         .get_webview_window("pet")
         .ok_or_else(|| "pet window is not available".to_string())?;
-    place_window_bottom_right(&window).map_err(|e| e.to_string())
+    let was_hidden = matches!(window.is_visible(), Ok(false));
+    place_window_bottom_right(&window).map_err(|e| e.to_string())?;
+    if was_hidden {
+        // Match the show branch of toggle_pet_window_visibility: re-applying the
+        // z-order policy is what actually surfaces an NSPanel onto the active
+        // Space; the async reassertion alone is too late, and the tray menu
+        // must be refreshed so the "Hide Pet" / "Show Pet" label stays in sync.
+        keep_pet_window_on_top(&window).map_err(|e| e.to_string())?;
+        schedule_pet_window_z_order_reassertions(&app);
+        if let Ok(state) = ConfigStore::from_home().and_then(|store| store.app_state()) {
+            refresh_tray_menu(&app, &state);
+        }
+    }
+    Ok(())
 }

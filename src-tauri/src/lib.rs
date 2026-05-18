@@ -136,7 +136,7 @@ fn set_locale_preference(
     Ok(state)
 }
 
-fn refresh_tray_menu(app: &AppHandle, state: &AppState) {
+pub fn refresh_tray_menu(app: &AppHandle, state: &AppState) {
     let Some(handles) = app.try_state::<TrayMenuHandles>() else {
         return;
     };

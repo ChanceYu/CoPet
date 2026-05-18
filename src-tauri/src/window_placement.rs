@@ -6,7 +6,11 @@ use crate::app_state::{
     normalize_pet_window_size, PetWindowSize, MAX_PET_WINDOW_SIZE, MIN_PET_WINDOW_SIZE,
 };
 
-const BOTTOM_RIGHT_MARGIN_PX: i32 = 24;
+// Logical pixels of breathing room from the monitor's bottom-right edge for
+// the default pet placement (first-launch position and tray "Reset Position").
+// Expressed in logical units so the gap looks consistent on Retina monitors,
+// where a fixed physical margin would visually halve.
+const BOTTOM_RIGHT_MARGIN_LOGICAL_PX: f64 = 200.0;
 const MIN_PET_WINDOW_WIDTH: f64 = 95.0;
 const MIN_PET_WINDOW_HEIGHT: f64 = 110.0;
 const MAX_PET_WINDOW_WIDTH: f64 = 270.0;
@@ -69,12 +73,8 @@ pub fn place_window_bottom_right(window: &WebviewWindow) -> tauri::Result<()> {
         return Ok(());
     };
     let window_size = window.outer_size()?;
-    let position = bottom_right_position(
-        *monitor.position(),
-        *monitor.size(),
-        window_size,
-        BOTTOM_RIGHT_MARGIN_PX,
-    );
+    let margin = (BOTTOM_RIGHT_MARGIN_LOGICAL_PX * monitor.scale_factor()).round() as i32;
+    let position = bottom_right_position(*monitor.position(), *monitor.size(), window_size, margin);
     window.set_position(position)?;
     Ok(())
 }
