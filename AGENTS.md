@@ -27,6 +27,11 @@ New feature modules must be developed in an isolated git worktree on a `feature/
 - Group related components by **filename prefix**, not by folder. Example: `SettingsNav.tsx`, `SettingsPetsSection.tsx`, `SettingsAboutSection.tsx`.
 - Window-level entry components (`PetWindow.tsx`, `SettingsWindow.tsx`) stay at `src/` top level. Auxiliary components they compose go flat into `src/components/`.
 - Hooks go in `src/hooks/`, shared utilities in `src/lib/`, static assets in `src/assets/`.
+- Asset placement follows the consumer, not the file type:
+  - `src/assets/` — assets the frontend `import`s at build time and Vite processes (URL/hashing). Example: agent icon SVGs, `logo.png`.
+  - `src-tauri/assets/` — content the Rust backend enumerates at runtime, ships through Tauri `bundle.resources`, and exposes to the webview via the `asset://` protocol (`convertFileSrc`).
+  - Decision rule: if Rust lists it with `fs::read_dir`, or the frontend receives a filesystem path that must pass through `convertFileSrc`, the asset belongs under `src-tauri/assets/`. If the frontend imports it directly in TS/CSS, it belongs under `src/assets/`.
+- Built-in pet packages live in `src-tauri/assets/pets/<pet-id>/` with `pet.json` + `spritesheet.{webp,png}`. They are discovered by `fs::read_dir` in `config_store.rs`, declared as `bundle.resources` and allowlisted under `assetProtocol.scope` (`$RESOURCE/assets/pets/**`) in `tauri.conf.json`, and share the same package format as user-imported pets under `~/.pethover/pets/`. Do not move built-in pets to `src/assets/`; doing so breaks runtime discovery, splits the built-in vs user-imported code paths, and forces a hardcoded manifest list.
 - Rust source goes in `src-tauri/src/`; keep it production-only (no tests inline).
 
 ### 4. Tauri command boundary
