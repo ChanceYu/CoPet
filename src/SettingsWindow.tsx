@@ -52,6 +52,7 @@ export function SettingsWindow() {
     setAgentMessageDisplay,
     setLocalePreference,
     setPetWindowSize,
+    setResponsePaused,
   } = data;
 
   const [activeSection, setActiveSection] =
@@ -174,9 +175,11 @@ export function SettingsWindow() {
                 locale={appState.localePreference === "zh-CN" ? "zh-CN" : "en-US"}
                 petWindowSize={petWindowSize}
                 resetPetWindowPosition={resetPetWindowPosition}
+                responsePaused={appState.responsePaused}
                 setAgentMessageDisplay={setAgentMessageDisplay}
                 setLocalePreference={setLocalePreference}
                 setPetWindowSize={setPetWindowSize}
+                setResponsePaused={setResponsePaused}
                 t={t}
               />
             )}

@@ -19,6 +19,7 @@ import type { PetWindowSizeSliderDragPayload } from "../lib/petWindowUi";
 import { Button } from "./ui/button";
 import { RadioGroup } from "./ui/radio-group";
 import { Slider } from "./ui/slider";
+import { Switch } from "./ui/switch";
 
 import type { Translator } from "../lib/settingsTypes";
 
@@ -30,6 +31,8 @@ interface SettingsPreferencesSectionProps {
   petWindowSize: PetWindowSize;
   setPetWindowSize: (size: PetWindowSize) => void;
   resetPetWindowPosition: () => Promise<{ errorMessage?: string }>;
+  responsePaused: boolean;
+  setResponsePaused: (paused: boolean) => void;
   t: Translator;
 }
 
@@ -41,6 +44,8 @@ export function SettingsPreferencesSection({
   petWindowSize,
   setPetWindowSize,
   resetPetWindowPosition,
+  responsePaused,
+  setResponsePaused,
   t,
 }: SettingsPreferencesSectionProps) {
   const [resetting, setResetting] = useState(false);
@@ -152,6 +157,24 @@ export function SettingsPreferencesSection({
               <RotateCcw aria-hidden="true" />
               {t("resetPosition")}
             </Button>
+          </div>
+        </div>
+
+        <div className="settings-preferences-row">
+          <div className="settings-preferences-row-text">
+            <span className="settings-preferences-row-title">
+              {t("pauseResponse")}
+            </span>
+            <p className="settings-preferences-row-description">
+              {t("pauseResponseDescription")}
+            </p>
+          </div>
+          <div className="settings-preferences-row-control">
+            <Switch
+              aria-label={t("pauseResponse")}
+              checked={responsePaused}
+              onCheckedChange={setResponsePaused}
+            />
           </div>
         </div>
 
