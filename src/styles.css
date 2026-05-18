@@ -510,7 +510,7 @@ select {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: var(--radius);
+  border-radius: 6px;
   border: 1px solid transparent;
   cursor: pointer;
   font-size: 12px;
