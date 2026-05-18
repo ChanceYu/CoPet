@@ -1,0 +1,12 @@
+{
+  "id": "pethover",
+  "slug": "pethover",
+  "displayName": "PetHover",
+  "description": "A cheerful blue-purple gradient fox pet inspired by the provided rounded 3D toy reference.",
+  "spritesheetPath": "spritesheet.webp",
+  "frameWidth": 192,
+  "frameHeight": 208,
+  "gridColumns": 8,
+  "gridRows": 9,
+  "builtIn": true
+}

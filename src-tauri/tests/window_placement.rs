@@ -1,0 +1,275 @@
+mod app_state {
+    pub use pethover_lib::app_state::*;
+}
+
+mod subject {
+    #![allow(dead_code)]
+
+    include!("../src/window_placement.rs");
+
+    #[test]
+    fn calculates_bottom_right_position_with_margin() {
+        let position = bottom_right_position(
+            PhysicalPosition { x: 100, y: 50 },
+            PhysicalSize {
+                width: 1920,
+                height: 1080,
+            },
+            PhysicalSize {
+                width: 420,
+                height: 520,
+            },
+            24,
+        );
+
+        assert_eq!(position, PhysicalPosition { x: 1576, y: 586 });
+    }
+
+    #[test]
+    fn does_not_place_window_above_monitor_origin_when_window_is_large() {
+        let position = bottom_right_position(
+            PhysicalPosition { x: -100, y: 20 },
+            PhysicalSize {
+                width: 300,
+                height: 200,
+            },
+            PhysicalSize {
+                width: 420,
+                height: 520,
+            },
+            24,
+        );
+
+        assert_eq!(position, PhysicalPosition { x: -100, y: 20 });
+    }
+
+    #[test]
+    fn maps_pet_window_slider_value_to_logical_dimensions() {
+        assert_eq!(pet_window_logical_dimensions(1), (95.0, 110.0));
+        assert_eq!(pet_window_logical_dimensions(70), (217.0, 249.4));
+        assert_eq!(pet_window_logical_dimensions(100), (270.0, 310.0));
+        assert_eq!(pet_window_logical_dimensions(0), (95.0, 110.0));
+    }
+
+    #[test]
+    fn pet_window_z_order_policy_survives_macos_app_switching() {
+        assert_eq!(
+            pet_window_z_order_policy(),
+            PetWindowZOrderPolicy {
+                macos_floating_level: false,
+                macos_screen_saver_level: true,
+                visible_on_all_workspaces: true,
+                visible_on_all_applications: true,
+                stationary_across_spaces: true,
+                fullscreen_auxiliary: true,
+                ignores_window_cycle: true,
+                hides_on_deactivate: false,
+                can_hide: false,
+                focusable: false,
+                orders_front_regardless: true,
+                restores_visibility: true,
+                deminiaturizes: true,
+                unhides_application_without_activation: true,
+                windows_hwnd_topmost: true,
+                windows_no_activate: true,
+            }
+        );
+    }
+
+    #[test]
+    fn pet_window_z_order_policy_focusable_strategy() {
+        let policy = format!("{:?}", pet_window_z_order_policy());
+
+        assert!(policy.contains("focusable: false"));
+    }
+
+    #[test]
+    fn pet_window_config_starts_non_focusable() {
+        let config = include_str!("../tauri.conf.json");
+        let pet_window_config = config
+            .split("\"label\": \"pet\"")
+            .nth(1)
+            .and_then(|rest| rest.split("\"label\": \"settings\"").next())
+            .expect("pet window config should be present before settings window config");
+
+        assert!(pet_window_config.contains("\"focusable\": false"));
+    }
+
+    #[test]
+    fn pet_window_config_does_not_rely_on_tauri_always_on_top() {
+        let config = include_str!("../tauri.conf.json");
+        let pet_window_config = config
+            .split("\"label\": \"pet\"")
+            .nth(1)
+            .and_then(|rest| rest.split("\"label\": \"settings\"").next())
+            .expect("pet window config should be present before settings window config");
+
+        assert!(!pet_window_config.contains("\"alwaysOnTop\": true"));
+    }
+
+    #[test]
+    fn pet_window_policy_uses_screen_saver_level_for_fullscreen_apps() {
+        let policy = format!("{:?}", pet_window_z_order_policy());
+
+        assert!(policy.contains("macos_floating_level: false"));
+        assert!(policy.contains("macos_screen_saver_level: true"));
+        assert!(policy.contains("visible_on_all_workspaces: true"));
+        assert!(policy.contains("stationary_across_spaces: true"));
+        assert!(policy.contains("fullscreen_auxiliary: true"));
+        assert!(policy.contains("hides_on_deactivate: false"));
+    }
+
+    #[test]
+    fn pet_window_topmost_path_does_not_use_tauri_always_on_top_on_macos() {
+        let source = include_str!("../src/window_placement.rs");
+        let keep_pet_window_on_top = source
+            .split("pub fn keep_pet_window_on_top")
+            .nth(1)
+            .and_then(|rest| rest.split("pub fn reassert_pet_window_on_top").next())
+            .expect("keep_pet_window_on_top body should exist");
+
+        assert!(!keep_pet_window_on_top.contains("set_always_on_top"));
+    }
+
+    #[test]
+    fn pet_window_z_order_policy_survives_macos_space_switching() {
+        let policy = pet_window_z_order_policy();
+
+        assert!(policy.macos_screen_saver_level);
+        assert!(policy.visible_on_all_applications);
+        assert!(policy.orders_front_regardless);
+        assert!(policy.restores_visibility);
+        assert!(policy.deminiaturizes);
+        assert!(policy.unhides_application_without_activation);
+        assert!(!policy.can_hide);
+    }
+
+    #[test]
+    fn pet_window_z_order_guard_reasserts_after_system_window_reordering() {
+        assert_eq!(
+            pet_window_reassertion_delays_ms(),
+            &[0, 120, 360, 900, 1_800, 3_200]
+        );
+    }
+
+    #[test]
+    fn pet_window_focus_loss_requests_z_order_reassertion_on_all_platforms() {
+        assert!(pet_window_event_needs_z_order_reassertion(
+            "pet",
+            &tauri::WindowEvent::Focused(false)
+        ));
+        assert!(!pet_window_event_needs_z_order_reassertion(
+            "pet",
+            &tauri::WindowEvent::Focused(true)
+        ));
+        assert!(!pet_window_event_needs_z_order_reassertion(
+            "settings",
+            &tauri::WindowEvent::Focused(false)
+        ));
+    }
+
+    #[test]
+    fn pet_window_reassertion_restores_hidden_or_minimized_windows() {
+        let source = include_str!("../src/window_placement.rs");
+
+        assert!(source.contains("unhideWithoutActivation"));
+        assert!(source.contains("deminiaturize"));
+        assert!(source.contains("window.show()"));
+    }
+
+    #[test]
+    fn pet_window_z_order_guard_observes_hide_deactivate_and_occlusion_events() {
+        let source = include_str!("../src/window_placement.rs");
+
+        assert!(source.contains("NSWorkspaceDidHideApplicationNotification"));
+        assert!(source.contains("NSWorkspaceDidDeactivateApplicationNotification"));
+        assert!(source.contains("NSWorkspaceDidWakeNotification"));
+        assert!(source.contains("NSApplicationDidHideNotification"));
+        assert!(source.contains("NSApplicationDidResignActiveNotification"));
+        assert!(source.contains("NSApplicationDidChangeOcclusionStateNotification"));
+    }
+
+    #[test]
+    fn windows_pet_window_reassertion_uses_native_no_activate_topmost() {
+        let source = include_str!("../src/window_placement.rs");
+
+        assert!(source.contains("SetWindowPos"));
+        assert!(source.contains("HWND_TOPMOST"));
+        assert!(source.contains("SWP_NOACTIVATE"));
+        assert!(source.contains("SWP_NOMOVE | SWP_NOSIZE"));
+    }
+
+    #[test]
+    fn pet_window_z_order_guard_pauses_while_settings_is_focused() {
+        assert!(!pet_window_reassertion_allowed(true));
+        assert!(pet_window_reassertion_allowed(false));
+    }
+
+    #[test]
+    fn pet_window_z_order_guard_does_not_poll_while_user_may_be_dragging_settings() {
+        assert!(!include_str!("../src/window_placement.rs").contains("WATCHDOG"));
+    }
+
+    #[test]
+    fn settings_window_interaction_policy_keeps_settings_below_pet() {
+        assert_eq!(
+            settings_window_interaction_policy(),
+            SettingsWindowInteractionPolicy {
+                macos_normal_level: true,
+                macos_screen_saver_level: false,
+                orders_front_regardless: false,
+            }
+        );
+    }
+
+    #[test]
+    fn settings_window_config_does_not_compete_with_pet_topmost_level() {
+        let config = include_str!("../tauri.conf.json");
+        let settings_window_config = config
+            .split("\"label\": \"settings\"")
+            .nth(1)
+            .expect("settings window config should be present");
+
+        assert!(!settings_window_config.contains("\"alwaysOnTop\": true"));
+    }
+
+    #[test]
+    fn settings_window_config_is_visible_on_startup() {
+        let config = include_str!("../tauri.conf.json");
+        let settings_window_config = config
+            .split("\"label\": \"settings\"")
+            .nth(1)
+            .expect("settings window config should be present");
+
+        assert!(!settings_window_config.contains("\"visible\": false"));
+    }
+
+    #[test]
+    fn calculates_resize_position_from_existing_window_center() {
+        let position = center_anchored_position(
+            PhysicalPosition { x: 100, y: 200 },
+            PhysicalSize {
+                width: 230,
+                height: 265,
+            },
+            PhysicalSize {
+                width: 280,
+                height: 325,
+            },
+        );
+
+        assert_eq!(position, PhysicalPosition { x: 75, y: 170 });
+    }
+
+    #[test]
+    fn pet_window_size_command_leaves_content_sizing_to_frontend() {
+        let source = include_str!("../src/lib.rs");
+        let set_pet_window_size = source
+            .split("fn set_pet_window_size")
+            .nth(1)
+            .and_then(|rest| rest.split("#[tauri::command]").next())
+            .expect("set_pet_window_size command should exist");
+
+        assert!(!set_pet_window_size.contains("resize_pet_window_from_center"));
+    }
+}

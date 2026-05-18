@@ -1,0 +1,36 @@
+{
+  "name": "pethover",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "icons:create": "node scripts/create-icons.mjs",
+    "test:frontend": "playwright test -c playwright.config.ts",
+    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
+    "verify:hardening": "pnpm build && cargo test --manifest-path src-tauri/Cargo.toml && pnpm tauri build --bundles app",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-dialog": "^2.7.1",
+    "@use-gesture/react": "^10.3.1",
+    "class-variance-authority": "^0.7.1",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-virtuoso": "^4.18.7",
+    "sonner": "^2.0.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@tauri-apps/cli": "^2.0.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.0"
+  }
+}

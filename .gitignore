@@ -1,0 +1,13 @@
+.DS_Store
+.worktrees/
+.pnpm-store/
+.claude/
+.agents/
+.superpowers/
+docs/superpowers/
+node_modules/
+dist/
+test-results/
+playwright-report/
+src-tauri/gen/
+src-tauri/target/

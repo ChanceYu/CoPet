@@ -1,0 +1,6 @@
+{
+  "id": "axobotl",
+  "displayName": "Axobotl",
+  "description": "A tiny blue axolotl Codex companion based on the provided reference image.",
+  "spritesheetPath": "spritesheet.webp"
+}

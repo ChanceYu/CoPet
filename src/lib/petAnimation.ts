@@ -1,0 +1,140 @@
+import type { PetStateId } from "./appTypes";
+
+// ---------- Layer unions ----------
+
+export type BaseState =
+  | { kind: "daze" }
+  | { kind: "blink" }
+  | { kind: "sleep" };
+
+export type AgentState =
+  | { kind: "none" }
+  | { kind: "thinking"; agent: string }
+  | { kind: "editing"; agent: string; tool?: string }
+  | { kind: "inspecting"; agent: string; tool?: string }
+  | { kind: "awaitingApproval"; agent: string }
+  | { kind: "celebrating"; agent: string }
+  | { kind: "hurt"; agent: string };
+
+export type InputState =
+  | { kind: "idle" }
+  | { kind: "looking"; direction: "left" | "right" }
+  | { kind: "tilting" }
+  | { kind: "happy" };
+
+export type EmotionState =
+  | { kind: "none" }
+  | { kind: "loadingBubble" }
+  | { kind: "sparkle" }
+  | { kind: "smoke" };
+
+export type MotionState =
+  | { kind: "anchored" }
+  | { kind: "dragging"; direction: "left" | "right" | "still" };
+
+export type PetLayers = {
+  base: BaseState;
+  agent: AgentState;
+  input: InputState;
+  motion: MotionState;
+  emotion: EmotionState;
+};
+
+export type EmotionOverlayId = "loading-bubble" | "sparkle" | "smoke";
+
+export type ComposedView = {
+  bodySpriteRow: PetStateId;
+  emotionOverlay: EmotionOverlayId | null;
+  dragging: boolean;
+};
+
+// ---------- Sprite fallback maps (layer → existing 9-row vocab) ----------
+
+function baseSpriteRow(_state: BaseState): PetStateId {
+  return "idle";
+}
+
+function agentSpriteRow(state: AgentState): PetStateId {
+  switch (state.kind) {
+    case "thinking":
+      return "waiting";
+    case "editing":
+      return "running";
+    case "inspecting":
+      return "review";
+    case "awaitingApproval":
+      return "waiting";
+    case "celebrating":
+      return "waving";
+    case "hurt":
+      return "failed";
+    case "none":
+      return "idle";
+  }
+}
+
+function inputSpriteRow(state: InputState): PetStateId {
+  switch (state.kind) {
+    case "looking":
+      return state.direction === "right" ? "running-right" : "running-left";
+    case "tilting":
+      return "waiting";
+    case "happy":
+      return "jumping";
+    case "idle":
+      return "idle";
+  }
+}
+
+function dragSpriteRow(direction: "left" | "right" | "still"): PetStateId {
+  if (direction === "right") return "running-right";
+  if (direction === "left") return "running-left";
+  return "idle";
+}
+
+function emotionId(state: Exclude<EmotionState, { kind: "none" }>): EmotionOverlayId {
+  switch (state.kind) {
+    case "loadingBubble":
+      return "loading-bubble";
+    case "sparkle":
+      return "sparkle";
+    case "smoke":
+      return "smoke";
+  }
+}
+
+// ---------- Composer ----------
+
+export function composeLayers(layers: PetLayers): ComposedView {
+  if (layers.motion.kind === "dragging") {
+    return {
+      bodySpriteRow: dragSpriteRow(layers.motion.direction),
+      emotionOverlay: null,
+      dragging: true,
+    };
+  }
+
+  if (layers.input.kind !== "idle") {
+    return {
+      bodySpriteRow: inputSpriteRow(layers.input),
+      emotionOverlay:
+        layers.emotion.kind === "none" ? null : emotionId(layers.emotion),
+      dragging: false,
+    };
+  }
+
+  if (layers.agent.kind !== "none") {
+    return {
+      bodySpriteRow: agentSpriteRow(layers.agent),
+      emotionOverlay:
+        layers.emotion.kind === "none" ? null : emotionId(layers.emotion),
+      dragging: false,
+    };
+  }
+
+  return {
+    bodySpriteRow: baseSpriteRow(layers.base),
+    emotionOverlay: null,
+    dragging: false,
+  };
+}
