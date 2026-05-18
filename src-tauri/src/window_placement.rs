@@ -97,6 +97,15 @@ pub fn reassert_pet_window_on_top(app: &AppHandle) {
         return;
     }
     if let Some(window) = app.get_webview_window("pet") {
+        // Skip reassertion when the user has hidden the pet via the tray menu.
+        // The guard otherwise re-shows the window on the next focus/space/wake
+        // event because keep_pet_window_on_top calls orderFrontRegardless on
+        // macOS and show() on other platforms. The Show Pet path explicitly
+        // schedules its own reassertion after window.show(), so a visible
+        // window will still be observed on the next tick.
+        if matches!(window.is_visible(), Ok(false)) {
+            return;
+        }
         let _ = keep_pet_window_on_top(&window);
     }
 }

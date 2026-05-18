@@ -206,6 +206,24 @@ mod subject {
     }
 
     #[test]
+    fn pet_window_z_order_guard_does_not_unhide_a_user_hidden_window() {
+        let source = include_str!("../src/window_placement.rs");
+        let body = source
+            .split("pub fn reassert_pet_window_on_top")
+            .nth(1)
+            .and_then(|rest| {
+                rest.split("pub fn pet_window_event_needs_z_order_reassertion")
+                    .next()
+            })
+            .expect("reassert_pet_window_on_top body should exist");
+
+        assert!(
+            body.contains("is_visible"),
+            "guard must check is_visible() before reasserting so toggle_pet_window_visibility's hide() sticks"
+        );
+    }
+
+    #[test]
     fn pet_window_z_order_guard_does_not_poll_while_user_may_be_dragging_settings() {
         assert!(!include_str!("../src/window_placement.rs").contains("WATCHDOG"));
     }
