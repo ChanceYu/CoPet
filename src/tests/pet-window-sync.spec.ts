@@ -335,6 +335,7 @@ test("agent messages expand the pet window without shrinking the configured pet 
       pets: [largePet],
       onboardingComplete: false,
       petWindowSize: 1,
+      agentMessageDisplay: "all",
     },
   });
   const page = await harness.openPage("pet");
@@ -1344,6 +1345,7 @@ test("pet window shows each agent message above the pet", async ({ browser }) =>
       currentPetId: pethover.id,
       pets: [pethover],
       onboardingComplete: false,
+      agentMessageDisplay: "all",
     },
   });
   const page = await harness.openPage("pet");
@@ -1355,6 +1357,51 @@ test("pet window shows each agent message above the pet", async ({ browser }) =>
     "Running pnpm",
   ]);
   await expect(panel.locator("img.pet-agent-icon")).toHaveCount(2);
+});
+
+test("pet window shows only the most recent message in latest mode", async ({ browser }) => {
+  const harness = await createAppHarness(browser, {
+    runtimeStatus: {
+      port: 8765,
+      endpoint: "http://127.0.0.1:8765/v1/events",
+      currentState: { state: "running", sinceMs: 100, idleAfterMs: 1600 },
+      messages: [
+        {
+          agent: "codex",
+          displayName: "Codex",
+          text: "Reading App.tsx",
+          updatedAtMs: 100,
+        },
+        {
+          agent: "claude-code",
+          displayName: "Claude Code",
+          text: "Running pnpm",
+          updatedAtMs: 200,
+        },
+        {
+          agent: "gemini",
+          displayName: "Gemini",
+          text: "Editing README",
+          updatedAtMs: 150,
+        },
+      ],
+      acceptedEvents: 3,
+      rejectedEvents: 0,
+    },
+    state: {
+      currentPetId: pethover.id,
+      pets: [pethover],
+      onboardingComplete: false,
+      agentMessageDisplay: "latest",
+    },
+  });
+  const page = await harness.openPage("pet");
+
+  const panel = page.getByTestId("pet-agent-messages");
+  await expect(panel).toBeVisible();
+  await expect(panel.getByTestId("pet-agent-message")).toHaveCount(1);
+  await expect(panel.getByTestId("pet-agent-message")).toHaveText("Running pnpm");
+  await expect(panel.locator('img[alt="Claude Code"]')).toBeVisible();
 });
 
 test("clicking an agent message row does not hide the message", async ({ browser }) => {
@@ -1405,6 +1452,7 @@ test("pet window renders simultaneous hook activity for all supported agents", a
       currentPetId: pethover.id,
       pets: [pethover],
       onboardingComplete: false,
+      agentMessageDisplay: "all",
     },
   });
   const page = await harness.openPage("pet");

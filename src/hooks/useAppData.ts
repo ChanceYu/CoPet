@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import type {
   AdapterSummary,
+  AgentMessageDisplay,
   AppState,
   AgentMessage,
   LocalePreference,
@@ -109,13 +110,25 @@ export function useAppData() {
     );
   }, [loadState]);
 
-  const visibleAgentMessages = useMemo(
-    () =>
-      agentMessages.filter(
-        (message) => !dismissedAgentMessageKeys.has(agentMessageKey(message)),
+  const agentMessageDisplay =
+    loadState.status === "ready" ? loadState.data.agentMessageDisplay : "latest";
+
+  const visibleAgentMessages = useMemo(() => {
+    const visible = agentMessages.filter(
+      (message) => !dismissedAgentMessageKeys.has(agentMessageKey(message)),
+    );
+    if (agentMessageDisplay !== "latest") {
+      return visible;
+    }
+    if (visible.length === 0) {
+      return visible;
+    }
+    return [
+      visible.reduce((latest, message) =>
+        message.updatedAtMs > latest.updatedAtMs ? message : latest,
       ),
-    [agentMessages, dismissedAgentMessageKeys],
-  );
+    ];
+  }, [agentMessages, agentMessageDisplay, dismissedAgentMessageKeys]);
 
   const selectPet = async (pet: PetSummary) => {
     setIsSelecting(true);
@@ -147,6 +160,20 @@ export function useAppData() {
   const setLocalePreference = async (localePreference: LocalePreference) => {
     try {
       const data = await invoke<AppState>("set_locale_preference", { localePreference });
+      setReadyData(data);
+    } catch (error) {
+      setLoadState({
+        status: "error",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+
+  const setAgentMessageDisplay = async (agentMessageDisplay: AgentMessageDisplay) => {
+    try {
+      const data = await invoke<AppState>("set_agent_message_display", {
+        agentMessageDisplay,
+      });
       setReadyData(data);
     } catch (error) {
       setLoadState({
@@ -314,6 +341,7 @@ export function useAppData() {
     runtimeStatus,
     selectPet,
     selectedPet,
+    setAgentMessageDisplay,
     setLocalePreference,
     setPetWindowSize,
   };

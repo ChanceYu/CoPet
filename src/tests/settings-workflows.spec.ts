@@ -123,19 +123,55 @@ test("language switch persists preference and updates settings copy", async ({ b
   const page = await harness.openPage("settings");
   await page.getByRole("tab", { name: "Preferences" }).click();
 
-  const languageSelect = page.getByRole("combobox", { name: "Language" });
-  await expect(page.locator("select#locale-preference-select")).toHaveCount(0);
-  await expect(languageSelect).toHaveText("English");
+  const languageGroup = page.getByRole("radiogroup", { name: "Language" });
+  await expect(languageGroup).toBeVisible();
+  await expect(languageGroup.getByRole("radio", { name: "English" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
   await expect(page.getByText("Choose the display language for PetHover.")).toHaveCount(0);
 
-  await languageSelect.click();
-  await page.getByRole("option", { name: "中文" }).click();
+  await languageGroup.getByRole("radio", { name: "中文" }).click();
 
-  await expect(page.getByRole("combobox", { name: "语言" })).toHaveText("中文");
+  await expect(
+    page.getByRole("radiogroup", { name: "语言" }).getByRole("radio", { name: "中文" }),
+  ).toHaveAttribute("aria-checked", "true");
   await expect(page.getByText("选择 PetHover 的显示语言。")).toHaveCount(0);
   expect(harness.calls).toContainEqual({
     command: "set_locale_preference",
     args: { localePreference: "zh-CN" },
+  });
+});
+
+test("message display preference toggles between latest and all", async ({ browser }) => {
+  const harness = await createAppHarness(browser, {
+    state: {
+      currentPetId: pethover.id,
+      locale: "en-US",
+      localePreference: "en-US",
+      pets: [pethover],
+      onboardingComplete: false,
+      agentMessageDisplay: "latest",
+    },
+  });
+
+  const page = await harness.openPage("settings");
+  await page.getByRole("tab", { name: "Preferences" }).click();
+
+  const messageDisplay = page.getByRole("radiogroup", { name: "Message display" });
+  await expect(messageDisplay).toBeVisible();
+  await expect(
+    messageDisplay.getByRole("radio", { name: "Most recent only" }),
+  ).toHaveAttribute("aria-checked", "true");
+
+  await messageDisplay.getByRole("radio", { name: "All agents" }).click();
+
+  await expect(
+    messageDisplay.getByRole("radio", { name: "All agents" }),
+  ).toHaveAttribute("aria-checked", "true");
+  expect(harness.calls).toContainEqual({
+    command: "set_agent_message_display",
+    args: { agentMessageDisplay: "all" },
   });
 });
 

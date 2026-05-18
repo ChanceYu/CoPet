@@ -38,7 +38,7 @@ test("clicking Agents shows agent switches and hides pet list", async ({
   await expect(page.getByRole("switch", { name: "Codex" })).toBeVisible();
 });
 
-test("Preferences exposes language, size, and reset position controls", async ({
+test("Preferences exposes message display, language, size, and reset position controls", async ({
   browser,
 }) => {
   const harness = await createAppHarness(browser);
@@ -46,7 +46,8 @@ test("Preferences exposes language, size, and reset position controls", async ({
 
   await page.getByRole("tab", { name: "Preferences" }).click();
 
-  await expect(page.getByRole("combobox", { name: "Language" })).toBeVisible();
+  await expect(page.getByRole("radiogroup", { name: "Message display" })).toBeVisible();
+  await expect(page.getByRole("radiogroup", { name: "Language" })).toBeVisible();
   await expect(page.getByRole("slider", { name: "Size" })).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Reset position" }),

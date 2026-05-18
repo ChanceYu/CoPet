@@ -32,6 +32,8 @@ export type PetSummary = {
 export type Locale = "en-US" | "zh-CN";
 export type LocalePreference = "system" | Locale;
 
+export type AgentMessageDisplay = "all" | "latest";
+
 export type AppState = {
   currentPetId: string;
   locale: Locale;
@@ -39,6 +41,7 @@ export type AppState = {
   pets: PetSummary[];
   onboardingComplete: boolean;
   petWindowSize: PetWindowSize;
+  agentMessageDisplay: AgentMessageDisplay;
 };
 
 export type PetWindowSize = number;

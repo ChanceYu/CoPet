@@ -5,6 +5,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { toast } from "sonner";
 
 import type {
+  AgentMessageDisplay,
   LocalePreference,
   PetWindowSize,
 } from "../lib/appTypes";
@@ -16,12 +17,14 @@ import {
 } from "../lib/petWindowUi";
 import type { PetWindowSizeSliderDragPayload } from "../lib/petWindowUi";
 import { Button } from "./ui/button";
-import { Select } from "./ui/select";
+import { RadioGroup } from "./ui/radio-group";
 import { Slider } from "./ui/slider";
 
 import type { Translator } from "../lib/settingsTypes";
 
 interface SettingsPreferencesSectionProps {
+  agentMessageDisplay: AgentMessageDisplay;
+  setAgentMessageDisplay: (next: AgentMessageDisplay) => void;
   locale: "en-US" | "zh-CN";
   setLocalePreference: (next: LocalePreference) => void;
   petWindowSize: PetWindowSize;
@@ -31,6 +34,8 @@ interface SettingsPreferencesSectionProps {
 }
 
 export function SettingsPreferencesSection({
+  agentMessageDisplay,
+  setAgentMessageDisplay,
   locale,
   setLocalePreference,
   petWindowSize,
@@ -151,17 +156,39 @@ export function SettingsPreferencesSection({
         </div>
 
         <div className="settings-preferences-row">
-          <label
+          <span
             className="settings-preferences-row-title"
-            htmlFor="language-select"
+            id="message-display-label"
+          >
+            {t("messageDisplay")}
+          </span>
+          <div className="settings-preferences-row-control">
+            <RadioGroup
+              aria-labelledby="message-display-label"
+              className="message-display-radio"
+              onValueChange={(value) =>
+                setAgentMessageDisplay(value as AgentMessageDisplay)
+              }
+              options={[
+                { label: t("messageDisplayLatest"), value: "latest" },
+                { label: t("messageDisplayAll"), value: "all" },
+              ]}
+              value={agentMessageDisplay}
+            />
+          </div>
+        </div>
+
+        <div className="settings-preferences-row">
+          <span
+            className="settings-preferences-row-title"
+            id="language-label"
           >
             {t("language")}
-          </label>
+          </span>
           <div className="settings-preferences-row-control">
-            <Select
-              aria-label={t("language")}
-              className="language-select"
-              id="language-select"
+            <RadioGroup
+              aria-labelledby="language-label"
+              className="language-radio"
               onValueChange={(value) =>
                 setLocalePreference(value as LocalePreference)
               }

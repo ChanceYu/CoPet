@@ -49,6 +49,7 @@ export function SettingsWindow() {
     resetPetWindowPosition,
     runAdapterAction,
     selectPet,
+    setAgentMessageDisplay,
     setLocalePreference,
     setPetWindowSize,
   } = data;
@@ -169,9 +170,11 @@ export function SettingsWindow() {
             )}
             {activeSection === "preferences" && (
               <SettingsPreferencesSection
+                agentMessageDisplay={appState.agentMessageDisplay}
                 locale={appState.localePreference === "zh-CN" ? "zh-CN" : "en-US"}
                 petWindowSize={petWindowSize}
                 resetPetWindowPosition={resetPetWindowPosition}
+                setAgentMessageDisplay={setAgentMessageDisplay}
                 setLocalePreference={setLocalePreference}
                 setPetWindowSize={setPetWindowSize}
                 t={t}

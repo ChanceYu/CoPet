@@ -736,6 +736,68 @@ select {
   background: hsl(189 93% 94% / 0.9);
 }
 
+.ui-radio-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.ui-radio-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  color: hsl(var(--foreground));
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.2;
+  transition: color 120ms ease;
+}
+
+.ui-radio-item:hover,
+.ui-radio-item[data-state="checked"] {
+  color: hsl(214 90% 24%);
+}
+
+.ui-radio-item:focus-visible {
+  outline: 2px solid hsl(var(--ring) / 0.34);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.ui-radio-indicator {
+  position: relative;
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  border: 1px solid hsl(213 96% 81%);
+  border-radius: 999px;
+  background: hsl(var(--card));
+}
+
+.ui-radio-item[data-state="checked"] .ui-radio-indicator {
+  border-color: hsl(214 90% 24%);
+}
+
+.ui-radio-item[data-state="checked"] .ui-radio-indicator::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: hsl(214 90% 24%);
+  transform: translate(-50%, -50%);
+}
+
 .ui-switch {
   position: relative;
   display: inline-flex;

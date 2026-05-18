@@ -20,6 +20,7 @@ export type AppState = {
   pets: PetSummary[];
   onboardingComplete: boolean;
   petWindowSize?: number;
+  agentMessageDisplay?: "all" | "latest";
 };
 
 export type AdapterSummary = {
@@ -137,7 +138,11 @@ export async function createAppHarness(browser: Browser, options: HarnessOptions
     pets: [pethover],
     onboardingComplete: false,
     petWindowSize: 30,
+    agentMessageDisplay: "latest",
   };
+  if (state.agentMessageDisplay === undefined) {
+    state = { ...state, agentMessageDisplay: "latest" };
+  }
   let adapters = options.adapters ?? [];
   let codexPets = options.codexPets ?? [];
   const scaleFactor = options.scaleFactor ?? 1;
@@ -302,6 +307,14 @@ export async function createAppHarness(browser: Browser, options: HarnessOptions
           const localePreference = args.localePreference as AppState["localePreference"];
           const locale = localePreference === "zh-CN" ? "zh-CN" : "en-US";
           state = { ...state, locale, localePreference };
+          await emitAppState();
+          return state;
+        }
+        if (command === "set_agent_message_display") {
+          state = {
+            ...state,
+            agentMessageDisplay: args.agentMessageDisplay as AppState["agentMessageDisplay"],
+          };
           await emitAppState();
           return state;
         }
