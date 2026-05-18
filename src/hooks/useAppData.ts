@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type {
   AdapterSummary,
@@ -41,6 +41,14 @@ export function useAppData() {
   );
   const [runtimeStatus, setRuntimeStatus] = useState<RuntimeStatus | null>(null);
 
+  const responsePausedRef = useRef(false);
+
+  useEffect(() => {
+    if (loadState.status === "ready") {
+      responsePausedRef.current = loadState.data.responsePaused;
+    }
+  }, [loadState]);
+
   const load = async () => {
     setLoadState({ status: "loading" });
     try {
@@ -80,7 +88,11 @@ export function useAppData() {
       pethoverDevLog("frontend.event.pet-state-changed", {
         currentState: event.payload.currentState,
         messages: event.payload.messages,
+        paused: responsePausedRef.current,
       });
+      if (responsePausedRef.current) {
+        return;
+      }
       setPetState(event.payload.currentState.state);
       setAgentMessages(event.payload.messages);
     }).then((cleanup) => {
@@ -174,6 +186,18 @@ export function useAppData() {
       const data = await invoke<AppState>("set_agent_message_display", {
         agentMessageDisplay,
       });
+      setReadyData(data);
+    } catch (error) {
+      setLoadState({
+        status: "error",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+
+  const setResponsePaused = async (paused: boolean) => {
+    try {
+      const data = await invoke<AppState>("set_response_paused", { paused });
       setReadyData(data);
     } catch (error) {
       setLoadState({
@@ -344,5 +368,6 @@ export function useAppData() {
     setAgentMessageDisplay,
     setLocalePreference,
     setPetWindowSize,
+    setResponsePaused,
   };
 }
