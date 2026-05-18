@@ -789,3 +789,18 @@ fn restore_env_var(key: &str, value: Option<OsString>) {
         env::remove_var(key);
     }
 }
+
+#[test]
+fn codex_install_idempotent_trusted_hashes_stable_across_runs() {
+    let temp = tempfile::tempdir().unwrap();
+    let home = temp.path().join("home");
+    let root = temp.path().join(".pethover");
+    let manager = manager_with_fake_agents(&root, &home);
+
+    manager.install("codex").unwrap();
+    let first = fs::read_to_string(home.join(".codex/config.toml")).unwrap();
+    manager.install("codex").unwrap();
+    let second = fs::read_to_string(home.join(".codex/config.toml")).unwrap();
+
+    assert_eq!(first, second, "config.toml diverged between two consecutive installs");
+}
