@@ -558,7 +558,17 @@ fn install_tray_menu(app: &mut tauri::App) -> tauri::Result<()> {
             TRAY_MENU_ABOUT_ID => {
                 let _ = handle_open_about(app);
             }
-            TRAY_MENU_QUIT_ID => app.exit(0),
+            TRAY_MENU_QUIT_ID => {
+                // Tauri 2 on macOS can leave the process alive after app.exit
+                // (NSApplication intercepts terminate). Proactively release the
+                // runtime listener and on-disk endpoint files so the next launch
+                // is not blocked by a stale port binding even if the process
+                // lingers.
+                if let Some(runtime) = app.try_state::<RuntimeManager>() {
+                    runtime.shutdown();
+                }
+                app.exit(0);
+            }
             _ => {}
         })
         .build(app)?;
@@ -666,7 +676,11 @@ pub fn run() {
                         schedule_pet_window_z_order_reassertions(window.app_handle());
                     }
                     "pet" => {
-                        window.app_handle().exit(0);
+                        let handle = window.app_handle();
+                        if let Some(runtime) = handle.try_state::<RuntimeManager>() {
+                            runtime.shutdown();
+                        }
+                        handle.exit(0);
                     }
                     _ => {}
                 }

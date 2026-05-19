@@ -179,6 +179,26 @@ impl RuntimeManager {
         self.port
     }
 
+    /// Signal both worker threads to stop, wake the blocking accept() via a
+    /// self-connect, and clean up the on-disk endpoint and token files.
+    ///
+    /// Safe to call multiple times. Drop calls this automatically, but the
+    /// quit handlers invoke it BEFORE `app.exit(0)` because Tauri 2 on macOS
+    /// does not always reach `std::process::exit` after the tray fires the
+    /// exit event — `NSApplication` can intercept the terminate and leave the
+    /// process alive. Releasing the listener up front guarantees the OS port
+    /// is freed even if the process lingers, so the next launch is not
+    /// blocked by "address already in use".
+    pub fn shutdown(&self) {
+        if self.shutdown.swap(true, Ordering::Relaxed) {
+            return; // already shut down by a prior call
+        }
+        let addr = SocketAddr::from(([127, 0, 0, 1], self.port));
+        let _ = TcpStream::connect_timeout(&addr, Duration::from_millis(50));
+        let _ = RuntimeToken::invalidate(&self.runtime_dir);
+        let _ = fs::remove_file(self.runtime_dir.join("event-endpoint"));
+    }
+
     pub fn snapshot(&self) -> RuntimeSnapshot {
         let status = self.core.lock().expect("runtime core poisoned").status();
         RuntimeSnapshot {
@@ -194,16 +214,9 @@ impl RuntimeManager {
 
 impl Drop for RuntimeManager {
     fn drop(&mut self) {
-        // Signal both worker threads to stop. Set the flag BEFORE the wake-up
-        // self-connect so the listener thread sees `true` the instant accept()
-        // returns. The connect timeout caps Drop latency at 50ms even if the
-        // OS is slow; a failed connect just means the socket is already gone,
-        // which is also a successful shutdown.
-        self.shutdown.store(true, Ordering::Relaxed);
-        let addr = SocketAddr::from(([127, 0, 0, 1], self.port));
-        let _ = TcpStream::connect_timeout(&addr, Duration::from_millis(50));
-        let _ = RuntimeToken::invalidate(&self.runtime_dir);
-        let _ = fs::remove_file(self.runtime_dir.join("event-endpoint"));
+        // Idempotent: if the quit handler already called shutdown(), this is
+        // a no-op. Otherwise the same cleanup path runs here.
+        self.shutdown();
     }
 }
 

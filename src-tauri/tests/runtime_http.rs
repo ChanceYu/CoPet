@@ -59,6 +59,37 @@ fn runtime_manager_accepts_authorized_http_events_and_rejects_bad_tokens() {
 }
 
 #[test]
+fn explicit_shutdown_releases_port_before_drop() {
+    let temp = tempfile::tempdir().unwrap();
+    let runtime_dir = temp.path().join("runtime");
+    let manager = RuntimeManager::start(&runtime_dir, |_| {}).unwrap();
+    let port = manager.port();
+
+    // Quit-handler path: call shutdown() explicitly before letting the manager
+    // drop. The OS port and the on-disk endpoint files must already be released.
+    manager.shutdown();
+    let deadline = Instant::now() + Duration::from_secs(1);
+    let mut bound = false;
+    while Instant::now() < deadline {
+        if TcpListener::bind(("127.0.0.1", port)).is_ok() {
+            bound = true;
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    assert!(
+        bound,
+        "TCP port {port} should be re-bindable immediately after shutdown()"
+    );
+    assert!(!runtime_dir.join("event-token").exists());
+    assert!(!runtime_dir.join("event-endpoint").exists());
+
+    // Second shutdown() call must be a no-op: no panic, no spurious connect.
+    manager.shutdown();
+    drop(manager); // Drop's internal shutdown call is also idempotent.
+}
+
+#[test]
 fn drop_releases_tcp_port_for_immediate_rebind() {
     let temp = tempfile::tempdir().unwrap();
     let runtime_dir = temp.path().join("runtime");
