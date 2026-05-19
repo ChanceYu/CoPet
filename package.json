@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev-server.mjs",
     "build": "tsc && vite build",
     "icons:create": "node scripts/create-icons.mjs",
     "test:frontend": "playwright test -c playwright.config.ts",

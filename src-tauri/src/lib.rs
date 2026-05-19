@@ -561,16 +561,17 @@ fn install_tray_menu(app: &mut tauri::App) -> tauri::Result<()> {
             TRAY_MENU_QUIT_ID => {
                 // Tauri 2's `app.exit` on macOS does not reliably reach
                 // `process::exit` — NSApplication can intercept the terminate
-                // event and leave the run loop alive. That keeps the Rust
-                // process resident, which in turn keeps `tauri dev` from
-                // killing its Vite child, so port 1420 stays bound and the
-                // next `pnpm tauri dev` fails with "Port already in use".
-                // We run the registered cleanup hooks first (Drop on managed
-                // state, our own shutdown), then exit the process directly.
+                // event and leave the run loop alive. We release our own
+                // resources, then hard-exit so the `tauri dev` parent observes
+                // the child exit and can attempt to reap its before-dev tree.
+                //
+                // We avoid `cleanup_before_exit()` here because in Tauri 2 it
+                // can re-enter window close handlers (which themselves want to
+                // call cleanup_before_exit), risking either stack overflow or
+                // a hang that defeats the whole point of this handler.
                 if let Some(runtime) = app.try_state::<RuntimeManager>() {
                     runtime.shutdown();
                 }
-                app.cleanup_before_exit();
                 std::process::exit(0);
             }
             _ => {}
@@ -680,14 +681,12 @@ pub fn run() {
                         schedule_pet_window_z_order_reassertions(window.app_handle());
                     }
                     "pet" => {
-                        // Same rationale as the tray quit handler: bypass
-                        // Tauri's macOS exit path so the process actually dies
-                        // and the `tauri dev` parent can reap the Vite child.
+                        // Same rationale as the tray quit handler; see comment
+                        // there. cleanup_before_exit is intentionally omitted.
                         let handle = window.app_handle();
                         if let Some(runtime) = handle.try_state::<RuntimeManager>() {
                             runtime.shutdown();
                         }
-                        handle.cleanup_before_exit();
                         std::process::exit(0);
                     }
                     _ => {}
