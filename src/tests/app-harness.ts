@@ -67,10 +67,12 @@ type HarnessOptions = {
   commandDelayMs?: Partial<Record<string, number>>;
   dialogOpenPath?: string | null;
   monitor?: HarnessMonitor;
+  monitorFromPointReturnsNull?: boolean;
   runtimeStatus?: RuntimeStatus;
   scaleFactor?: number;
   state?: AppState;
   windowPositions?: Partial<Record<"pet" | "settings", { x: number; y: number }>>;
+  windowSizes?: Partial<Record<"pet" | "settings", { height: number; width: number }>>;
 };
 
 type HarnessMonitor = {
@@ -200,6 +202,9 @@ export async function createAppHarness(browser: Browser, options: HarnessOptions
 
   async function openPage(label: "pet" | "settings") {
     const page = await context.newPage();
+    if (options.windowSizes?.[label]) {
+      await page.setViewportSize(options.windowSizes[label]);
+    }
     pages.push(page);
     windowPositions.set(
       label,
@@ -265,6 +270,12 @@ export async function createAppHarness(browser: Browser, options: HarnessOptions
           return scaleFactor;
         }
         if (command === "plugin:window|monitor_from_point") {
+          if (options.monitorFromPointReturnsNull) {
+            return null;
+          }
+          return monitor;
+        }
+        if (command === "plugin:window|current_monitor") {
           return monitor;
         }
         if (command === "plugin:window|set_position") {

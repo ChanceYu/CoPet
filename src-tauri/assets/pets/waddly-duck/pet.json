@@ -1,0 +1,81 @@
+{
+  "id": "waddly-duck",
+  "displayName": "Waddly Duck",
+  "description": "A cheerful little yellow duck with a bright beak and friendly waddle.",
+  "spritesheetPath": "spritesheet.webp",
+  "frameWidth": 192,
+  "frameHeight": 208,
+  "gridColumns": 8,
+  "gridRows": 9,
+  "pethover": {
+    "schemaVersion": 1,
+    "displayNameZh": "摇摇小鸭",
+    "descriptionZh": "一只开朗的小黄鸭，有明亮的喙和友好的摇摆步。",
+    "audio": {
+      "interactionSounds": {
+        "click": "pethover/audio/click.mp3",
+        "doubleClick": "pethover/audio/surprised.mp3",
+        "petted": "pethover/audio/giggle.mp3",
+        "pettedSlow": "pethover/audio/sigh.mp3",
+        "dragLand": "pethover/audio/land.mp3"
+      },
+      "agentSounds": {
+        "celebrating": "pethover/audio/yay.mp3",
+        "failed": "pethover/audio/oof.mp3",
+        "thinking": "pethover/audio/hmm.mp3",
+        "editing": "pethover/audio/tap.mp3",
+        "inspecting": "pethover/audio/peek.mp3",
+        "awaitingApproval": "pethover/audio/wait.mp3"
+      }
+    },
+    "behaviors": {
+      "stateRows": {
+        "idle": {
+          "row": 0,
+          "frames": 6,
+          "durationMs": 1100
+        },
+        "running-right": {
+          "row": 1,
+          "frames": 8,
+          "durationMs": 1060
+        },
+        "running-left": {
+          "row": 2,
+          "frames": 8,
+          "durationMs": 1060
+        },
+        "waving": {
+          "row": 3,
+          "frames": 4,
+          "durationMs": 700
+        },
+        "jumping": {
+          "row": 4,
+          "frames": 5,
+          "durationMs": 840
+        },
+        "failed": {
+          "row": 5,
+          "frames": 8,
+          "durationMs": 1220
+        },
+        "waiting": {
+          "row": 6,
+          "frames": 6,
+          "durationMs": 1010
+        },
+        "running": {
+          "row": 7,
+          "frames": 6,
+          "durationMs": 820
+        },
+        "review": {
+          "row": 8,
+          "frames": 6,
+          "durationMs": 1030
+        }
+      }
+    }
+  }
+}

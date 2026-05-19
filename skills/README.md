@@ -16,7 +16,7 @@ $HOME/.pethover/pets/<pet-id>/
         └── ...
 ```
 
-`<pet-id>` is a kebab-case identifier unique within `$HOME/.pethover/pets/`. Built-in pets ship inside the app bundle using the same layout.
+`<pet-id>` is a kebab-case identifier unique within `$HOME/.pethover/pets/`. Built-in pets ship inside the app bundle using the same layout. The PetHover skill writes its final package only to `$HOME/.pethover/pets/<pet-id>/`; it does not write a second package under `$HOME/.codex/pets/`.
 
 A minimal Codex-compatible `pet.json`:
 
@@ -65,6 +65,8 @@ A PetHover-extended `pet.json` keeps the Codex fields at the top level and puts 
 ```
 
 PetHover-side configuration lives under a single `pethover` top-level section in `pet.json`, written by the `pethover` skill.
+
+`pethover.displayNameZh` is the Chinese translation of top-level `displayName`; `pethover.descriptionZh` is the Chinese translation of top-level `description`.
 
 When a skill creates a package, it must write the Codex-required top-level fields. When it updates an existing package, it must preserve every unowned top-level field verbatim and only replace the `pethover` section unless it is filling missing Codex-required fields for a package it is creating.
 

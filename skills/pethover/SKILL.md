@@ -12,7 +12,7 @@ This skill is the **single orchestration entry point** for creating a PetHover p
 1. Calls the upstream `$hatch-pet` skill to generate the Codex-compatible **sprite atlas** and canonical 9-row behavior vocabulary.
 2. Uses the `$hatch-pet` package manifest as the source of truth for Codex top-level fields: `id`, `displayName`, `description`, and `spritesheetPath`.
 3. Adds PetHover-only metadata under the top-level `pethover` key: Chinese display strings, optional audio bindings, and optional behavior metadata.
-4. Writes the entire output to `$HOME/.pethover/pets/<pet-id>/`, including `pet.json`, the spritesheet, and any `pethover/` resources.
+4. Writes the final package only to `$HOME/.pethover/pets/<pet-id>/`, including `pet.json`, the spritesheet, and any `pethover/` resources.
 
 It is the only PetHover skill. All PetHover-side configuration lives under the `pethover` top-level key of `pet.json`.
 
@@ -40,7 +40,7 @@ $HOME/.pethover/pets/<pet-id>/
         └── ...
 ```
 
-`<pet-id>` is a kebab-case identifier, unique within `$HOME/.pethover/pets/`. Built-in pets ship in the app bundle using the same layout.
+`<pet-id>` is a kebab-case identifier, unique within `$HOME/.pethover/pets/`. Built-in pets ship in the app bundle using the same layout. This skill writes its final package only to `$HOME/.pethover/pets/<pet-id>/`; do not write or mirror the finished PetHover package into `$HOME/.codex/pets/`.
 
 ## Inputs
 
@@ -77,7 +77,7 @@ Use the `$hatch-pet` manifest and the original user input to confirm two short p
 - **`displayName`** — a friendly, human-readable name for the pet (≤ 24 chars). Distinct from the machine `id` / `name`.
 - **`description`** — a one-sentence summary of the pet's appearance and personality (≤ 140 chars).
 
-Then **translate each into Chinese**, stored under `pethover` as **`displayNameZh`** and **`descriptionZh`**. Translations must preserve tone (playful, warm, regal, etc.) and stay within the same length budget — they are translations of the English, not retellings. All four fields are required for PetHover-generated packages; missing any one is a generation failure.
+Then translate the top-level fields into Chinese: **`pethover.displayNameZh`** is the Chinese translation of `displayName`, and **`pethover.descriptionZh`** is the Chinese translation of `description`. Translations must preserve tone (playful, warm, regal, etc.) and stay within the same length budget — they are translations of the English, not retellings. All four fields are required for PetHover-generated packages; missing any one is a generation failure.
 
 The English originals stay in the Codex-compatible top-level fields. The Chinese siblings live under `pethover` — see the schema in step 5.
 
@@ -112,7 +112,7 @@ Save each generated clip under `pethover/audio/`. Filenames are free-form; the m
 
 ### 5. Write `pet.json`
 
-Write the manifest at `$HOME/.pethover/pets/<pet-id>/pet.json`. Start from the `$hatch-pet` manifest when available, then add or replace only the top-level `pethover` object. The top-level fields must remain Codex-compatible; PetHover extensions must stay inside `pethover`.
+Write the manifest at `$HOME/.pethover/pets/<pet-id>/pet.json`. Start from the `$hatch-pet` manifest when available, then add or replace only the top-level `pethover` object. The top-level fields must remain Codex-compatible; PetHover extensions must stay inside `pethover`. This is the only final output location for the PetHover package.
 
 Recommended package schema:
 
@@ -166,7 +166,7 @@ Recommended package schema:
 
 All paths are relative to the pet package root (the directory containing `pet.json`). Absolute paths or `../` segments are rejected.
 
-Top-level `displayName` and `description` are required non-empty English strings within the length budgets defined in step 3. `pethover.displayNameZh` and `pethover.descriptionZh` are required non-empty Chinese translations for PetHover-generated packages. Further locales should follow the same suffix pattern, such as `displayNameJa` or `descriptionKo`; do not introduce nested locale objects in this schema version.
+Top-level `displayName` and `description` are required non-empty English strings within the length budgets defined in step 3. `pethover.displayNameZh` must be the Chinese translation of `displayName`; `pethover.descriptionZh` must be the Chinese translation of `description`. Further locales should follow the same suffix pattern, such as `displayNameJa` or `descriptionKo`; do not introduce nested locale objects in this schema version.
 
 `spritesheetPath` is the Codex-compatible top-level path to the file written in step 2 — either `"spritesheet.png"` or `"spritesheet.webp"` depending on `$hatch-pet`'s output format. Do not duplicate that value as `pethover.spritesheet`.
 
@@ -193,6 +193,7 @@ Implementations must:
 - Ensure `id`, `displayName`, `description`, and `spritesheetPath` exist for packages this skill creates, preferably copied from the `$hatch-pet` manifest.
 - Replace or set the `pethover` field.
 - Preserve every unrelated top-level key verbatim, including its value and (where practical) its formatting.
+- Write the final package only under `$HOME/.pethover/pets/<pet-id>/`.
 
 Never rewrite the whole file from a hard-coded template, and never delete sibling keys whose schema this skill does not own.
 
@@ -217,6 +218,7 @@ Agent sounds have no cooldown coupling — they fire as agent events arrive (sub
 - Don't reference files outside the pet package (absolute paths, `../` segments, URLs).
 - Don't put PetHover fields at the top level except for the single `pethover` object.
 - Don't duplicate `spritesheetPath` as a PetHover-only spritesheet field.
+- Don't write the final PetHover package under `$HOME/.codex/pets/`.
 - Don't author long clips. ≤ 1 second is plenty for gesture feedback; longer is fine for ambient agent sounds but rare.
 - Don't include silence padding — trim at generation time.
 - Don't rewrite `pet.json` from a template or delete unowned top-level fields — other ecosystems may share this manifest.

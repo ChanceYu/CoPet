@@ -1,0 +1,4 @@
+interface:
+  display_name: "PetHover"
+  short_description: "Create PetHover pet packages"
+  default_prompt: "Use $pethover to create a PetHover-compatible pet package."

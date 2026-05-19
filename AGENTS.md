@@ -59,7 +59,13 @@ Examples:
 - `fix(settings): align section heading IDs with tabpanel aria-labelledby`
 - `refactor(settings): compose window from sectioned shell`
 
-### 6. Definition of done
+### 6. Git hygiene
+
+- Do not force-add ignored files. Never use `git add -f` or `git add --force` unless the user explicitly names the ignored file and asks for it to be tracked.
+- Respect `.gitignore` as authoritative.
+- Before every commit, check `git diff --cached --name-status` and verify the staged files match the user-requested scope.
+
+### 7. Definition of done
 
 A feature module is done only when **all** of the following hold:
 

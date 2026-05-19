@@ -25,6 +25,7 @@ import {
   petWindowSizeSliderResizeDelayMs,
   petWindowStackContentSize,
   resizeCurrentPetWindowFromCenter,
+  resizeCurrentPetWindowToResetPosition,
 } from "./lib/petWindowUi";
 import type { PetWindowSizeSliderDragPayload } from "./lib/petWindowUi";
 import { agentIconUrl } from "./lib/agentIcons";
@@ -46,6 +47,7 @@ export function PetWindow() {
     typeof navigator !== "undefined" &&
     /Mac/i.test(navigator.userAgent) &&
     typeof (window as { __TAURI__?: unknown }).__TAURI__ !== "undefined";
+  const initialContentResizeAnchorReleaseMs = 250;
   const { composed, bindInput, bindMotion } = useLayeredPetState({
     onLongPress: isMac ? () => setMenuOpen(true) : undefined,
   });
@@ -53,6 +55,8 @@ export function PetWindow() {
   const stackRef = useRef<HTMLDivElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const sliderDraggingRef = useRef(false);
+  const initialContentResizePendingRef = useRef(true);
+  const initialContentResizeReleaseTimerRef = useRef<number | null>(null);
   const resizeTimerRef = useRef<number | null>(null);
   const sliderScaleReleaseTimerRef = useRef<number | null>(null);
   const petWindowSizeRef = useRef(defaultPetWindowSize);
@@ -85,12 +89,14 @@ export function PetWindow() {
       ? sliderScaleLock.startScale
       : fitPetScale;
 
-  const resizeToStack = () => {
+  const resizeToStack = (anchor: "center" | "resetPosition" = "center") => {
     if (sliderDraggingRef.current || !stackRef.current) {
       return Promise.resolve();
     }
     const nextSize = petWindowStackContentSize(stackRef.current);
-    return resizeCurrentPetWindowFromCenter(nextSize);
+    return anchor === "resetPosition"
+      ? resizeCurrentPetWindowToResetPosition(nextSize)
+      : resizeCurrentPetWindowFromCenter(nextSize);
   };
 
   useEffect(() => {
@@ -100,10 +106,28 @@ export function PetWindow() {
 
   useEffect(() => {
     const animationFrame = window.requestAnimationFrame(() => {
-      void resizeToStack();
+      const anchor =
+        initialContentResizePendingRef.current && stackRef.current
+          ? "resetPosition"
+          : "center";
+      if (anchor === "resetPosition" && initialContentResizeReleaseTimerRef.current === null) {
+        initialContentResizeReleaseTimerRef.current = window.setTimeout(() => {
+          initialContentResizePendingRef.current = false;
+          initialContentResizeReleaseTimerRef.current = null;
+        }, initialContentResizeAnchorReleaseMs);
+      }
+      void resizeToStack(anchor);
     });
     return () => window.cancelAnimationFrame(animationFrame);
   }, [selectedPet?.id, petScale, agentMessages.length, menuOpen, viewportSize.height, viewportSize.width]);
+
+  useEffect(() => {
+    return () => {
+      if (initialContentResizeReleaseTimerRef.current !== null) {
+        window.clearTimeout(initialContentResizeReleaseTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const updateViewportSize = () => {

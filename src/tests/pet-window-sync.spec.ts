@@ -681,6 +681,27 @@ test("starting the size slider resizes the pet window from its center", async ({
   await petPage.setViewportSize({ width: 100, height: 110 });
   await expect(petPage.getByRole("img", { name: "PetHover" })).toBeVisible();
   await petPage.waitForTimeout(50);
+  const positionBeforeSlider =
+    harness.calls
+      .filter((call) => call.command === "plugin:window|set_position")
+      .map((call) => physicalSetPosition(call)?.Physical)
+      .at(-1) ?? { x: 1540, y: 80 };
+  const sizeBeforeSlider =
+    harness.calls
+      .filter((call) => call.command === "plugin:window|set_size")
+      .map((call) => logicalSetSize(call)?.Logical)
+      .at(-1) ?? { width: 100, height: 110 };
+  const sliderStartCenter = {
+    x: positionBeforeSlider.x + (sizeBeforeSlider.width * 2) / 2,
+    y: positionBeforeSlider.y + (sizeBeforeSlider.height * 2) / 2,
+  };
+  const expectedSliderStartPosition = {
+    x: Math.round(sliderStartCenter.x - (270 * 2) / 2),
+    y: Math.round(sliderStartCenter.y - (310 * 2) / 2),
+  };
+  const positionCallCountBeforeSlider = harness.calls.filter(
+    (call) => call.command === "plugin:window|set_position",
+  ).length;
 
   const settingsPage = await harness.openPage("settings");
   await settingsPage.getByRole("tab", { name: "General" }).click();
@@ -702,13 +723,14 @@ test("starting the size slider resizes the pet window from its center", async ({
     .poll(() =>
       harness.calls
         .filter((call) => call.command === "plugin:window|set_position")
+        .slice(positionCallCountBeforeSlider)
         .map((call) => physicalSetPosition(call)?.Physical)
         .at(-1),
     )
-    .toEqual({ x: 1370, y: -120 });
+    .toEqual(expectedSliderStartPosition);
   expect(harness.calls).toContainEqual({
     command: "plugin:window|monitor_from_point",
-    args: { x: 1640, y: 190 },
+    args: sliderStartCenter,
   });
   await expect
     .poll(() =>
@@ -737,6 +759,170 @@ test("starting the size slider resizes the pet window from its center", async ({
           .length,
     )
     .toBeGreaterThan(startPositionCallCount);
+});
+
+test("initial pet content resize keeps the reset-position bottom-right anchor", async ({
+  browser,
+}) => {
+  const scaleFactor = 2;
+  const monitor = {
+    name: "Retina",
+    position: { x: 1440, y: 0 },
+    scaleFactor,
+    size: { width: 2560, height: 1440 },
+    workArea: {
+      position: { x: 1440, y: 0 },
+      size: { width: 2560, height: 1440 },
+    },
+  };
+  const initialSize = { width: 146, height: 134 };
+  const resetMargin = 200 * scaleFactor;
+  const initialPosition = {
+    x: monitor.position.x + monitor.size.width - initialSize.width * scaleFactor - resetMargin,
+    y: monitor.position.y + monitor.size.height - initialSize.height * scaleFactor - resetMargin,
+  };
+  const harness = await createAppHarness(browser, {
+    monitor,
+    scaleFactor,
+    windowPositions: {
+      pet: initialPosition,
+    },
+    windowSizes: {
+      pet: initialSize,
+    },
+    state: {
+      currentPetId: pethover.id,
+      pets: [pethover],
+      onboardingComplete: false,
+      petWindowSize: 30,
+    },
+  });
+
+  const petPage = await harness.openPage("pet");
+  await expect(petPage.getByRole("img", { name: "PetHover" })).toBeVisible();
+
+  await expect
+    .poll(() =>
+      harness.calls
+        .filter((call) => call.command === "plugin:window|set_size")
+        .map((call) => logicalSetSize(call)?.Logical)
+        .at(-1),
+    )
+    .toBeTruthy();
+
+  const finalSize = harness.calls
+    .filter((call) => call.command === "plugin:window|set_size")
+    .map((call) => logicalSetSize(call)?.Logical)
+    .at(-1);
+  expect(finalSize).toBeTruthy();
+  const expectedResetPosition = {
+    x:
+      monitor.position.x +
+      monitor.size.width -
+      Math.ceil(finalSize!.width * scaleFactor) -
+      resetMargin,
+    y:
+      monitor.position.y +
+      monitor.size.height -
+      Math.ceil(finalSize!.height * scaleFactor) -
+      resetMargin,
+  };
+
+  await expect
+    .poll(() =>
+      harness.calls
+        .filter((call) => call.command === "plugin:window|set_position")
+        .map((call) => physicalSetPosition(call)?.Physical)
+        .at(-1),
+    )
+    .toEqual(expectedResetPosition);
+});
+
+test("initial pet content resize falls back to the current monitor", async ({
+  browser,
+}) => {
+  const scaleFactor = 2;
+  const monitor = {
+    name: "Retina",
+    position: { x: 1440, y: 0 },
+    scaleFactor,
+    size: { width: 2560, height: 1440 },
+    workArea: {
+      position: { x: 1440, y: 0 },
+      size: { width: 2560, height: 1440 },
+    },
+  };
+  const initialSize = { width: 146, height: 134 };
+  const resetMargin = 200 * scaleFactor;
+  const harness = await createAppHarness(browser, {
+    monitor,
+    monitorFromPointReturnsNull: true,
+    scaleFactor,
+    windowPositions: {
+      pet: {
+        x:
+          monitor.position.x +
+          monitor.size.width -
+          initialSize.width * scaleFactor -
+          resetMargin,
+        y:
+          monitor.position.y +
+          monitor.size.height -
+          initialSize.height * scaleFactor -
+          resetMargin,
+      },
+    },
+    windowSizes: {
+      pet: initialSize,
+    },
+    state: {
+      currentPetId: pethover.id,
+      pets: [pethover],
+      onboardingComplete: false,
+      petWindowSize: 30,
+    },
+  });
+
+  const petPage = await harness.openPage("pet");
+  await expect(petPage.getByRole("img", { name: "PetHover" })).toBeVisible();
+  await expect
+    .poll(() =>
+      harness.calls
+        .filter((call) => call.command === "plugin:window|set_size")
+        .map((call) => logicalSetSize(call)?.Logical)
+        .at(-1),
+    )
+    .toBeTruthy();
+
+  const finalSize = harness.calls
+    .filter((call) => call.command === "plugin:window|set_size")
+    .map((call) => logicalSetSize(call)?.Logical)
+    .at(-1);
+  expect(finalSize).toBeTruthy();
+
+  await expect
+    .poll(() =>
+      harness.calls
+        .filter((call) => call.command === "plugin:window|set_position")
+        .map((call) => physicalSetPosition(call)?.Physical)
+        .at(-1),
+    )
+    .toEqual({
+      x:
+        monitor.position.x +
+        monitor.size.width -
+        Math.ceil(finalSize!.width * scaleFactor) -
+        resetMargin,
+      y:
+        monitor.position.y +
+        monitor.size.height -
+        Math.ceil(finalSize!.height * scaleFactor) -
+        resetMargin,
+    });
+  expect(harness.calls).toContainEqual({
+    command: "plugin:window|current_monitor",
+    args: {},
+  });
 });
 
 test("growing the size slider expands the pet window to max while rendering slider changes", async ({
