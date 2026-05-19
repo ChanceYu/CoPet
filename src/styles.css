@@ -263,6 +263,18 @@ select {
   cursor: grabbing;
 }
 
+/* Top-left exclusion zone covering the macOS traffic lights so the cursor
+   stays default and clicks near the buttons don't initiate a window drag. */
+.settings-titlebar-traffic-lights {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 80px;
+  height: 100%;
+  -webkit-app-region: no-drag;
+  cursor: default;
+}
+
 .settings-sidebar {
   grid-row: 2;
   grid-column: 1;

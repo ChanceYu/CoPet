@@ -138,7 +138,13 @@ export function SettingsWindow() {
           className="settings-titlebar"
           data-tauri-drag-region
           onPointerDown={startSettingsDrag}
-        />
+        >
+          <span
+            aria-hidden="true"
+            className="settings-titlebar-traffic-lights"
+            data-settings-no-drag
+          />
+        </header>
 
         <SettingsSectionHost
           activeSection={activeSection}
