@@ -1,7 +1,8 @@
 use crate::{
     app_state::{
         default_pet_window_size, normalize_pet_window_size, AgentMessageDisplay, AppState,
-        PetWindowSize, DEFAULT_PET_WINDOW_SIZE, MAX_PET_WINDOW_SIZE, MIN_PET_WINDOW_SIZE,
+        PetInteractionPrefs, PetWindowSize, DEFAULT_PET_WINDOW_SIZE, MAX_PET_WINDOW_SIZE,
+        MIN_PET_WINDOW_SIZE,
     },
     i18n::{default_locale, Locale, LocalePreference},
     pet_package::{find_sprite_path, PetManifest, PetPackage, PetSummary},
@@ -125,6 +126,7 @@ impl ConfigStore {
             pet_window_size: normalized_pet_window_size,
             agent_message_display: config.agent_message_display,
             response_paused: config.response_paused,
+            pet_interactions: config.pet_interactions.clone(),
         })
     }
 
@@ -252,6 +254,14 @@ impl ConfigStore {
         self.app_state()?;
         let mut config = self.load_or_create_config()?;
         config.response_paused = paused;
+        self.save_config(&config)?;
+        self.app_state()
+    }
+
+    pub fn set_pet_interactions(&self, prefs: PetInteractionPrefs) -> Result<AppState, StoreError> {
+        self.app_state()?;
+        let mut config = self.load_or_create_config()?;
+        config.pet_interactions = prefs;
         self.save_config(&config)?;
         self.app_state()
     }
@@ -617,6 +627,8 @@ struct StoredConfig {
     agent_message_display: AgentMessageDisplay,
     #[serde(default)]
     response_paused: bool,
+    #[serde(default)]
+    pet_interactions: PetInteractionPrefs,
 }
 
 impl Default for StoredConfig {
@@ -628,6 +640,7 @@ impl Default for StoredConfig {
             pet_window_size: DEFAULT_PET_WINDOW_SIZE,
             agent_message_display: AgentMessageDisplay::Latest,
             response_paused: false,
+            pet_interactions: PetInteractionPrefs::default(),
         }
     }
 }

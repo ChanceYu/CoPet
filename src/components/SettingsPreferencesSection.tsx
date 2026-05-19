@@ -6,7 +6,9 @@ import { toast } from "sonner";
 
 import type {
   AgentMessageDisplay,
+  CooldownStyle,
   LocalePreference,
+  PetInteractionPrefs,
   PetWindowSize,
 } from "../lib/appTypes";
 import {
@@ -33,6 +35,8 @@ interface SettingsPreferencesSectionProps {
   resetPetWindowPosition: () => Promise<{ errorMessage?: string }>;
   responsePaused: boolean;
   setResponsePaused: (paused: boolean) => void;
+  petInteractions: PetInteractionPrefs;
+  setPetInteractions: (prefs: PetInteractionPrefs) => void;
   t: Translator;
 }
 
@@ -46,6 +50,8 @@ export function SettingsPreferencesSection({
   resetPetWindowPosition,
   responsePaused,
   setResponsePaused,
+  petInteractions,
+  setPetInteractions,
   t,
 }: SettingsPreferencesSectionProps) {
   const [resetting, setResetting] = useState(false);
@@ -182,6 +188,65 @@ export function SettingsPreferencesSection({
             >
               {t(responsePaused ? "pauseStateOn" : "pauseStateOff")}
             </span>
+          </div>
+        </div>
+
+        <div className="settings-preferences-row">
+          <div className="settings-preferences-row-text">
+            <span className="settings-preferences-row-title">{t("petInteractionsHeading")}</span>
+          </div>
+        </div>
+
+        <div className="settings-preferences-row">
+          <div className="settings-preferences-row-text">
+            <span className="settings-preferences-row-title">{t("enableInteractionQuips")}</span>
+            <p className="settings-preferences-row-description">{t("enableInteractionQuipsDescription")}</p>
+          </div>
+          <div className="settings-preferences-row-control">
+            <Switch
+              aria-label={t("enableInteractionQuips")}
+              checked={petInteractions.enableQuips}
+              onCheckedChange={(next) => setPetInteractions({ ...petInteractions, enableQuips: next })}
+            />
+          </div>
+        </div>
+
+        <div className="settings-preferences-row">
+          <div className="settings-preferences-row-text">
+            <span className="settings-preferences-row-title">
+              {t("enableClickSounds")}
+              <span className="settings-preferences-coming-soon">{t("enableClickSoundsBadge")}</span>
+            </span>
+          </div>
+          <div className="settings-preferences-row-control">
+            <Switch
+              aria-label={t("enableClickSounds")}
+              checked={petInteractions.enableClickSounds}
+              disabled
+            />
+          </div>
+        </div>
+
+        <div className="settings-preferences-row">
+          <span
+            className="settings-preferences-row-title"
+            id="interaction-cooldown-label"
+          >
+            {t("interactionCooldown")}
+          </span>
+          <div className="settings-preferences-row-control">
+            <RadioGroup
+              aria-labelledby="interaction-cooldown-label"
+              onValueChange={(value) =>
+                setPetInteractions({ ...petInteractions, cooldownStyle: value as CooldownStyle })
+              }
+              options={[
+                { label: t("interactionCooldownShort"), value: "short" },
+                { label: t("interactionCooldownNormal"), value: "normal" },
+                { label: t("interactionCooldownLazy"), value: "lazy" },
+              ]}
+              value={petInteractions.cooldownStyle}
+            />
           </div>
         </div>
 

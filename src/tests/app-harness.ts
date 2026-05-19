@@ -13,6 +13,12 @@ export type PetSummary = {
   spritePath: string;
 };
 
+export type PetInteractionPrefs = {
+  enableQuips: boolean;
+  enableClickSounds: boolean;
+  cooldownStyle: "short" | "normal" | "lazy";
+};
+
 export type AppState = {
   currentPetId: string;
   locale?: "en-US" | "zh-CN";
@@ -22,6 +28,7 @@ export type AppState = {
   petWindowSize?: number;
   agentMessageDisplay?: "all" | "latest";
   responsePaused?: boolean;
+  petInteractions?: PetInteractionPrefs;
 };
 
 export type AdapterSummary = {
@@ -147,6 +154,12 @@ export async function createAppHarness(browser: Browser, options: HarnessOptions
   }
   if (state.responsePaused === undefined) {
     state = { ...state, responsePaused: false };
+  }
+  if (state.petInteractions === undefined) {
+    state = {
+      ...state,
+      petInteractions: { enableQuips: true, enableClickSounds: false, cooldownStyle: "normal" },
+    };
   }
   let adapters = options.adapters ?? [];
   let codexPets = options.codexPets ?? [];
@@ -310,6 +323,11 @@ export async function createAppHarness(browser: Browser, options: HarnessOptions
         }
         if (command === "set_response_paused") {
           state = { ...state, responsePaused: Boolean(args.paused) };
+          await emitAppState();
+          return state;
+        }
+        if (command === "set_pet_interactions") {
+          state = { ...state, petInteractions: args.prefs as PetInteractionPrefs };
           await emitAppState();
           return state;
         }

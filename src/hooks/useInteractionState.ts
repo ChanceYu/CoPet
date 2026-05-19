@@ -1,6 +1,7 @@
 import type { PointerEvent as ReactPointerEvent, MouseEvent as ReactMouseEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import type { CooldownStyle } from "../lib/appTypes";
 import type { InputState } from "../lib/petAnimation";
 import { bumpCounter } from "../lib/petInteractionCounters";
 import type { InteractionQuipPool } from "../lib/i18n";
@@ -28,6 +29,12 @@ const COOLDOWNS_MS = {
   dragLand: 600,
 } as const;
 
+const COOLDOWN_SCALE: Record<CooldownStyle, number> = {
+  short: 0.6,
+  normal: 1.0,
+  lazy: 1.6,
+};
+
 export type InteractionHandlers = {
   onPointerEnter: (event: ReactPointerEvent<HTMLElement>) => void;
   onPointerMove: (event: ReactPointerEvent<HTMLElement>) => void;
@@ -48,6 +55,7 @@ export type UseInteractionStateResult = {
 export function useInteractionState(opts?: {
   onQuip?: (pool: InteractionQuipPool) => void;
   onLongPress?: (origin: { x: number; y: number }) => void;
+  cooldownStyle?: CooldownStyle;
 }): UseInteractionStateResult {
   const onQuipRef = useRef(opts?.onQuip);
   useEffect(() => {
@@ -78,7 +86,7 @@ export function useInteractionState(opts?: {
     pettedSlow: null,
     petted: null,
   });
-  const cooldownRef = useRef<{ [K in keyof typeof COOLDOWNS_MS]: number }>({
+  const cooldownRef = useRef<{ -readonly [K in keyof typeof COOLDOWNS_MS]: number }>({
     singleClick: 0,
     doubleClick: 0,
     petted: 0,
@@ -93,8 +101,9 @@ export function useInteractionState(opts?: {
   }, []);
 
   const startCooldown = useCallback((key: keyof typeof COOLDOWNS_MS) => {
-    cooldownRef.current[key] = Date.now() + COOLDOWNS_MS[key];
-  }, []);
+    const scale = COOLDOWN_SCALE[opts?.cooldownStyle ?? "normal"];
+    cooldownRef.current[key] = Date.now() + COOLDOWNS_MS[key] * scale;
+  }, [opts?.cooldownStyle]);
 
   const clearTimer = useCallback((key: "look" | "happy" | "tilt" | "surprised" | "longPress" | "pettedSlow" | "petted") => {
     const id = timersRef.current[key];

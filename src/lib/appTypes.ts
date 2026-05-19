@@ -34,6 +34,20 @@ export type LocalePreference = "system" | Locale;
 
 export type AgentMessageDisplay = "all" | "latest";
 
+export type CooldownStyle = "short" | "normal" | "lazy";
+
+export type PetInteractionPrefs = {
+  enableQuips: boolean;
+  enableClickSounds: boolean;
+  cooldownStyle: CooldownStyle;
+};
+
+export const defaultPetInteractionPrefs: PetInteractionPrefs = {
+  enableQuips: true,
+  enableClickSounds: false,
+  cooldownStyle: "normal",
+};
+
 export type AppState = {
   currentPetId: string;
   locale: Locale;
@@ -43,6 +57,7 @@ export type AppState = {
   petWindowSize: PetWindowSize;
   agentMessageDisplay: AgentMessageDisplay;
   responsePaused: boolean;
+  petInteractions: PetInteractionPrefs;
 };
 
 export type PetWindowSize = number;

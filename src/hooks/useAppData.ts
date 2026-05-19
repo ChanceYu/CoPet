@@ -8,6 +8,7 @@ import type {
   AppState,
   AgentMessage,
   LocalePreference,
+  PetInteractionPrefs,
   PetStateId,
   PetSummary,
   PetWindowSize,
@@ -207,6 +208,18 @@ export function useAppData() {
     }
   };
 
+  const setPetInteractions = async (prefs: PetInteractionPrefs) => {
+    try {
+      const data = await invoke<AppState>("set_pet_interactions", { prefs });
+      setReadyData(data);
+    } catch (error) {
+      setLoadState({
+        status: "error",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+
   const setReadyData = (data: AppState) => {
     setLoadState({ status: "ready", data });
   };
@@ -367,6 +380,7 @@ export function useAppData() {
     selectedPet,
     setAgentMessageDisplay,
     setLocalePreference,
+    setPetInteractions,
     setPetWindowSize,
     setResponsePaused,
   };

@@ -21,6 +21,7 @@ import { Toaster } from "./components/ui/sonner";
 import { useAppData } from "./hooks/useAppData";
 import { createTranslator } from "./lib/i18n";
 import type { PetSummary } from "./lib/appTypes";
+import { defaultPetInteractionPrefs } from "./lib/appTypes";
 import { defaultPetWindowSize } from "./lib/petWindowUi";
 
 const emptyPetSummaries: PetSummary[] = [];
@@ -52,6 +53,7 @@ export function SettingsWindow() {
     selectPet,
     setAgentMessageDisplay,
     setLocalePreference,
+    setPetInteractions,
     setPetWindowSize,
     setResponsePaused,
   } = data;
@@ -186,11 +188,13 @@ export function SettingsWindow() {
               <SettingsPreferencesSection
                 agentMessageDisplay={appState.agentMessageDisplay}
                 locale={appState.localePreference === "zh-CN" ? "zh-CN" : "en-US"}
+                petInteractions={appState.petInteractions ?? defaultPetInteractionPrefs}
                 petWindowSize={petWindowSize}
                 resetPetWindowPosition={resetPetWindowPosition}
                 responsePaused={appState.responsePaused}
                 setAgentMessageDisplay={setAgentMessageDisplay}
                 setLocalePreference={setLocalePreference}
+                setPetInteractions={setPetInteractions}
                 setPetWindowSize={setPetWindowSize}
                 setResponsePaused={setResponsePaused}
                 t={t}

@@ -476,6 +476,19 @@ select {
   color: hsl(var(--primary));
 }
 
+.settings-preferences-coming-soon {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(127, 127, 127, 0.18);
+  color: rgba(127, 127, 127, 1);
+  font-size: 10px;
+  font-weight: 500;
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
 .settings-about {
   align-items: center;
   text-align: center;

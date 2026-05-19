@@ -30,6 +30,38 @@ impl Default for AgentMessageDisplay {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum CooldownStyle {
+    Short,
+    Normal,
+    Lazy,
+}
+
+impl Default for CooldownStyle {
+    fn default() -> Self {
+        Self::Normal
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PetInteractionPrefs {
+    pub enable_quips: bool,
+    pub enable_click_sounds: bool,
+    pub cooldown_style: CooldownStyle,
+}
+
+impl Default for PetInteractionPrefs {
+    fn default() -> Self {
+        Self {
+            enable_quips: true,
+            enable_click_sounds: false,
+            cooldown_style: CooldownStyle::Normal,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppState {
@@ -42,4 +74,6 @@ pub struct AppState {
     pub agent_message_display: AgentMessageDisplay,
     #[serde(default)]
     pub response_paused: bool,
+    #[serde(default)]
+    pub pet_interactions: PetInteractionPrefs,
 }

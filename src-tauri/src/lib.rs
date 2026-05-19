@@ -11,7 +11,7 @@ pub mod runtime_state;
 pub mod window_placement;
 
 use agents::{AdapterError, AdapterOperationResult, AdapterSummary, AgentManager};
-use app_state::{AgentMessageDisplay, AppState, PetWindowSize};
+use app_state::{AgentMessageDisplay, AppState, PetInteractionPrefs, PetWindowSize};
 use config_store::{set_builtin_pets_dir, ConfigStore, PetImportResult};
 use i18n::{default_locale, t, Locale, LocalePreference, MessageKey};
 use pet_package::PetSummary;
@@ -284,6 +284,18 @@ fn set_agent_message_display(
 ) -> Result<AppState, String> {
     let state = ConfigStore::from_home()
         .and_then(|store| store.set_agent_message_display(agent_message_display))
+        .map_err(localize_store_error)?;
+    emit_app_state_changed(&app, &state)?;
+    Ok(state)
+}
+
+#[tauri::command]
+fn set_pet_interactions(
+    app: tauri::AppHandle,
+    prefs: PetInteractionPrefs,
+) -> Result<AppState, String> {
+    let state = ConfigStore::from_home()
+        .and_then(|store| store.set_pet_interactions(prefs))
         .map_err(localize_store_error)?;
     emit_app_state_changed(&app, &state)?;
     Ok(state)
@@ -667,6 +679,7 @@ pub fn run() {
             set_locale_preference,
             set_agent_message_display,
             set_response_paused,
+            set_pet_interactions,
             toggle_pet_window_visibility,
             open_about_section,
             list_pets,
