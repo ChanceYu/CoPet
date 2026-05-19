@@ -1536,6 +1536,22 @@ select {
   animation: pet-emotion-smoke 800ms ease-out 1;
 }
 
+.pet-emotion-heart {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 21s-7-4.5-9.5-9.5C0.6 7.6 3 3 7.5 3c2 0 3.5 1 4.5 2.5C13 4 14.5 3 16.5 3 21 3 23.4 7.6 21.5 11.5 19 16.5 12 21 12 21z' fill='%23ff5b8a' stroke='%23c2185b' stroke-width='1.2' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  animation: pet-emotion-heart 900ms ease-out 1;
+}
+
+.pet-emotion-question-mark {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='%23fff6c2' stroke='%23b08800' stroke-width='1.2'/><text x='12' y='17' text-anchor='middle' font-family='-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif' font-weight='800' font-size='15' fill='%23a06200'>?</text></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  animation: pet-emotion-question 800ms ease-out 1;
+}
+
 @keyframes pet-emotion-loading {
   0%, 100% { transform: scale(1); opacity: 0.7; }
   50%       { transform: scale(1.18); opacity: 1; }
@@ -1550,6 +1566,18 @@ select {
 @keyframes pet-emotion-smoke {
   0%   { transform: translateY(0) scale(0.7); opacity: 0.9; }
   100% { transform: translateY(-22px) scale(1.4); opacity: 0; }
+}
+
+@keyframes pet-emotion-heart {
+  0%   { transform: scale(0.4) translateY(4px); opacity: 0; }
+  40%  { transform: scale(1.2)  translateY(-4px); opacity: 1; }
+  100% { transform: scale(1.1)  translateY(-14px); opacity: 0; }
+}
+
+@keyframes pet-emotion-question {
+  0%   { transform: scale(0.4) translateY(2px); opacity: 0; }
+  30%  { transform: scale(1.15) translateY(0);  opacity: 1; }
+  100% { transform: scale(1.0)  translateY(-10px); opacity: 0; }
 }
 
 .loading-shell,
@@ -1649,7 +1677,9 @@ select {
   .spin,
   .pet-emotion-loading-bubble,
   .pet-emotion-sparkle,
-  .pet-emotion-smoke {
+  .pet-emotion-smoke,
+  .pet-emotion-heart,
+  .pet-emotion-question-mark {
     animation: none;
   }
 }
