@@ -5,7 +5,7 @@ use crate::{
         MIN_PET_WINDOW_SIZE,
     },
     i18n::{default_locale, Locale, LocalePreference},
-    pet_package::{find_sprite_path, PetManifest, PetPackage, PetSummary},
+    pet_package::{collect_pet_sounds, find_sprite_path, PetManifest, PetPackage, PetSummary},
     pet_registry::BUILTIN_PET_ID,
 };
 use serde::{
@@ -739,9 +739,11 @@ fn read_pet_package(dir: &Path) -> Option<PetPackage> {
         manifest.slug = manifest.id.clone();
     }
     let sprite_path = find_sprite_path(dir)?;
+    let sounds = collect_pet_sounds(&manifest, dir);
 
     Some(PetPackage {
         manifest,
         sprite_path,
+        sounds,
     })
 }
