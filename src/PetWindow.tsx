@@ -35,7 +35,6 @@ export function PetWindow() {
     dismissAgentMessage,
     load,
     loadState,
-    selectPet,
     selectedPet,
     setResponsePaused,
   } = useAppData();
@@ -190,8 +189,6 @@ export function PetWindow() {
   const motionHandlers = bindMotion();
   const locale = loadState.data.locale ?? "en-US";
   const t = createTranslator(locale);
-  const installedPets = loadState.data.pets;
-  const activePetId = loadState.data.currentPetId;
   const pauseEnabled = loadState.data.responsePaused ?? false;
 
   return (
@@ -236,22 +233,15 @@ export function PetWindow() {
         <PetContextMenu
           anchor={menuAnchor}
           pauseEnabled={pauseEnabled}
-          pets={installedPets.map((pet) => ({ id: pet.id, displayName: pet.displayName }))}
-          activePetId={activePetId}
           onClose={() => setMenuAnchor(null)}
           onPet={() => emitQuip("hi")}
           onTogglePause={(next) => { void setResponsePaused(next); }}
-          onSwitchPet={(petId) => {
-            const pet = installedPets.find((p) => p.id === petId);
-            if (pet) void selectPet(pet);
-          }}
           onOpenSettings={() => void invoke("open_settings_window")}
           onHidePet={() => void invoke("toggle_pet_window_visibility")}
           labels={{
             pet: t("contextMenuPet"),
             pauseOn: t("contextMenuPauseOn"),
             pauseOff: t("contextMenuPauseOff"),
-            switchPet: t("contextMenuSwitchPet"),
             openSettings: t("contextMenuOpenSettings"),
             hidePet: t("contextMenuHidePet"),
           }}

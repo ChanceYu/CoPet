@@ -1660,18 +1660,6 @@ select {
   outline: none;
 }
 
-.pet-context-menu-group {
-  display: flex;
-  flex-direction: column;
-  padding-top: 2px;
-}
-
-.pet-context-menu-section-label {
-  font-size: 11px;
-  opacity: 0.55;
-  padding: 6px 10px 2px;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .pet-sprite,
   .spin,

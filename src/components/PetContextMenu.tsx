@@ -1,23 +1,17 @@
 import { useEffect, useRef } from "react";
 
-export type PetContextMenuPet = { id: string; displayName: string };
-
 export type PetContextMenuProps = {
   anchor: { x: number; y: number };
   pauseEnabled: boolean;
-  pets: PetContextMenuPet[];
-  activePetId: string | null;
   onClose: () => void;
   onPet: () => void;
   onTogglePause: (next: boolean) => void;
-  onSwitchPet: (petId: string) => void;
   onOpenSettings: () => void;
   onHidePet: () => void;
   labels: {
     pet: string;
     pauseOn: string;
     pauseOff: string;
-    switchPet: string;
     openSettings: string;
     hidePet: string;
   };
@@ -89,25 +83,6 @@ export function PetContextMenu(props: PetContextMenuProps) {
       >
         {props.pauseEnabled ? props.labels.pauseOff : props.labels.pauseOn}
       </button>
-      {props.pets.length > 1 ? (
-        <div role="menuradiogroup" aria-label={props.labels.switchPet} className="pet-context-menu-group">
-          <div className="pet-context-menu-section-label">{props.labels.switchPet}</div>
-          {props.pets.map((pet) => (
-            <button
-              key={pet.id}
-              type="button"
-              role="menuitemradio"
-              aria-checked={pet.id === props.activePetId}
-              onClick={() => {
-                props.onSwitchPet(pet.id);
-                props.onClose();
-              }}
-            >
-              {pet.displayName}
-            </button>
-          ))}
-        </div>
-      ) : null}
       <button
         type="button"
         role="menuitem"
