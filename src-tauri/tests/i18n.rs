@@ -91,7 +91,10 @@ fn localizes_app_menu_labels() {
     assert_eq!(t(Locale::ZhCn, MessageKey::AppMenuQuit), "退出 PetHover");
 
     assert_eq!(t(Locale::EnUs, MessageKey::AppMenuServices), "Services");
-    assert_eq!(t(Locale::EnUs, MessageKey::AppMenuHideOthers), "Hide Others");
+    assert_eq!(
+        t(Locale::EnUs, MessageKey::AppMenuHideOthers),
+        "Hide Others"
+    );
     assert_eq!(t(Locale::EnUs, MessageKey::AppMenuShowAll), "Show All");
     assert_eq!(t(Locale::EnUs, MessageKey::AppMenuEdit), "Edit");
     assert_eq!(t(Locale::EnUs, MessageKey::AppMenuWindow), "Window");

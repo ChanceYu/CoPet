@@ -126,7 +126,7 @@ const messages = {
     resetPosition: "重置位置",
     resetPositionDescription: "把桌面宠物拉回屏幕右下方的默认位置",
     resetPositionFailed: "无法重置宠物位置",
-    resetPositionSuccess: "桌面宠物已回到屏幕右下方。",
+    resetPositionSuccess: "桌面宠物已回到屏幕右下方",
     settingsDescription: "为每个 Agent CLI 开启或关闭集成",
     settingsNavLabel: "设置分区",
     size: "尺寸",
