@@ -1,4 +1,4 @@
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Info, PawPrint, Plug, Settings2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -64,6 +64,15 @@ export function SettingsWindow() {
     let dispose: (() => void) | undefined;
     void listen<SettingsSectionId>("pethover-navigate-to-section", (event) => {
       setActiveSection(event.payload);
+      // Ack only after the new section has actually been painted, so Rust can
+      // hold off `window.show()` until the OS surface reflects the target
+      // tab. Two RAFs: the first fires before paint of the new state, the
+      // second fires after that paint commits.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          void emit("pethover-settings-section-ready");
+        });
+      });
     }).then((cleanup) => {
       dispose = cleanup;
     });
