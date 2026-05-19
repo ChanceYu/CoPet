@@ -10,12 +10,14 @@ import {
 } from "lucide-react";
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 import type {
   ChangeEvent,
+  CSSProperties,
   MouseEvent as ReactMouseEvent,
 } from "react";
 import { Virtuoso } from "react-virtuoso";
@@ -42,6 +44,16 @@ type LocalImportResult = {
   errorMessage: string | null;
   state: AppState | null;
 };
+
+// Width breakpoints for the pet grid. Each card targets a ~150px min width;
+// thresholds pad for the 10px gap between cards so we round up only when a
+// new column would still leave each card readable.
+function computeColumns(width: number): number {
+  if (width >= 640) return 4;
+  if (width >= 470) return 3;
+  if (width >= 310) return 2;
+  return 1;
+}
 
 interface SettingsPetsSectionProps {
   currentPetId: string;
@@ -75,7 +87,34 @@ export function SettingsPetsSection({
   const [pendingScrollPetId, setPendingScrollPetId] = useState<string | null>(
     null,
   );
+  const [columns, setColumns] = useState(3);
   const virtuosoRef = useRef<VirtuosoHandle>(null);
+  const listRegionRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const node = listRegionRef.current;
+    if (!node) {
+      return;
+    }
+
+    const apply = (width: number) => {
+      setColumns(computeColumns(width));
+    };
+
+    apply(node.clientWidth);
+
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        apply(entry.contentRect.width);
+      }
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [installedPets.length === 0]);
 
   useEffect(() => {
     if (!pendingScrollPetId) {
@@ -89,12 +128,12 @@ export function SettingsPetsSection({
       return;
     }
     virtuosoRef.current?.scrollToIndex({
-      index: Math.floor(index / 3),
+      index: Math.floor(index / columns),
       align: "center",
       behavior: "smooth",
     });
     setPendingScrollPetId(null);
-  }, [pendingScrollPetId, installedPets]);
+  }, [pendingScrollPetId, installedPets, columns]);
 
   const petCardStrings = useMemo(
     () => ({
@@ -115,7 +154,7 @@ export function SettingsPetsSection({
       return;
     }
     virtuosoRef.current?.scrollToIndex({
-      index: Math.floor(index / 3),
+      index: Math.floor(index / columns),
       align: "center",
       behavior: "smooth",
     });
@@ -124,7 +163,7 @@ export function SettingsPetsSection({
   const activePetList = useMemo(() => {
     if (installedPets.length === 0) {
       return (
-        <div className="pet-list-region">
+        <div className="pet-list-region" ref={listRegionRef}>
           <Empty>
             <EmptyHeader>
               <EmptyMedia>
@@ -138,17 +177,21 @@ export function SettingsPetsSection({
     }
 
     const rows: PetSummary[][] = [];
-    for (let i = 0; i < installedPets.length; i += 3) {
-      rows.push(installedPets.slice(i, i + 3));
+    for (let i = 0; i < installedPets.length; i += columns) {
+      rows.push(installedPets.slice(i, i + columns));
     }
 
+    const gridStyle = {
+      "--pet-grid-columns": columns,
+    } as CSSProperties;
+
     return (
-      <div className="pet-list-region">
+      <div className="pet-list-region" ref={listRegionRef}>
         <Virtuoso
           className="pet-virtuoso"
           data={rows}
           itemContent={(_index, row) => (
-            <div className="pet-grid">
+            <div className="pet-grid" style={gridStyle}>
               {row.map((pet) => {
                 const active = pet.id === currentPetId;
                 return (
@@ -192,6 +235,7 @@ export function SettingsPetsSection({
       </div>
     );
   }, [
+    columns,
     currentPetId,
     installedPets,
     isSelecting,
