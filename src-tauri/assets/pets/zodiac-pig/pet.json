@@ -1,0 +1,11 @@
+{
+  "id": "zodiac-pig",
+  "slug": "zodiac-pig",
+  "displayName": "生肖猪",
+  "description": "A compact Chinese zodiac pig Codex pet.",
+  "frameWidth": 192,
+  "frameHeight": 208,
+  "gridColumns": 8,
+  "gridRows": 9,
+  "builtIn": false
+}

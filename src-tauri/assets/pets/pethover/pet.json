@@ -8,5 +8,22 @@
   "frameHeight": 208,
   "gridColumns": 8,
   "gridRows": 9,
-  "builtIn": true
+  "builtIn": true,
+  "pethoverConfig": {
+    "interactionSounds": {
+      "click": "pethover/click.mp3",
+      "doubleClick": "pethover/surprised.mp3",
+      "petted": "pethover/purr.mp3",
+      "pettedSlow": "pethover/sigh.mp3",
+      "dragLand": "pethover/wheee.mp3"
+    },
+    "agentSounds": {
+      "thinking": "pethover/hmm.mp3",
+      "editing": "pethover/tap.mp3",
+      "inspecting": "pethover/peek.mp3",
+      "awaitingApproval": "pethover/wait.mp3",
+      "celebrating": "pethover/yay.mp3",
+      "failed": "pethover/oof.mp3"
+    }
+  }
 }

@@ -5,6 +5,8 @@ use pethover_lib::{
 };
 use std::{fs, path::Path, path::PathBuf};
 
+const NON_DEFAULT_BUILTIN_PET_ID: &str = "zodiac-dragon";
+
 fn builtin_pets_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/pets")
 }
@@ -27,7 +29,11 @@ fn ensure_ready_initializes_pethover_tree_without_copying_builtins() {
     assert!(store.root().join("runtime").exists());
     // Built-in pets are not copied to the user dir under the new architecture.
     assert!(!store.root().join("pets/pethover").exists());
-    assert!(!store.root().join("pets/goku").exists());
+    assert!(!store
+        .root()
+        .join("pets")
+        .join(NON_DEFAULT_BUILTIN_PET_ID)
+        .exists());
 }
 
 #[test]
@@ -41,12 +47,15 @@ fn list_pets_exposes_all_builtin_packages_from_resource_dir() {
         .iter()
         .map(|pet| pet.id.as_str())
         .collect::<Vec<_>>();
-    let goku = state.pets.iter().find(|pet| pet.id == "goku").unwrap();
+    let zodiac_dragon = state
+        .pets
+        .iter()
+        .find(|pet| pet.id == NON_DEFAULT_BUILTIN_PET_ID)
+        .unwrap();
 
     assert!(ids.contains(&"pethover"));
-    assert!(ids.contains(&"goku"));
-    assert!(goku.built_in);
-    assert_eq!(goku.display_name, "Goku");
+    assert!(ids.contains(&NON_DEFAULT_BUILTIN_PET_ID));
+    assert!(zodiac_dragon.built_in);
 }
 
 #[test]
@@ -110,13 +119,17 @@ fn ensure_ready_prunes_stale_builtin_copies_from_user_dir() {
     fs::create_dir_all(store.root().join("pets")).unwrap();
     // Simulate a stale copy left over from the previous sync-based architecture.
     create_user_pet(store.root(), "pethover", "Stale PetHover");
-    create_user_pet(store.root(), "goku", "Stale Goku");
+    create_user_pet(store.root(), NON_DEFAULT_BUILTIN_PET_ID, "Stale Builtin");
     create_user_pet(store.root(), "desk-cat", "Desk Cat");
 
     store.ensure_ready().unwrap();
 
     assert!(!store.root().join("pets/pethover").exists());
-    assert!(!store.root().join("pets/goku").exists());
+    assert!(!store
+        .root()
+        .join("pets")
+        .join(NON_DEFAULT_BUILTIN_PET_ID)
+        .exists());
     assert!(store.root().join("pets/desk-cat").exists());
 }
 
@@ -166,9 +179,9 @@ fn import_pet_files_rejects_builtin_id_collision() {
     let store = make_store(&temp);
     store.ensure_ready().unwrap();
     let manifest = r#"{
-  "id": "goku",
-  "slug": "goku",
-  "displayName": "Fake Goku",
+  "id": "zodiac-dragon",
+  "slug": "zodiac-dragon",
+  "displayName": "Fake Builtin",
   "frameWidth": 160,
   "frameHeight": 64,
   "gridColumns": 8,
@@ -180,7 +193,11 @@ fn import_pet_files_rejects_builtin_id_collision() {
         .unwrap_err();
 
     assert!(error.to_string().contains("built-in"));
-    assert!(!store.root().join("pets/goku").exists());
+    assert!(!store
+        .root()
+        .join("pets")
+        .join(NON_DEFAULT_BUILTIN_PET_ID)
+        .exists());
 }
 
 #[test]
@@ -255,7 +272,7 @@ fn remove_pet_rejects_any_bundled_builtin() {
     let store = make_store(&temp);
     store.ensure_ready().unwrap();
 
-    let error = store.remove_pet("goku").unwrap_err();
+    let error = store.remove_pet(NON_DEFAULT_BUILTIN_PET_ID).unwrap_err();
 
     assert!(error.to_string().contains("built-in"));
 }
@@ -398,14 +415,22 @@ fn import_codex_pets_skips_packages_that_collide_with_builtin_ids() {
     let store = make_store(&temp);
     let codex_pets = temp.path().join(".codex/pets");
     create_pet_package(&codex_pets.join("space-cat"), "space-cat", "Space Cat");
-    create_pet_package(&codex_pets.join("goku"), "goku", "Fake Goku");
+    create_pet_package(
+        &codex_pets.join(NON_DEFAULT_BUILTIN_PET_ID),
+        NON_DEFAULT_BUILTIN_PET_ID,
+        "Fake Builtin",
+    );
     store.ensure_ready().unwrap();
 
     let result = store.import_codex_pets(&codex_pets).unwrap();
 
     assert_eq!(result.imported, 1);
     assert_eq!(result.skipped, 1);
-    assert!(!store.root().join("pets/goku").exists());
+    assert!(!store
+        .root()
+        .join("pets")
+        .join(NON_DEFAULT_BUILTIN_PET_ID)
+        .exists());
 }
 
 #[test]
@@ -448,13 +473,23 @@ fn install_codex_pet_rejects_builtin_id_collision() {
     let temp = tempfile::tempdir().unwrap();
     let store = make_store(&temp);
     let codex_pets = temp.path().join(".codex/pets");
-    create_pet_package(&codex_pets.join("goku"), "goku", "Fake Goku");
+    create_pet_package(
+        &codex_pets.join(NON_DEFAULT_BUILTIN_PET_ID),
+        NON_DEFAULT_BUILTIN_PET_ID,
+        "Fake Builtin",
+    );
     store.ensure_ready().unwrap();
 
-    let error = store.install_codex_pet(&codex_pets, "goku").unwrap_err();
+    let error = store
+        .install_codex_pet(&codex_pets, NON_DEFAULT_BUILTIN_PET_ID)
+        .unwrap_err();
 
     assert!(error.to_string().contains("built-in"));
-    assert!(!store.root().join("pets/goku").exists());
+    assert!(!store
+        .root()
+        .join("pets")
+        .join(NON_DEFAULT_BUILTIN_PET_ID)
+        .exists());
 }
 
 #[test]

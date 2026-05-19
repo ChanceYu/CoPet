@@ -1,0 +1,11 @@
+{
+  "id": "zodiac-snake",
+  "slug": "zodiac-snake",
+  "displayName": "生肖蛇",
+  "description": "A compact Chinese zodiac snake Codex pet.",
+  "frameWidth": 192,
+  "frameHeight": 208,
+  "gridColumns": 8,
+  "gridRows": 9,
+  "builtIn": false
+}
