@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
-    AppHandle, Emitter, EventTarget, Manager, WebviewWindow,
+    AppHandle, Emitter, EventTarget, LogicalPosition, Manager, WebviewWindow,
 };
 
 pub const PET_CONTEXT_MENU_ACTION_EVENT: &str = "pethover-pet-context-menu-action";
@@ -15,6 +15,13 @@ pub struct PetContextMenuLabels {
     pub pause: String,
     pub open_settings: String,
     pub hide_pet: String,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PetContextMenuPosition {
+    pub x: f64,
+    pub y: f64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -48,7 +55,11 @@ pub fn handle_menu_event(app: &AppHandle, id: &str) -> bool {
 }
 
 #[tauri::command]
-pub fn open_pet_context_menu(app: AppHandle, labels: PetContextMenuLabels) -> Result<(), String> {
+pub fn open_pet_context_menu(
+    app: AppHandle,
+    labels: PetContextMenuLabels,
+    position: PetContextMenuPosition,
+) -> Result<(), String> {
     let window: WebviewWindow = app
         .get_webview_window("pet")
         .ok_or_else(|| "pet window is not available".to_string())?;
@@ -82,5 +93,7 @@ pub fn open_pet_context_menu(app: AppHandle, labels: PetContextMenuLabels) -> Re
     let menu = Menu::with_items(&app, &[&pause, &open_settings, &separator, &hide_pet])
         .map_err(|error| error.to_string())?;
 
-    window.popup_menu(&menu).map_err(|error| error.to_string())
+    window
+        .popup_menu_at(&menu, LogicalPosition::new(position.x, position.y))
+        .map_err(|error| error.to_string())
 }

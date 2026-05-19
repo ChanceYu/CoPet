@@ -40,7 +40,7 @@ export function PetWindow() {
     setResponsePaused,
   } = useAppData();
   // macOS NSPanel does not always deliver contextmenu to the webview; long-press
-  // is a fallback path that opens the same menu at the press origin.
+  // is a fallback path that opens the same native menu below the pet.
   // We require __TAURI__ to be present so this path does not activate under
   // bare Playwright (which may report a Mac UA on Apple-silicon CI hosts).
   const isMac =
@@ -116,6 +116,13 @@ export function PetWindow() {
       : resizeCurrentPetWindowFromCenter(nextSize);
   };
 
+  const petMenuAnchor = () =>
+    stackRef.current?.querySelector<HTMLElement>(".pet-sprite-frame") ?? stackRef.current;
+
+  const openPetContextMenuBelowPet = () => {
+    void openPetContextMenu(petMenuAnchor());
+  };
+
   useEffect(() => {
     petWindowSizeRef.current = petWindowSize;
     displayedPetScaleRef.current = petScale;
@@ -140,7 +147,7 @@ export function PetWindow() {
 
   useEffect(() => {
     openPetContextMenuRef.current = () => {
-      void openPetContextMenu();
+      openPetContextMenuBelowPet();
     };
   }, [openPetContextMenu]);
 
@@ -222,7 +229,7 @@ export function PetWindow() {
 
   const handleContextMenu = (event: ReactMouseEvent<HTMLElement>) => {
     event.preventDefault();
-    void openPetContextMenu();
+    openPetContextMenuBelowPet();
   };
 
   if (loadState.status === "loading") {

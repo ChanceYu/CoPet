@@ -380,6 +380,8 @@ test("right-click opens the native pet context menu command", async ({ browser }
   });
   const page = await harness.openPage("pet");
   const spriteFrame = page.locator(".pet-sprite-frame");
+  const box = await spriteFrame.boundingBox();
+  if (!box) throw new Error("pet sprite frame not laid out");
 
   await spriteFrame.dispatchEvent("contextmenu", {
     bubbles: true,
@@ -389,7 +391,22 @@ test("right-click opens the native pet context menu command", async ({ browser }
   });
 
   expect(harness.invocations("open_pet_context_menu")).toHaveLength(1);
-  expect(harness.invocations("open_pet_context_menu")[0].args).toEqual({
+  const args = harness.invocations("open_pet_context_menu")[0].args;
+  expect(args?.labels).toEqual({
+    pause: "Pause messages",
+    openSettings: "Open Settings",
+    hidePet: "Hide pet",
+  });
+  expect(args?.position).toEqual({
+    x: expect.any(Number),
+    y: expect.any(Number),
+  });
+  const position = args?.position as { x: number; y: number };
+  expect(position.x).toBeGreaterThanOrEqual(box.x + box.width / 2 - 75);
+  expect(position.x).toBeLessThanOrEqual(box.x + box.width / 2 - 73);
+  expect(position.y).toBeGreaterThanOrEqual(box.y + box.height + 3);
+  expect(position.y).toBeLessThanOrEqual(box.y + box.height + 5);
+  expect(args).toMatchObject({
     labels: {
       pause: "Pause messages",
       openSettings: "Open Settings",
