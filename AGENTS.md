@@ -117,13 +117,13 @@ Some Rust integration tests bind local TCP ports. If a sandbox blocks local netw
 
 ## Verification
 
-Before claiming a testing or behavior change is complete, run the relevant commands and read their output:
+Match the test budget to the blast radius of the change. Run the **smallest closure** that can actually break — do not run the full suite for every tweak.
 
-```sh
-pnpm test:frontend
-pnpm test:rust
-pnpm build
-cargo fmt --manifest-path src-tauri/Cargo.toml --check
-```
+| Change scope | Required check |
+|---|---|
+| Style/CSS only, copy/i18n string, single-file with no behavior change | `pnpm build` only — skip the spec suite |
+| One component or one hook | That file's spec only: `pnpm test:frontend src/tests/<name>.spec.ts` |
+| One Rust module or one command | That module's Cargo test only: `cargo test --manifest-path src-tauri/Cargo.toml --test <name>` |
+| Major feature module, shared infrastructure (test harness, app state, runtime, hooks consumed across components), or a DoD claim | Full suites: `pnpm test:frontend`, `pnpm test:rust`, `pnpm build`, `cargo fmt --manifest-path src-tauri/Cargo.toml --check` |
 
-For a narrow change, run the smallest relevant subset first, then run the full relevant command before final status.
+Running the full Playwright matrix for a CSS tweak is wasted budget. Pick the narrowest command that exercises the changed surface; escalate to full suites only when crossing a feature-module boundary or shipping work.
