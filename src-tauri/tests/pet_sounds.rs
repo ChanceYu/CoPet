@@ -1,5 +1,6 @@
 use pethover_lib::config_store::ConfigStore;
 use std::{
+    env,
     fs,
     path::{Path, PathBuf},
 };
@@ -260,6 +261,38 @@ fn import_pet_folder_preserves_valid_audio_resources() {
         .as_ref()
         .unwrap()
         .contains("folder-sound-pet/pethover/audio/click.mp3"));
+}
+
+#[test]
+fn import_pet_folder_from_relative_path_preserves_valid_audio_resources() {
+    let cwd = env::current_dir().unwrap();
+    let temp = tempfile::tempdir_in(&cwd).unwrap();
+    let store = make_store(&temp);
+    store.ensure_ready().unwrap();
+    let source_dir = temp.path().join("relative-sound-pet");
+    create_sound_pet(&source_dir, "relative-sound-pet", "Relative Sound Pet");
+    let relative_source_dir = source_dir.strip_prefix(&cwd).unwrap();
+
+    let state = store.import_pet_folder(relative_source_dir).unwrap();
+    let pet = state
+        .pets
+        .iter()
+        .find(|pet| pet.id == "relative-sound-pet")
+        .unwrap();
+
+    assert!(store
+        .root()
+        .join("pets/relative-sound-pet/pethover/audio/click.mp3")
+        .exists());
+    assert!(pet
+        .sounds
+        .as_ref()
+        .unwrap()
+        .interaction_sounds
+        .click
+        .as_ref()
+        .unwrap()
+        .contains("relative-sound-pet/pethover/audio/click.mp3"));
 }
 
 #[test]

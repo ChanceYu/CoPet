@@ -641,23 +641,30 @@ fn copy_pet_package(
     target_dir: &Path,
     package: &PetPackage,
 ) -> Result<(), StoreError> {
+    let source_root = fs::canonicalize(source_dir)?;
     if target_dir.exists() {
         fs::remove_dir_all(target_dir)?;
     }
     fs::create_dir_all(target_dir)?;
-    fs::copy(source_dir.join("pet.json"), target_dir.join("pet.json"))?;
+    fs::copy(source_root.join("pet.json"), target_dir.join("pet.json"))?;
     if let Some(sprite_name) = package.sprite_path.file_name() {
         fs::copy(&package.sprite_path, target_dir.join(sprite_name))?;
     }
     for sound_path in package.sound_file_paths() {
-        let Ok(relative_path) = sound_path.strip_prefix(source_dir) else {
-            continue;
-        };
+        let canonical_sound_path = fs::canonicalize(&sound_path)?;
+        let relative_path = canonical_sound_path
+            .strip_prefix(&source_root)
+            .map_err(|_| {
+                StoreError::InvalidPetPackage(format!(
+                    "sound file must be inside package: {}",
+                    sound_path.display()
+                ))
+            })?;
         let target_path = target_dir.join(relative_path);
         if let Some(parent) = target_path.parent() {
             fs::create_dir_all(parent)?;
         }
-        fs::copy(sound_path, target_path)?;
+        fs::copy(canonical_sound_path, target_path)?;
     }
     Ok(())
 }
