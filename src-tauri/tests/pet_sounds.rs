@@ -1,7 +1,6 @@
 use pethover_lib::config_store::ConfigStore;
 use std::{
-    env,
-    fs,
+    env, fs,
     path::{Path, PathBuf},
 };
 
