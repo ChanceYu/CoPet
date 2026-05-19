@@ -46,12 +46,12 @@ export function PetWindow() {
     typeof navigator !== "undefined" &&
     /Mac/i.test(navigator.userAgent) &&
     typeof (window as { __TAURI__?: unknown }).__TAURI__ !== "undefined";
-  const { composed, bindInput, bindMotion, quipText, emitQuip } = useLayeredPetState({
-    onLongPress: isMac ? (origin) => setMenuAnchor(origin) : undefined,
+  const { composed, bindInput, bindMotion, quipText } = useLayeredPetState({
+    onLongPress: isMac ? () => setMenuOpen(true) : undefined,
   });
 
   const stackRef = useRef<HTMLDivElement | null>(null);
-  const [menuAnchor, setMenuAnchor] = useState<{ x: number; y: number } | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const sliderDraggingRef = useRef(false);
   const resizeTimerRef = useRef<number | null>(null);
   const sliderScaleReleaseTimerRef = useRef<number | null>(null);
@@ -103,7 +103,7 @@ export function PetWindow() {
       void resizeToStack();
     });
     return () => window.cancelAnimationFrame(animationFrame);
-  }, [selectedPet?.id, petScale, agentMessages.length, viewportSize.height, viewportSize.width]);
+  }, [selectedPet?.id, petScale, agentMessages.length, menuOpen, viewportSize.height, viewportSize.width]);
 
   useEffect(() => {
     const updateViewportSize = () => {
@@ -175,7 +175,7 @@ export function PetWindow() {
 
   const handleContextMenu = (event: ReactMouseEvent<HTMLElement>) => {
     event.preventDefault();
-    setMenuAnchor({ x: event.clientX, y: event.clientY });
+    setMenuOpen(true);
   };
 
   if (loadState.status === "loading") {
@@ -228,25 +228,22 @@ export function PetWindow() {
             inputHandlers={bindInput()}
           />
         ) : null}
+        {menuOpen ? (
+          <PetContextMenu
+            pauseEnabled={pauseEnabled}
+            onClose={() => setMenuOpen(false)}
+            onTogglePause={(next) => { void setResponsePaused(next); }}
+            onOpenSettings={() => void invoke("open_settings_window")}
+            onHidePet={() => void invoke("toggle_pet_window_visibility")}
+            labels={{
+              pauseOn: t("contextMenuPauseOn"),
+              pauseOff: t("contextMenuPauseOff"),
+              openSettings: t("contextMenuOpenSettings"),
+              hidePet: t("contextMenuHidePet"),
+            }}
+          />
+        ) : null}
       </div>
-      {menuAnchor ? (
-        <PetContextMenu
-          anchor={menuAnchor}
-          pauseEnabled={pauseEnabled}
-          onClose={() => setMenuAnchor(null)}
-          onPet={() => emitQuip("hi")}
-          onTogglePause={(next) => { void setResponsePaused(next); }}
-          onOpenSettings={() => void invoke("open_settings_window")}
-          onHidePet={() => void invoke("toggle_pet_window_visibility")}
-          labels={{
-            pet: t("contextMenuPet"),
-            pauseOn: t("contextMenuPauseOn"),
-            pauseOff: t("contextMenuPauseOff"),
-            openSettings: t("contextMenuOpenSettings"),
-            hidePet: t("contextMenuHidePet"),
-          }}
-        />
-      ) : null}
     </main>
   );
 }

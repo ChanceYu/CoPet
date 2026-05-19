@@ -1632,15 +1632,15 @@ select {
 .pet-context-menu {
   background: rgba(20, 20, 24, 0.95);
   color: #fff;
-  border-radius: 8px;
-  padding: 4px;
+  border-radius: 6px;
+  padding: 2px;
   display: flex;
   flex-direction: column;
-  min-width: 160px;
-  z-index: 1000;
+  min-width: 100px;
   user-select: none;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-  font-size: 13px;
+  font-size: 11px;
+  line-height: 1.2;
 }
 
 .pet-context-menu button {
@@ -1648,10 +1648,11 @@ select {
   border: 0;
   color: inherit;
   text-align: left;
-  padding: 6px 10px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 3px;
   cursor: pointer;
   font: inherit;
+  white-space: nowrap;
 }
 
 .pet-context-menu button:hover,
