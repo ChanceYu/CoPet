@@ -126,162 +126,187 @@ export function SettingsPreferencesSection({
     <div className="settings-preferences">
       <h2 id="settings-section-panel-heading">{t("preferencesTitle")}</h2>
 
-      <div className="settings-preferences-rows">
-        <div className="settings-preferences-row">
-          <span className="settings-preferences-row-title">{t("size")}</span>
-          <div
-            className="settings-preferences-row-control pet-size-control"
-            onPointerCancel={handleSizeEnd}
-            onPointerDown={handleSizePointerDown}
-            onPointerMove={handleSizePointerMove}
-            onPointerUp={handleSizeEnd}
-          >
-            <Slider
-              aria-label={t("size")}
-              max={maxPetWindowSize}
-              min={minPetWindowSize}
-              onValueChange={(value) => setPetWindowSize(value)}
-              step={1}
-              value={petWindowSize}
-            />
-          </div>
-        </div>
-
-        <div className="settings-preferences-row">
-          <p className="settings-preferences-row-description">
-            {t("resetPositionDescription")}
-          </p>
-          <div className="settings-preferences-row-control">
-            <Button
-              className="pet-toolbar-button"
-              disabled={resetting}
-              onClick={() => void handleResetPosition()}
-              size="sm"
-              type="button"
-              variant="outline"
+      <section className="settings-preferences-group">
+        <header className="settings-preferences-group-header">
+          {t("petWindowHeading")}
+        </header>
+        <div className="settings-preferences-rows">
+          <div className="settings-preferences-row">
+            <span className="settings-preferences-row-title">{t("size")}</span>
+            <div
+              className="settings-preferences-row-control pet-size-control"
+              onPointerCancel={handleSizeEnd}
+              onPointerDown={handleSizePointerDown}
+              onPointerMove={handleSizePointerMove}
+              onPointerUp={handleSizeEnd}
             >
-              <RotateCcw aria-hidden="true" />
-              {t("resetPosition")}
-            </Button>
+              <Slider
+                aria-label={t("size")}
+                max={maxPetWindowSize}
+                min={minPetWindowSize}
+                onValueChange={(value) => setPetWindowSize(value)}
+                step={1}
+                value={petWindowSize}
+              />
+            </div>
           </div>
-        </div>
 
-        <div className="settings-preferences-row">
-          <div className="settings-preferences-row-text">
-            <span className="settings-preferences-row-title">
-              {t("pauseResponse")}
-            </span>
+          <div className="settings-preferences-row">
             <p className="settings-preferences-row-description">
-              {t("pauseResponseDescription")}
+              {t("resetPositionDescription")}
             </p>
+            <div className="settings-preferences-row-control">
+              <Button
+                className="pet-toolbar-button"
+                disabled={resetting}
+                onClick={() => void handleResetPosition()}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <RotateCcw aria-hidden="true" />
+                {t("resetPosition")}
+              </Button>
+            </div>
           </div>
-          <div className="settings-preferences-row-control pause-response-control">
-            <Switch
-              aria-label={t("pauseResponse")}
-              checked={responsePaused}
-              onCheckedChange={setResponsePaused}
-            />
+
+          <div className="settings-preferences-row">
+            <div className="settings-preferences-row-text">
+              <span className="settings-preferences-row-title">
+                {t("pauseResponse")}
+              </span>
+              <p className="settings-preferences-row-description">
+                {t("pauseResponseDescription")}
+              </p>
+            </div>
+            <div className="settings-preferences-row-control">
+              <div
+                className="settings-switch-row"
+                onClick={() => setResponsePaused(!responsePaused)}
+              >
+                <Switch
+                  aria-label={t("pauseResponse")}
+                  checked={responsePaused}
+                  onCheckedChange={setResponsePaused}
+                />
+                <span
+                  aria-hidden="true"
+                  className="settings-switch-state"
+                  data-active={responsePaused ? "true" : "false"}
+                >
+                  {t(responsePaused ? "pauseStateOn" : "pauseStateOff")}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="settings-preferences-group">
+        <header className="settings-preferences-group-header">
+          {t("petInteractionsHeading")}
+        </header>
+        <div className="settings-preferences-rows">
+          <div className="settings-preferences-row">
+            <div className="settings-preferences-row-text">
+              <span className="settings-preferences-row-title">
+                {t("enableClickSounds")}
+                <span className="settings-preferences-coming-soon">{t("enableClickSoundsBadge")}</span>
+              </span>
+            </div>
+            <div className="settings-preferences-row-control">
+              <div className="settings-switch-row" data-disabled="true">
+                <Switch
+                  aria-label={t("enableClickSounds")}
+                  checked={petInteractions.enableClickSounds}
+                  disabled
+                />
+                <span
+                  aria-hidden="true"
+                  className="settings-switch-state"
+                  data-active={petInteractions.enableClickSounds ? "true" : "false"}
+                  data-disabled="true"
+                >
+                  {t(petInteractions.enableClickSounds ? "pauseStateOn" : "pauseStateOff")}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="settings-preferences-row">
             <span
-              aria-hidden="true"
-              className="pause-response-state"
-              data-active={responsePaused ? "true" : "false"}
+              className="settings-preferences-row-title"
+              id="interaction-cooldown-label"
             >
-              {t(responsePaused ? "pauseStateOn" : "pauseStateOff")}
+              {t("interactionCooldown")}
             </span>
+            <div className="settings-preferences-row-control">
+              <RadioGroup
+                aria-labelledby="interaction-cooldown-label"
+                onValueChange={(value) =>
+                  setPetInteractions({ ...petInteractions, cooldownStyle: value as CooldownStyle })
+                }
+                options={[
+                  { label: t("interactionCooldownShort"), value: "short" },
+                  { label: t("interactionCooldownNormal"), value: "normal" },
+                  { label: t("interactionCooldownLazy"), value: "lazy" },
+                ]}
+                value={petInteractions.cooldownStyle}
+              />
+            </div>
           </div>
         </div>
+      </section>
 
-        <div className="settings-preferences-row">
-          <div className="settings-preferences-row-text">
-            <span className="settings-preferences-row-title">{t("petInteractionsHeading")}</span>
-          </div>
-        </div>
-
-        <div className="settings-preferences-row">
-          <div className="settings-preferences-row-text">
-            <span className="settings-preferences-row-title">
-              {t("enableClickSounds")}
-              <span className="settings-preferences-coming-soon">{t("enableClickSoundsBadge")}</span>
+      <section className="settings-preferences-group">
+        <div className="settings-preferences-rows">
+          <div className="settings-preferences-row">
+            <span
+              className="settings-preferences-row-title"
+              id="message-display-label"
+            >
+              {t("messageDisplay")}
             </span>
+            <div className="settings-preferences-row-control">
+              <RadioGroup
+                aria-labelledby="message-display-label"
+                className="message-display-radio"
+                onValueChange={(value) =>
+                  setAgentMessageDisplay(value as AgentMessageDisplay)
+                }
+                options={[
+                  { label: t("messageDisplayLatest"), value: "latest" },
+                  { label: t("messageDisplayAll"), value: "all" },
+                ]}
+                value={agentMessageDisplay}
+              />
+            </div>
           </div>
-          <div className="settings-preferences-row-control">
-            <Switch
-              aria-label={t("enableClickSounds")}
-              checked={petInteractions.enableClickSounds}
-              disabled
-            />
-          </div>
-        </div>
 
-        <div className="settings-preferences-row">
-          <span
-            className="settings-preferences-row-title"
-            id="interaction-cooldown-label"
-          >
-            {t("interactionCooldown")}
-          </span>
-          <div className="settings-preferences-row-control">
-            <RadioGroup
-              aria-labelledby="interaction-cooldown-label"
-              onValueChange={(value) =>
-                setPetInteractions({ ...petInteractions, cooldownStyle: value as CooldownStyle })
-              }
-              options={[
-                { label: t("interactionCooldownShort"), value: "short" },
-                { label: t("interactionCooldownNormal"), value: "normal" },
-                { label: t("interactionCooldownLazy"), value: "lazy" },
-              ]}
-              value={petInteractions.cooldownStyle}
-            />
+          <div className="settings-preferences-row">
+            <span
+              className="settings-preferences-row-title"
+              id="language-label"
+            >
+              {t("language")}
+            </span>
+            <div className="settings-preferences-row-control">
+              <RadioGroup
+                aria-labelledby="language-label"
+                className="language-radio"
+                onValueChange={(value) =>
+                  setLocalePreference(value as LocalePreference)
+                }
+                options={[
+                  { label: t("english"), value: "en-US" },
+                  { label: t("zhCn"), value: "zh-CN" },
+                ]}
+                value={locale === "zh-CN" ? "zh-CN" : "en-US"}
+              />
+            </div>
           </div>
         </div>
-
-        <div className="settings-preferences-row">
-          <span
-            className="settings-preferences-row-title"
-            id="message-display-label"
-          >
-            {t("messageDisplay")}
-          </span>
-          <div className="settings-preferences-row-control">
-            <RadioGroup
-              aria-labelledby="message-display-label"
-              className="message-display-radio"
-              onValueChange={(value) =>
-                setAgentMessageDisplay(value as AgentMessageDisplay)
-              }
-              options={[
-                { label: t("messageDisplayLatest"), value: "latest" },
-                { label: t("messageDisplayAll"), value: "all" },
-              ]}
-              value={agentMessageDisplay}
-            />
-          </div>
-        </div>
-
-        <div className="settings-preferences-row">
-          <span
-            className="settings-preferences-row-title"
-            id="language-label"
-          >
-            {t("language")}
-          </span>
-          <div className="settings-preferences-row-control">
-            <RadioGroup
-              aria-labelledby="language-label"
-              className="language-radio"
-              onValueChange={(value) =>
-                setLocalePreference(value as LocalePreference)
-              }
-              options={[
-                { label: t("english"), value: "en-US" },
-                { label: t("zhCn"), value: "zh-CN" },
-              ]}
-              value={locale === "zh-CN" ? "zh-CN" : "en-US"}
-            />
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }

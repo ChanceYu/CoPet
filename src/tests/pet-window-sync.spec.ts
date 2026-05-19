@@ -69,10 +69,6 @@ test("settings header is a draggable window region", async ({ browser }) => {
     "data-tauri-drag-region",
     /^(|true)$/,
   );
-  await expect(page.getByRole("button", { name: "Close" })).not.toHaveAttribute(
-    "data-tauri-drag-region",
-    "",
-  );
 
   await page.locator(".settings-titlebar").dispatchEvent("pointerdown", {
     button: 0,
@@ -82,31 +78,9 @@ test("settings header is a draggable window region", async ({ browser }) => {
     command: "plugin:window|start_dragging",
     args: { label: "settings" },
   });
-
-  await page.locator(".settings-logo-image").dispatchEvent("pointerdown", {
-    button: 0,
-    pointerType: "mouse",
-  });
-  await page.locator(".settings-brand-name").dispatchEvent("pointerdown", {
-    button: 0,
-    pointerType: "mouse",
-  });
   expect(
     harness.calls.filter((call) => call.command === "plugin:window|start_dragging"),
-  ).toHaveLength(3);
-
-  const dragCallsBeforeClose = harness.calls.filter(
-    (call) => call.command === "plugin:window|start_dragging",
-  ).length;
-
-  await page.getByRole("button", { name: "Close" }).click();
-  expect(harness.calls).toContainEqual({
-    command: "plugin:window|hide",
-    args: { label: "settings" },
-  });
-  expect(
-    harness.calls.filter((call) => call.command === "plugin:window|start_dragging"),
-  ).toHaveLength(dragCallsBeforeClose);
+  ).toHaveLength(1);
 });
 
 test("pet window exposes a draggable Tauri region while keeping settings clickable", async ({

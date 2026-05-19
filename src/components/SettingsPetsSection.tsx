@@ -260,7 +260,13 @@ export function SettingsPetsSection({
 
     const result = await importLocalPetFolder(selectedPath);
     if (result.errorMessage) {
-      toast.error(result.errorMessage);
+      // Rust backend returns a hardcoded English message for the missing-
+      // manifest/sprite case; translate it here so non-English locales see
+      // the localized copy.
+      const message = /folder must contain pet\.json/i.test(result.errorMessage)
+        ? t("invalidLocalPetFolder")
+        : result.errorMessage;
+      toast.error(message);
       return;
     }
 

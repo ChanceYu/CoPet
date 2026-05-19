@@ -1,6 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { Info, PawPrint, Plug, Settings2, X } from "lucide-react";
+import { Info, PawPrint, Plug, Settings2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 
@@ -16,7 +16,6 @@ import type {
   SettingsNavItem,
   SettingsSectionId,
 } from "./lib/settingsTypes";
-import { Button } from "./components/ui/button";
 import { Toaster } from "./components/ui/sonner";
 import { useAppData } from "./hooks/useAppData";
 import { createTranslator } from "./lib/i18n";
@@ -95,10 +94,6 @@ export function SettingsWindow() {
   const currentPetId = appState.currentPetId ?? "";
   const petWindowSize = appState.petWindowSize ?? defaultPetWindowSize;
 
-  const closeSettingsWindow = () => {
-    void getCurrentWebviewWindow().hide();
-  };
-
   const startSettingsDrag = (event: ReactPointerEvent<HTMLElement>) => {
     if (event.button !== 0) {
       return;
@@ -118,38 +113,17 @@ export function SettingsWindow() {
   return (
     <main className="settings-window">
       <div className="settings-shell">
-        <header
-          className="settings-titlebar"
-          data-tauri-drag-region
-          onPointerDown={startSettingsDrag}
-        >
-          <div className="settings-brand" data-tauri-drag-region>
+        <aside className="settings-sidebar">
+          <div className="settings-sidebar-brand">
             <img
               alt=""
               aria-hidden="true"
               className="settings-logo-image"
-              data-tauri-drag-region
               draggable={false}
               src={pethoverLogoUrl}
             />
-            <span className="settings-brand-name" data-tauri-drag-region>
-              PetHover
-            </span>
+            <span className="settings-brand-name">PetHover</span>
           </div>
-          <Button
-            aria-label={t("close")}
-            className="settings-close-button"
-            onClick={closeSettingsWindow}
-            size="icon"
-            title={t("close")}
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </header>
-
-        <div className="settings-body">
           <SettingsNav
             active={activeSection}
             items={NAV_ITEMS}
@@ -157,52 +131,59 @@ export function SettingsWindow() {
             panelId={SETTINGS_PANEL_ID}
             t={t}
           />
+        </aside>
 
-          <SettingsSectionHost
-            activeSection={activeSection}
-            id={SETTINGS_PANEL_ID}
-          >
-            {activeSection === "pets" && (
-              <SettingsPetsSection
-                currentPetId={currentPetId}
-                importLocalPet={importLocalPet}
-                importLocalPetFolder={importLocalPetFolder}
-                installedPets={installedPets}
-                isSelecting={isSelecting}
-                petBusyId={petBusyId}
-                refreshPetLists={refreshPetLists}
-                removePet={removePet}
-                selectPet={selectPet}
-                t={t}
-              />
-            )}
-            {activeSection === "agents" && (
-              <SettingsAgentsSection
-                adapterBusyId={adapterBusyId}
-                adapters={adapters}
-                runAdapterAction={runAdapterAction}
-                t={t}
-              />
-            )}
-            {activeSection === "preferences" && (
-              <SettingsPreferencesSection
-                agentMessageDisplay={appState.agentMessageDisplay}
-                locale={appState.localePreference === "zh-CN" ? "zh-CN" : "en-US"}
-                petInteractions={appState.petInteractions ?? defaultPetInteractionPrefs}
-                petWindowSize={petWindowSize}
-                resetPetWindowPosition={resetPetWindowPosition}
-                responsePaused={appState.responsePaused}
-                setAgentMessageDisplay={setAgentMessageDisplay}
-                setLocalePreference={setLocalePreference}
-                setPetInteractions={setPetInteractions}
-                setPetWindowSize={setPetWindowSize}
-                setResponsePaused={setResponsePaused}
-                t={t}
-              />
-            )}
-            {activeSection === "about" && <SettingsAboutSection t={t} />}
-          </SettingsSectionHost>
-        </div>
+        <header
+          aria-hidden="true"
+          className="settings-titlebar"
+          data-tauri-drag-region
+          onPointerDown={startSettingsDrag}
+        />
+
+        <SettingsSectionHost
+          activeSection={activeSection}
+          id={SETTINGS_PANEL_ID}
+        >
+          {activeSection === "pets" && (
+            <SettingsPetsSection
+              currentPetId={currentPetId}
+              importLocalPet={importLocalPet}
+              importLocalPetFolder={importLocalPetFolder}
+              installedPets={installedPets}
+              isSelecting={isSelecting}
+              petBusyId={petBusyId}
+              refreshPetLists={refreshPetLists}
+              removePet={removePet}
+              selectPet={selectPet}
+              t={t}
+            />
+          )}
+          {activeSection === "agents" && (
+            <SettingsAgentsSection
+              adapterBusyId={adapterBusyId}
+              adapters={adapters}
+              runAdapterAction={runAdapterAction}
+              t={t}
+            />
+          )}
+          {activeSection === "preferences" && (
+            <SettingsPreferencesSection
+              agentMessageDisplay={appState.agentMessageDisplay}
+              locale={appState.localePreference === "zh-CN" ? "zh-CN" : "en-US"}
+              petInteractions={appState.petInteractions ?? defaultPetInteractionPrefs}
+              petWindowSize={petWindowSize}
+              resetPetWindowPosition={resetPetWindowPosition}
+              responsePaused={appState.responsePaused}
+              setAgentMessageDisplay={setAgentMessageDisplay}
+              setLocalePreference={setLocalePreference}
+              setPetInteractions={setPetInteractions}
+              setPetWindowSize={setPetWindowSize}
+              setResponsePaused={setResponsePaused}
+              t={t}
+            />
+          )}
+          {activeSection === "about" && <SettingsAboutSection t={t} />}
+        </SettingsSectionHost>
       </div>
       <Toaster />
     </main>

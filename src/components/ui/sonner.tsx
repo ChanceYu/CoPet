@@ -5,10 +5,13 @@ export function Toaster(props: ToasterProps) {
   return (
     <SonnerToaster
       position="top-center"
-      richColors
       toastOptions={{
         classNames: {
           toast: "ui-sonner-toast",
+          title: "ui-sonner-title",
+          description: "ui-sonner-description",
+          icon: "ui-sonner-icon",
+          closeButton: "ui-sonner-close",
         },
       }}
       {...props}

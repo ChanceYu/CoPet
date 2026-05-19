@@ -77,7 +77,6 @@ test("settings page uses Chinese copy from app locale", async ({ browser }) => {
   await expect(page.getByRole("heading", { name: "宠物" })).toBeVisible();
   await expect(page.getByRole("button", { name: "刷新列表" })).toBeVisible();
   await expect(page.getByRole("button", { name: "导入文件夹" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "关闭" })).toBeVisible();
 
   await page.getByRole("tab", { name: "偏好设置" }).click();
   await expect(page.getByRole("slider", { name: "尺寸" })).toBeVisible();
@@ -103,7 +102,6 @@ test("settings page uses English copy from app locale", async ({ browser }) => {
   await expect(page.getByRole("heading", { name: "Pets" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Refresh list" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Import folder" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Close" })).toBeVisible();
 
   await page.getByRole("tab", { name: "Preferences" }).click();
   await expect(page.getByRole("slider", { name: "Size" })).toBeVisible();
