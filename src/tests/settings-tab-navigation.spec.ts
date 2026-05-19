@@ -4,7 +4,7 @@ import { createAppHarness, pethover } from "./app-harness";
 
 const sectionCases = [
   { section: "agents", heading: "Agent integrations" },
-  { section: "preferences", heading: "Preferences" },
+  { section: "preferences", heading: "General" },
   { section: "about", heading: "About" },
   { section: "pets", heading: "Pets" },
 ] as const;

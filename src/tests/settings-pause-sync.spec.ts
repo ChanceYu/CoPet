@@ -16,7 +16,7 @@ test("pause toggle calls set_response_paused and syncs across windows", async ({
   });
 
   const settingsPage = await harness.openPage("settings");
-  await settingsPage.getByRole("tab", { name: "Preferences" }).click();
+  await settingsPage.getByRole("tab", { name: "General" }).click();
 
   const pauseToggle = settingsPage.getByRole("switch", { name: "Pause messages" });
   await expect(pauseToggle).toHaveAttribute("aria-checked", "false");

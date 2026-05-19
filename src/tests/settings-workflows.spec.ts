@@ -78,7 +78,7 @@ test("settings page uses Chinese copy from app locale", async ({ browser }) => {
   await expect(page.getByRole("button", { name: "刷新列表" })).toBeVisible();
   await expect(page.getByRole("button", { name: "导入文件夹" })).toBeVisible();
 
-  await page.getByRole("tab", { name: "偏好设置" }).click();
+  await page.getByRole("tab", { name: "通用" }).click();
   await expect(page.getByRole("slider", { name: "尺寸" })).toBeVisible();
 });
 
@@ -103,7 +103,7 @@ test("settings page uses English copy from app locale", async ({ browser }) => {
   await expect(page.getByRole("button", { name: "Refresh list" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Import folder" })).toBeVisible();
 
-  await page.getByRole("tab", { name: "Preferences" }).click();
+  await page.getByRole("tab", { name: "General" }).click();
   await expect(page.getByRole("slider", { name: "Size" })).toBeVisible();
 });
 
@@ -119,7 +119,7 @@ test("language switch persists preference and updates settings copy", async ({ b
   });
 
   const page = await harness.openPage("settings");
-  await page.getByRole("tab", { name: "Preferences" }).click();
+  await page.getByRole("tab", { name: "General" }).click();
 
   const languageGroup = page.getByRole("radiogroup", { name: "Language" });
   await expect(languageGroup).toBeVisible();
@@ -154,7 +154,7 @@ test("message display preference toggles between latest and all", async ({ brows
   });
 
   const page = await harness.openPage("settings");
-  await page.getByRole("tab", { name: "Preferences" }).click();
+  await page.getByRole("tab", { name: "General" }).click();
 
   const messageDisplay = page.getByRole("radiogroup", { name: "Message display" });
   await expect(messageDisplay).toBeVisible();
@@ -275,7 +275,7 @@ test("pet window size setting uses a slider and updates the pet window", async (
     },
   });
   const settings = await harness.openPage("settings");
-  await settings.getByRole("tab", { name: "Preferences" }).click();
+  await settings.getByRole("tab", { name: "General" }).click();
   const sizeSlider = settings.getByRole("slider", { name: "Size" });
 
   await expect(settings.getByText("Pet Window Size")).toHaveCount(0);
@@ -404,7 +404,7 @@ test("pet interactions settings sub-section renders all controls", async ({ brow
     },
   });
   const page = await harness.openPage("settings");
-  await page.getByRole("tab", { name: "Preferences" }).click();
+  await page.getByRole("tab", { name: "General" }).click();
 
   await expect(page.getByText("Pet interactions")).toBeVisible();
   await expect(page.getByRole("switch", { name: "Enable click sounds" })).toBeDisabled();
@@ -428,7 +428,7 @@ test("pet interactions cooldown radio calls set_pet_interactions", async ({ brow
     },
   });
   const page = await harness.openPage("settings");
-  await page.getByRole("tab", { name: "Preferences" }).click();
+  await page.getByRole("tab", { name: "General" }).click();
 
   const cooldownGroup = page.getByRole("radiogroup", { name: "Interaction cooldown" });
   await cooldownGroup.getByRole("radio", { name: "Lazy" }).click();

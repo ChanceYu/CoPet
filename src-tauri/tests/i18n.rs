@@ -37,8 +37,8 @@ fn localizes_tray_menu_labels() {
     assert_eq!(t(Locale::ZhCn, MessageKey::TrayPets), "宠物…");
     assert_eq!(t(Locale::EnUs, MessageKey::TrayAgents), "Agents…");
     assert_eq!(t(Locale::ZhCn, MessageKey::TrayAgents), "Agent…");
-    assert_eq!(t(Locale::EnUs, MessageKey::TrayPreferences), "Preferences…");
-    assert_eq!(t(Locale::ZhCn, MessageKey::TrayPreferences), "偏好设置…");
+    assert_eq!(t(Locale::EnUs, MessageKey::TrayPreferences), "General…");
+    assert_eq!(t(Locale::ZhCn, MessageKey::TrayPreferences), "通用…");
 
     // New menu keys
     assert_eq!(t(Locale::EnUs, MessageKey::TrayShowPet), "Show Pet");

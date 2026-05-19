@@ -38,13 +38,13 @@ test("clicking Agents shows agent switches and hides pet list", async ({
   await expect(page.getByRole("switch", { name: "Codex" })).toBeVisible();
 });
 
-test("Preferences exposes message display, language, size, and reset position controls", async ({
+test("General exposes message display, language, size, and reset position controls", async ({
   browser,
 }) => {
   const harness = await createAppHarness(browser);
   const page = await harness.openPage("settings");
 
-  await page.getByRole("tab", { name: "Preferences" }).click();
+  await page.getByRole("tab", { name: "General" }).click();
 
   await expect(page.getByRole("radiogroup", { name: "Message display" })).toBeVisible();
   await expect(page.getByRole("radiogroup", { name: "Language" })).toBeVisible();
@@ -60,7 +60,7 @@ test("Reset position invokes reset_pet_window_position and shows success toast",
   const harness = await createAppHarness(browser);
   const page = await harness.openPage("settings");
 
-  await page.getByRole("tab", { name: "Preferences" }).click();
+  await page.getByRole("tab", { name: "General" }).click();
   await page.getByRole("button", { name: "Reset position" }).click();
 
   await expect(page.getByText("Pet returned to the bottom-right.")).toBeVisible();
@@ -80,7 +80,7 @@ test("Reset position failure shows error toast and re-enables button", async ({
   });
   const page = await harness.openPage("settings");
 
-  await page.getByRole("tab", { name: "Preferences" }).click();
+  await page.getByRole("tab", { name: "General" }).click();
   const button = page.getByRole("button", { name: "Reset position" });
   await button.click();
 

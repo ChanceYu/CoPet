@@ -398,7 +398,7 @@ test("dragging the size slider expands the pet window to the max logical height"
     (call) => call.command === "plugin:window|set_size",
   ).length;
   const settingsPage = await harness.openPage("settings");
-  await settingsPage.getByRole("tab", { name: "Preferences" }).click();
+  await settingsPage.getByRole("tab", { name: "General" }).click();
   const sizeSlider = settingsPage.getByRole("slider", { name: "Size" });
 
   await sizeSlider.dispatchEvent("pointerdown", {
@@ -446,7 +446,7 @@ test("starting the size slider does not resize the pet window to a fit-content s
     (call) => call.command === "plugin:window|set_size",
   ).length;
   const settingsPage = await harness.openPage("settings");
-  await settingsPage.getByRole("tab", { name: "Preferences" }).click();
+  await settingsPage.getByRole("tab", { name: "General" }).click();
   const sizeSlider = settingsPage.getByRole("slider", { name: "Size" });
 
   await sizeSlider.dispatchEvent("pointerdown", {
@@ -509,7 +509,7 @@ test("clicking the size slider directly does not expand the pet window to max", 
     (call) => call.command === "plugin:window|set_size",
   ).length;
   const settingsPage = await harness.openPage("settings");
-  await settingsPage.getByRole("tab", { name: "Preferences" }).click();
+  await settingsPage.getByRole("tab", { name: "General" }).click();
   const sizeSlider = settingsPage.getByRole("slider", { name: "Size" });
 
   await sizeSlider.dispatchEvent("pointerdown", {
@@ -563,7 +563,7 @@ test("pet size control mouse press alone does not start slider window resizing",
     (call) => call.command === "plugin:window|set_size",
   ).length;
   const settingsPage = await harness.openPage("settings");
-  await settingsPage.getByRole("tab", { name: "Preferences" }).click();
+  await settingsPage.getByRole("tab", { name: "General" }).click();
   const sizeControl = settingsPage.locator(".pet-size-control");
 
   await sizeControl.dispatchEvent("mousedown", { button: 0 });
@@ -609,7 +609,7 @@ test("size slider window resizing does not change pet scale without a value chan
     .locator(".pet-sprite-frame")
     .evaluate((node) => node.getBoundingClientRect().width);
   const settingsPage = await harness.openPage("settings");
-  await settingsPage.getByRole("tab", { name: "Preferences" }).click();
+  await settingsPage.getByRole("tab", { name: "General" }).click();
   const sizeSlider = settingsPage.getByRole("slider", { name: "Size" });
 
   await sizeSlider.dispatchEvent("pointerdown", {
@@ -683,7 +683,7 @@ test("starting the size slider resizes the pet window from its center", async ({
   await petPage.waitForTimeout(50);
 
   const settingsPage = await harness.openPage("settings");
-  await settingsPage.getByRole("tab", { name: "Preferences" }).click();
+  await settingsPage.getByRole("tab", { name: "General" }).click();
   const sizeControl = settingsPage.locator(".pet-size-control");
 
   await sizeControl.dispatchEvent("pointerdown", {
@@ -798,7 +798,7 @@ test("growing the size slider expands the pet window to max while rendering slid
     .locator(".pet-sprite-frame")
     .evaluate((node) => node.getBoundingClientRect().width);
   const settingsPage = await harness.openPage("settings");
-  await settingsPage.getByRole("tab", { name: "Preferences" }).click();
+  await settingsPage.getByRole("tab", { name: "General" }).click();
   const sizeSlider = settingsPage.getByRole("slider", { name: "Size" });
 
   await sizeSlider.dispatchEvent("pointerdown", {
@@ -906,7 +906,7 @@ test("shrinking the size slider renders the smaller pet before shrinking the win
     .locator(".pet-sprite-frame")
     .evaluate((node) => node.getBoundingClientRect().width);
   const settingsPage = await harness.openPage("settings");
-  await settingsPage.getByRole("tab", { name: "Preferences" }).click();
+  await settingsPage.getByRole("tab", { name: "General" }).click();
   const sizeSlider = settingsPage.getByRole("slider", { name: "Size" });
 
   await sizeSlider.dispatchEvent("pointerdown", {
@@ -1122,7 +1122,7 @@ test("size slider window movement does not change the pet direction animation", 
   });
   const petPage = await harness.openPage("pet");
   const settingsPage = await harness.openPage("settings");
-  await settingsPage.getByRole("tab", { name: "Preferences" }).click();
+  await settingsPage.getByRole("tab", { name: "General" }).click();
   const sprite = petPage.locator(".pet-sprite");
 
   await expect(sprite).toHaveAttribute("data-pet-state", "idle");
