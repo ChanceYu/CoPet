@@ -9,6 +9,7 @@ const HAPPY_DURATION_MS = 600;
 const LOOK_RESET_MS = 400;
 const TILT_AFTER_HOVER_MS = 1_000;
 const SURPRISED_DURATION_MS = 800;
+const FAILED_DURATION_MS = 900;
 const LONG_PRESS_THRESHOLD_MS = 800;
 // Keep in sync with HEART_PETTED_SLOW_DURATION_MS in src/hooks/useEmotionState.ts.
 const PETTED_SLOW_DURATION_MS = 1500;
@@ -48,6 +49,7 @@ export type UseInteractionStateResult = {
   handlers: InteractionHandlers;
   notifyActivity: () => void;
   notifyDragLand: () => void;
+  notifyFailed: () => void;
   lastActivityAtMs: number;
 };
 
@@ -70,6 +72,7 @@ export function useInteractionState(opts?: {
     longPress: number | null;
     pettedSlow: number | null;
     petted: number | null;
+    failed: number | null;
   }>({
     look: null,
     happy: null,
@@ -78,6 +81,7 @@ export function useInteractionState(opts?: {
     longPress: null,
     pettedSlow: null,
     petted: null,
+    failed: null,
   });
   const cooldownRef = useRef<{ -readonly [K in keyof typeof COOLDOWNS_MS]: number }>({
     singleClick: 0,
@@ -98,7 +102,7 @@ export function useInteractionState(opts?: {
     cooldownRef.current[key] = Date.now() + COOLDOWNS_MS[key] * scale;
   }, [opts?.cooldownStyle]);
 
-  const clearTimer = useCallback((key: "look" | "happy" | "tilt" | "surprised" | "longPress" | "pettedSlow" | "petted") => {
+  const clearTimer = useCallback((key: "look" | "happy" | "tilt" | "surprised" | "longPress" | "pettedSlow" | "petted" | "failed") => {
     const id = timersRef.current[key];
     if (id !== null) {
       window.clearTimeout(id);
@@ -114,6 +118,7 @@ export function useInteractionState(opts?: {
     clearTimer("longPress");
     clearTimer("pettedSlow");
     clearTimer("petted");
+    clearTimer("failed");
   }, [clearTimer]);
 
   useEffect(() => clearAllTimers, [clearAllTimers]);
@@ -182,6 +187,16 @@ export function useInteractionState(opts?: {
     startCooldown("dragLand");
     triggerSurprised("drag");
   }, [isCoolingDown, startCooldown, triggerSurprised]);
+
+  const notifyFailed = useCallback(() => {
+    clearAllTimers();
+    setState({ kind: "failed" });
+    notifyActivity();
+    timersRef.current.failed = window.setTimeout(() => {
+      timersRef.current.failed = null;
+      setState((current) => (current.kind === "failed" ? { kind: "idle" } : current));
+    }, FAILED_DURATION_MS);
+  }, [clearAllTimers, notifyActivity]);
 
   const onClick = useCallback(
     (event: ReactMouseEvent<HTMLElement>) => {
@@ -319,6 +334,7 @@ export function useInteractionState(opts?: {
     },
     notifyActivity,
     notifyDragLand,
+    notifyFailed,
     lastActivityAtMs,
   };
 }

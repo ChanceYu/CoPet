@@ -369,7 +369,7 @@ test("interaction counters increment after successful gestures", async ({ browse
   expect(counters.doubleClick).toBe(1);
 });
 
-test("right-click opens the pet context menu; Esc dismisses it", async ({ browser }) => {
+test("right-click opens the native pet context menu command", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
     state: {
       currentPetId: pethover.id,
@@ -380,12 +380,75 @@ test("right-click opens the pet context menu; Esc dismisses it", async ({ browse
   });
   const page = await harness.openPage("pet");
   const spriteFrame = page.locator(".pet-sprite-frame");
-  const menu = page.locator("[data-testid=pet-context-menu]");
 
-  await expect(menu).toBeHidden();
-  await spriteFrame.dispatchEvent("contextmenu", { clientX: 50, clientY: 50, button: 2 });
-  await expect(menu).toBeVisible();
+  await spriteFrame.dispatchEvent("contextmenu", {
+    bubbles: true,
+    button: 2,
+    clientX: 50,
+    clientY: 50,
+  });
 
-  await page.keyboard.press("Escape");
-  await expect(menu).toBeHidden();
+  expect(harness.invocations("open_pet_context_menu")).toHaveLength(1);
+  expect(harness.invocations("open_pet_context_menu")[0].args).toEqual({
+    labels: {
+      pause: "Pause messages",
+      openSettings: "Open Settings",
+      hidePet: "Hide pet",
+    },
+  });
+  await expect(page.getByTestId("pet-context-menu")).toHaveCount(0);
+});
+
+test("native pet context menu failure plays failed animation without fallback UI", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser, {
+    nativePetContextMenuError: "popup failed",
+    state: {
+      currentPetId: pethover.id,
+      pets: [pethover],
+      onboardingComplete: false,
+    },
+  });
+  const page = await harness.openPage("pet");
+  const spriteFrame = page.locator(".pet-sprite-frame");
+  const sprite = page.locator(".pet-sprite");
+
+  await spriteFrame.dispatchEvent("contextmenu", {
+    bubbles: true,
+    button: 2,
+    clientX: 50,
+    clientY: 50,
+  });
+
+  await expect(sprite).toHaveAttribute("data-pet-state", "failed");
+  await expect(page.getByTestId("pet-context-menu")).toHaveCount(0);
+});
+
+test("native pet context menu action events run pet commands", async ({ browser }) => {
+  const harness = await createAppHarness(browser, {
+    state: {
+      currentPetId: pethover.id,
+      pets: [pethover],
+      onboardingComplete: false,
+      responsePaused: false,
+    },
+  });
+  await harness.openPage("pet");
+
+  await harness.emitPetContextMenuAction("togglePause");
+  await expect.poll(() => harness.state().responsePaused).toBe(true);
+  expect(harness.invocations("set_response_paused").at(-1)?.args).toEqual({
+    paused: true,
+  });
+
+  await harness.emitPetContextMenuAction("openSettings");
+  await expect
+    .poll(() => harness.invocations("open_settings_window").length)
+    .toBe(1);
+
+  await harness.emitPetContextMenuAction("hidePet");
+  await expect
+    .poll(() => harness.invocations("toggle_pet_window_visibility").length)
+    .toBe(1);
 });

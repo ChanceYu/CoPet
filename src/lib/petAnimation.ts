@@ -23,7 +23,8 @@ export type InputState =
   | { kind: "happy" }
   | { kind: "surprised"; source?: "click" | "drag" }
   | { kind: "petted" }
-  | { kind: "pettedSlow" };
+  | { kind: "pettedSlow" }
+  | { kind: "failed" };
 
 export type EmotionState =
   | { kind: "none" }
@@ -95,6 +96,8 @@ function inputSpriteRow(state: InputState): PetStateId {
       return "jumping";
     case "pettedSlow":
       return "waiting";
+    case "failed":
+      return "failed";
     case "idle":
       return "idle";
   }

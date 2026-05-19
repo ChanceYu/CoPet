@@ -4,6 +4,7 @@ pub mod commands;
 pub mod config_store;
 pub mod diagnostics;
 pub mod i18n;
+pub mod pet_context_menu;
 pub mod pet_package;
 pub mod pet_registry;
 pub mod runtime_server;
@@ -820,6 +821,11 @@ pub fn run() {
                 }
             }
         })
+        .on_menu_event(|app, event| {
+            if pet_context_menu::handle_menu_event(app, event.id().as_ref()) {
+                return;
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             get_app_state,
             select_pet,
@@ -842,6 +848,7 @@ pub fn run() {
             install_agent_adapter,
             uninstall_agent_adapter,
             repair_agent_adapter,
+            pet_context_menu::open_pet_context_menu,
             commands::reset_pet_window_position
         ])
         .build(tauri::generate_context!())

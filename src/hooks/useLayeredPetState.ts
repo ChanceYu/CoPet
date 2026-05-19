@@ -22,6 +22,7 @@ export type UseLayeredPetStateResult = {
   composed: ComposedView;
   bindInput: () => InteractionHandlers;
   bindMotion: () => MotionHandlers;
+  notifyFailed: () => void;
 };
 
 export function useLayeredPetState(opts?: {
@@ -70,5 +71,6 @@ export function useLayeredPetState(opts?: {
     composed,
     bindInput: () => interaction.handlers,
     bindMotion: () => motion.handlers,
+    notifyFailed: interaction.notifyFailed,
   };
 }

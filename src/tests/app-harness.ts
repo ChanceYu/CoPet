@@ -68,6 +68,7 @@ type HarnessOptions = {
   dialogOpenPath?: string | null;
   monitor?: HarnessMonitor;
   monitorFromPointReturnsNull?: boolean;
+  nativePetContextMenuError?: string;
   runtimeStatus?: RuntimeStatus;
   scaleFactor?: number;
   state?: AppState;
@@ -221,6 +222,12 @@ export async function createAppHarness(browser: Browser, options: HarnessOptions
         }
         if (options.commandErrors?.[command]) {
           throw new Error(options.commandErrors[command]);
+        }
+        if (command === "open_pet_context_menu") {
+          if (options.nativePetContextMenuError) {
+            throw new Error(options.nativePetContextMenuError);
+          }
+          return null;
         }
 
         if (command === "get_app_state") {
@@ -547,7 +554,20 @@ export async function createAppHarness(browser: Browser, options: HarnessOptions
   return {
     calls,
     context,
+    emitPetContextMenuAction: async (
+      action: "togglePause" | "openSettings" | "hidePet",
+    ) => {
+      await Promise.all(
+        pages.map((targetPage) =>
+          targetPage.evaluate(
+            ({ event, payload }) => window.__pethoverTestEmit(event, payload),
+            { event: "pethover-pet-context-menu-action", payload: action },
+          ),
+        ),
+      );
+    },
     emitRuntimeUpdate,
+    invocations: (command: string) => calls.filter((call) => call.command === command),
     openPage,
     state: () => state,
   };

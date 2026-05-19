@@ -10,10 +10,10 @@ import type {
 import { useEffect, useRef, useState } from "react";
 
 import { ErrorView, LoadingView } from "./components/AppShell";
-import { PetContextMenu } from "./components/PetContextMenu";
 import { PetSprite } from "./components/PetSprite";
 import { useLayeredPetState } from "./hooks/useLayeredPetState";
 import { useAppData } from "./hooks/useAppData";
+import { usePetContextMenu } from "./hooks/usePetContextMenu";
 import { createTranslator } from "./lib/i18n";
 import type { AgentMessage, PetWindowSize } from "./lib/appTypes";
 import {
@@ -48,12 +48,12 @@ export function PetWindow() {
     /Mac/i.test(navigator.userAgent) &&
     typeof (window as { __TAURI__?: unknown }).__TAURI__ !== "undefined";
   const initialContentResizeAnchorReleaseMs = 250;
-  const { composed, bindInput, bindMotion } = useLayeredPetState({
-    onLongPress: isMac ? () => setMenuOpen(true) : undefined,
+  const openPetContextMenuRef = useRef<() => void>(() => undefined);
+  const { composed, bindInput, bindMotion, notifyFailed } = useLayeredPetState({
+    onLongPress: isMac ? () => openPetContextMenuRef.current() : undefined,
   });
 
   const stackRef = useRef<HTMLDivElement | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
   const sliderDraggingRef = useRef(false);
   const initialContentResizePendingRef = useRef(true);
   const initialContentResizeReleaseTimerRef = useRef<number | null>(null);
@@ -72,6 +72,23 @@ export function PetWindow() {
 
   const petWindowSize =
     loadState.status === "ready" ? loadState.data.petWindowSize : defaultPetWindowSize;
+  const locale = loadState.status === "ready" ? loadState.data.locale ?? "en-US" : "en-US";
+  const t = createTranslator(locale);
+  const pauseEnabled =
+    loadState.status === "ready" ? loadState.data.responsePaused ?? false : false;
+  const { openMenu: openPetContextMenu } = usePetContextMenu({
+    labels: {
+      pause: pauseEnabled ? t("contextMenuPauseOff") : t("contextMenuPauseOn"),
+      openSettings: t("contextMenuOpenSettings"),
+      hidePet: t("contextMenuHidePet"),
+    },
+    onTogglePause: () => {
+      void setResponsePaused(!pauseEnabled);
+    },
+    onOpenSettings: () => invoke("open_settings_window"),
+    onHidePet: () => invoke("toggle_pet_window_visibility"),
+    onPopupFailed: notifyFailed,
+  });
   const configuredPetScale = petWindowScaleFromSize(petWindowSize);
   const fitPetScale =
     selectedPet && agentMessages.length === 0
@@ -119,7 +136,13 @@ export function PetWindow() {
       void resizeToStack(anchor);
     });
     return () => window.cancelAnimationFrame(animationFrame);
-  }, [selectedPet?.id, petScale, agentMessages.length, menuOpen, viewportSize.height, viewportSize.width]);
+  }, [selectedPet?.id, petScale, agentMessages.length, viewportSize.height, viewportSize.width]);
+
+  useEffect(() => {
+    openPetContextMenuRef.current = () => {
+      void openPetContextMenu();
+    };
+  }, [openPetContextMenu]);
 
   useEffect(() => {
     return () => {
@@ -199,7 +222,7 @@ export function PetWindow() {
 
   const handleContextMenu = (event: ReactMouseEvent<HTMLElement>) => {
     event.preventDefault();
-    setMenuOpen(true);
+    void openPetContextMenu();
   };
 
   if (loadState.status === "loading") {
@@ -211,9 +234,6 @@ export function PetWindow() {
   }
 
   const motionHandlers = bindMotion();
-  const locale = loadState.data.locale ?? "en-US";
-  const t = createTranslator(locale);
-  const pauseEnabled = loadState.data.responsePaused ?? false;
 
   return (
     <main
@@ -245,21 +265,6 @@ export function PetWindow() {
             composed={composed}
             scale={petScale}
             inputHandlers={bindInput()}
-          />
-        ) : null}
-        {menuOpen ? (
-          <PetContextMenu
-            pauseEnabled={pauseEnabled}
-            onClose={() => setMenuOpen(false)}
-            onTogglePause={(next) => { void setResponsePaused(next); }}
-            onOpenSettings={() => void invoke("open_settings_window")}
-            onHidePet={() => void invoke("toggle_pet_window_visibility")}
-            labels={{
-              pauseOn: t("contextMenuPauseOn"),
-              pauseOff: t("contextMenuPauseOff"),
-              openSettings: t("contextMenuOpenSettings"),
-              hidePet: t("contextMenuHidePet"),
-            }}
           />
         ) : null}
       </div>

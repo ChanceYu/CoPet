@@ -1976,38 +1976,6 @@ select {
   }
 }
 
-.pet-context-menu {
-  background: rgba(20, 20, 24, 0.95);
-  color: #fff;
-  border-radius: 6px;
-  padding: 2px;
-  display: inline-flex;
-  flex-direction: column;
-  align-self: center;
-  width: max-content;
-  user-select: none;
-  font-size: 11px;
-  line-height: 1.2;
-}
-
-.pet-context-menu button {
-  background: transparent;
-  border: 0;
-  color: inherit;
-  text-align: left;
-  padding: 3px 6px;
-  border-radius: 3px;
-  cursor: pointer;
-  font: inherit;
-  white-space: nowrap;
-}
-
-.pet-context-menu button:hover,
-.pet-context-menu button:focus-visible {
-  background: rgba(255, 255, 255, 0.12);
-  outline: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .pet-sprite,
   .spin,

@@ -111,6 +111,35 @@ test("pet window exposes a draggable Tauri region while keeping settings clickab
   });
 });
 
+test("right-clicking the pet opens the native menu without resizing or repositioning", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser, {
+    state: {
+      currentPetId: pethover.id,
+      pets: [pethover],
+      onboardingComplete: false,
+    },
+  });
+  const page = await harness.openPage("pet");
+  await page.waitForTimeout(350);
+
+  const sizeCallsBefore = harness.invocations("plugin:window|set_size").length;
+  const positionCallsBefore = harness.invocations("plugin:window|set_position").length;
+
+  await page.locator(".pet-sprite-frame").dispatchEvent("contextmenu", {
+    bubbles: true,
+    button: 2,
+    clientX: 50,
+    clientY: 50,
+  });
+  await page.waitForTimeout(100);
+
+  expect(harness.invocations("open_pet_context_menu")).toHaveLength(1);
+  expect(harness.invocations("plugin:window|set_size")).toHaveLength(sizeCallsBefore);
+  expect(harness.invocations("plugin:window|set_position")).toHaveLength(positionCallsBefore);
+});
+
 test("pet sprite stays inside the pet window when the selected pet frame is large", async ({
   browser,
 }) => {
