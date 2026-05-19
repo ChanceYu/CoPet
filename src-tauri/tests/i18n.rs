@@ -32,9 +32,13 @@ fn localizes_tray_menu_labels() {
     assert_eq!(t(Locale::ZhCn, MessageKey::TrayBrand), "PetHover");
     assert_eq!(t(Locale::ZhCn, MessageKey::TrayQuit), "退出应用");
 
-    // Updated strings (now end with ellipsis to signal "opens a window")
-    assert_eq!(t(Locale::EnUs, MessageKey::TraySettings), "Settings…");
-    assert_eq!(t(Locale::ZhCn, MessageKey::TraySettings), "偏好设置…");
+    // Settings sub-tab labels (each opens the settings window on that tab)
+    assert_eq!(t(Locale::EnUs, MessageKey::TrayPets), "Pets…");
+    assert_eq!(t(Locale::ZhCn, MessageKey::TrayPets), "宠物…");
+    assert_eq!(t(Locale::EnUs, MessageKey::TrayAgents), "Agents…");
+    assert_eq!(t(Locale::ZhCn, MessageKey::TrayAgents), "Agent…");
+    assert_eq!(t(Locale::EnUs, MessageKey::TrayPreferences), "Preferences…");
+    assert_eq!(t(Locale::ZhCn, MessageKey::TrayPreferences), "偏好设置…");
 
     // New menu keys
     assert_eq!(t(Locale::EnUs, MessageKey::TrayShowPet), "Show Pet");

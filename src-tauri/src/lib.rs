@@ -49,25 +49,34 @@ const TRAY_MENU_BRAND_HEADER_ID: &str = "brand-header";
 const TRAY_MENU_VISIBILITY_ID: &str = "toggle-visibility";
 const TRAY_MENU_PAUSE_ID: &str = "toggle-pause";
 const TRAY_MENU_RESET_POSITION_ID: &str = "reset-pet-position";
+const TRAY_MENU_PETS_ID: &str = "open-pets";
+const TRAY_MENU_AGENTS_ID: &str = "open-agents";
 const TRAY_MENU_PREFERENCES_ID: &str = "open-preferences";
+const TRAY_MENU_ABOUT_ID: &str = "open-about";
 const TRAY_MENU_LANGUAGE_SUBMENU_ID: &str = "language-submenu";
 const TRAY_MENU_LANG_SYSTEM_ID: &str = "lang-system";
 const TRAY_MENU_LANG_EN_ID: &str = "lang-en-us";
 const TRAY_MENU_LANG_ZH_ID: &str = "lang-zh-cn";
-const TRAY_MENU_ABOUT_ID: &str = "open-about";
 const TRAY_MENU_QUIT_ID: &str = "quit-app";
+
+const SETTINGS_SECTION_PETS: &str = "pets";
+const SETTINGS_SECTION_AGENTS: &str = "agents";
+const SETTINGS_SECTION_PREFERENCES: &str = "preferences";
+const SETTINGS_SECTION_ABOUT: &str = "about";
 
 struct TrayMenuHandles {
     brand: MenuItem<Wry>,
     visibility: MenuItem<Wry>,
     pause: MenuItem<Wry>,
     reset_position: MenuItem<Wry>,
+    pets: MenuItem<Wry>,
+    agents: MenuItem<Wry>,
     preferences: MenuItem<Wry>,
+    about: MenuItem<Wry>,
     language_menu: Submenu<Wry>,
     language_system: CheckMenuItem<Wry>,
     language_en: CheckMenuItem<Wry>,
     language_zh: CheckMenuItem<Wry>,
-    about: MenuItem<Wry>,
     quit: MenuItem<Wry>,
 }
 
@@ -170,9 +179,12 @@ pub fn refresh_tray_menu(app: &AppHandle, state: &AppState) {
     let _ = handles
         .reset_position
         .set_text(t(locale, MessageKey::TrayResetPosition));
+    let _ = handles.pets.set_text(t(locale, MessageKey::TrayPets));
+    let _ = handles.agents.set_text(t(locale, MessageKey::TrayAgents));
     let _ = handles
         .preferences
-        .set_text(t(locale, MessageKey::TraySettings));
+        .set_text(t(locale, MessageKey::TrayPreferences));
+    let _ = handles.about.set_text(t(locale, MessageKey::TrayAbout));
     let _ = handles
         .language_menu
         .set_text(t(locale, MessageKey::TrayLanguageMenu));
@@ -185,7 +197,6 @@ pub fn refresh_tray_menu(app: &AppHandle, state: &AppState) {
     let _ = handles
         .language_zh
         .set_text(t(locale, MessageKey::TrayLanguageChinese));
-    let _ = handles.about.set_text(t(locale, MessageKey::TrayAbout));
     let _ = handles.quit.set_text(t(locale, MessageKey::TrayQuit));
 
     let pref = state.locale_preference;
@@ -225,8 +236,14 @@ fn handle_set_locale(app: &AppHandle, preference: LocalePreference) -> Result<()
     Ok(())
 }
 
-fn handle_open_about(app: &AppHandle) -> Result<(), String> {
-    open_about_section(app.clone())
+fn navigate_to_settings_section(app: &AppHandle, section: &'static str) -> Result<(), String> {
+    show_settings_window(app)?;
+    app.emit_to(
+        EventTarget::webview_window("settings"),
+        "pethover-navigate-to-section",
+        section,
+    )
+    .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -264,17 +281,6 @@ fn toggle_pet_window_visibility(app: tauri::AppHandle) -> Result<bool, String> {
         .map_err(localize_store_error)?;
     refresh_tray_menu(&app, &state);
     Ok(!visible)
-}
-
-#[tauri::command]
-fn open_about_section(app: tauri::AppHandle) -> Result<(), String> {
-    show_settings_window(&app)?;
-    app.emit_to(
-        EventTarget::webview_window("settings"),
-        "pethover-navigate-to-section",
-        "about",
-    )
-    .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -450,10 +456,31 @@ fn install_tray_menu(app: &mut tauri::App) -> tauri::Result<()> {
         true,
         None::<&str>,
     )?;
+    let pets = MenuItem::with_id(
+        app,
+        TRAY_MENU_PETS_ID,
+        t(locale, MessageKey::TrayPets),
+        true,
+        None::<&str>,
+    )?;
+    let agents = MenuItem::with_id(
+        app,
+        TRAY_MENU_AGENTS_ID,
+        t(locale, MessageKey::TrayAgents),
+        true,
+        None::<&str>,
+    )?;
     let preferences = MenuItem::with_id(
         app,
         TRAY_MENU_PREFERENCES_ID,
-        t(locale, MessageKey::TraySettings),
+        t(locale, MessageKey::TrayPreferences),
+        true,
+        None::<&str>,
+    )?;
+    let about = MenuItem::with_id(
+        app,
+        TRAY_MENU_ABOUT_ID,
+        t(locale, MessageKey::TrayAbout),
         true,
         None::<&str>,
     )?;
@@ -490,13 +517,6 @@ fn install_tray_menu(app: &mut tauri::App) -> tauri::Result<()> {
     language_menu.append(&language_system)?;
     language_menu.append(&language_en)?;
     language_menu.append(&language_zh)?;
-    let about = MenuItem::with_id(
-        app,
-        TRAY_MENU_ABOUT_ID,
-        t(locale, MessageKey::TrayAbout),
-        true,
-        None::<&str>,
-    )?;
     let quit = MenuItem::with_id(
         app,
         TRAY_MENU_QUIT_ID,
@@ -506,6 +526,7 @@ fn install_tray_menu(app: &mut tauri::App) -> tauri::Result<()> {
     )?;
     let separator_after_brand = PredefinedMenuItem::separator(app)?;
     let separator_after_reset = PredefinedMenuItem::separator(app)?;
+    let separator_after_settings = PredefinedMenuItem::separator(app)?;
     let separator_before_quit = PredefinedMenuItem::separator(app)?;
 
     let menu = Menu::with_items(
@@ -517,9 +538,12 @@ fn install_tray_menu(app: &mut tauri::App) -> tauri::Result<()> {
             &pause,
             &reset_position,
             &separator_after_reset,
+            &pets,
+            &agents,
             &preferences,
-            &language_menu,
             &about,
+            &separator_after_settings,
+            &language_menu,
             &separator_before_quit,
             &quit,
         ],
@@ -543,8 +567,17 @@ fn install_tray_menu(app: &mut tauri::App) -> tauri::Result<()> {
             TRAY_MENU_RESET_POSITION_ID => {
                 let _ = handle_reset_position(app);
             }
+            TRAY_MENU_PETS_ID => {
+                let _ = navigate_to_settings_section(app, SETTINGS_SECTION_PETS);
+            }
+            TRAY_MENU_AGENTS_ID => {
+                let _ = navigate_to_settings_section(app, SETTINGS_SECTION_AGENTS);
+            }
             TRAY_MENU_PREFERENCES_ID => {
-                let _ = show_settings_window(app);
+                let _ = navigate_to_settings_section(app, SETTINGS_SECTION_PREFERENCES);
+            }
+            TRAY_MENU_ABOUT_ID => {
+                let _ = navigate_to_settings_section(app, SETTINGS_SECTION_ABOUT);
             }
             TRAY_MENU_LANG_SYSTEM_ID => {
                 let _ = handle_set_locale(app, LocalePreference::System);
@@ -554,9 +587,6 @@ fn install_tray_menu(app: &mut tauri::App) -> tauri::Result<()> {
             }
             TRAY_MENU_LANG_ZH_ID => {
                 let _ = handle_set_locale(app, LocalePreference::ZhCn);
-            }
-            TRAY_MENU_ABOUT_ID => {
-                let _ = handle_open_about(app);
             }
             TRAY_MENU_QUIT_ID => {
                 // Tauri 2's `app.exit` on macOS does not reliably reach
@@ -583,12 +613,14 @@ fn install_tray_menu(app: &mut tauri::App) -> tauri::Result<()> {
         visibility,
         pause,
         reset_position,
+        pets,
+        agents,
         preferences,
+        about,
         language_menu,
         language_system,
         language_en,
         language_zh,
-        about,
         quit,
     });
     Ok(())
@@ -702,7 +734,6 @@ pub fn run() {
             set_response_paused,
             set_pet_interactions,
             toggle_pet_window_visibility,
-            open_about_section,
             list_pets,
             list_codex_pets,
             install_codex_pet,
