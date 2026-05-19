@@ -1466,6 +1466,12 @@ select {
   line-height: 1.35;
 }
 
+.pet-sprite-wrap {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
+
 .pet-sprite-frame {
   position: relative;
   width: var(--scaled-frame-width);

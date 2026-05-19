@@ -41,18 +41,11 @@ export function PetSprite({
   };
 
   return (
+    // .pet-sprite-frame keeps overflow:hidden (load-bearing for fit-pet clamp).
+    // The emotion overlay lives in this outer wrap so it can extend past the
+    // frame edges without being clipped by that overflow:hidden.
     <div
-      className="pet-sprite-frame"
-      role="img"
-      aria-label={pet.displayName}
-      data-dragging={composed.dragging ? "true" : "false"}
-      data-emotion={composed.emotionOverlay ?? ""}
-      onPointerEnter={handlePointerEnter}
-      onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerLeave}
-      onClick={handleClick}
-      onDoubleClick={handleDoubleClick}
-      onPointerDown={handlePointerDown}
+      className="pet-sprite-wrap"
       style={
         {
           "--pet-scale": scale,
@@ -68,18 +61,32 @@ export function PetSprite({
       }
     >
       <div
-        className="pet-sprite"
-        data-animated={animated}
-        data-pet-state={animation.id as PetStateId}
-        style={
-          {
-            "--sprite-url": `url("${convertFileSrc(pet.spritePath)}")`,
-            "--sprite-row": animation.row,
-            "--sprite-frames": animation.frames,
-            "--sprite-duration": `${animation.durationMs}ms`,
-          } as CSSProperties
-        }
-      />
+        className="pet-sprite-frame"
+        role="img"
+        aria-label={pet.displayName}
+        data-dragging={composed.dragging ? "true" : "false"}
+        data-emotion={composed.emotionOverlay ?? ""}
+        onPointerEnter={handlePointerEnter}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
+        onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
+        onPointerDown={handlePointerDown}
+      >
+        <div
+          className="pet-sprite"
+          data-animated={animated}
+          data-pet-state={animation.id as PetStateId}
+          style={
+            {
+              "--sprite-url": `url("${convertFileSrc(pet.spritePath)}")`,
+              "--sprite-row": animation.row,
+              "--sprite-frames": animation.frames,
+              "--sprite-duration": `${animation.durationMs}ms`,
+            } as CSSProperties
+          }
+        />
+      </div>
       {composed.emotionOverlay ? (
         <div
           className={`pet-emotion-overlay pet-emotion-${composed.emotionOverlay}`}
