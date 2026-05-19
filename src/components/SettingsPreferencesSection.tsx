@@ -199,20 +199,6 @@ export function SettingsPreferencesSection({
 
         <div className="settings-preferences-row">
           <div className="settings-preferences-row-text">
-            <span className="settings-preferences-row-title">{t("enableInteractionQuips")}</span>
-            <p className="settings-preferences-row-description">{t("enableInteractionQuipsDescription")}</p>
-          </div>
-          <div className="settings-preferences-row-control">
-            <Switch
-              aria-label={t("enableInteractionQuips")}
-              checked={petInteractions.enableQuips}
-              onCheckedChange={(next) => setPetInteractions({ ...petInteractions, enableQuips: next })}
-            />
-          </div>
-        </div>
-
-        <div className="settings-preferences-row">
-          <div className="settings-preferences-row-text">
             <span className="settings-preferences-row-title">
               {t("enableClickSounds")}
               <span className="settings-preferences-coming-soon">{t("enableClickSoundsBadge")}</span>

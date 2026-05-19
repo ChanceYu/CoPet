@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { CooldownStyle } from "../lib/appTypes";
 import type { InputState } from "../lib/petAnimation";
 import { bumpCounter } from "../lib/petInteractionCounters";
-import type { InteractionQuipPool } from "../lib/i18n";
 
 const HAPPY_DURATION_MS = 600;
 const LOOK_RESET_MS = 400;
@@ -53,15 +52,9 @@ export type UseInteractionStateResult = {
 };
 
 export function useInteractionState(opts?: {
-  onQuip?: (pool: InteractionQuipPool) => void;
   onLongPress?: (origin: { x: number; y: number }) => void;
   cooldownStyle?: CooldownStyle;
 }): UseInteractionStateResult {
-  const onQuipRef = useRef(opts?.onQuip);
-  useEffect(() => {
-    onQuipRef.current = opts?.onQuip;
-  }, [opts?.onQuip]);
-
   const onLongPressRef = useRef(opts?.onLongPress);
   useEffect(() => {
     onLongPressRef.current = opts?.onLongPress;
@@ -187,7 +180,6 @@ export function useInteractionState(opts?: {
   const notifyDragLand = useCallback(() => {
     if (isCoolingDown("dragLand")) return;
     startCooldown("dragLand");
-    onQuipRef.current?.("wheee");
     triggerSurprised("drag");
   }, [isCoolingDown, startCooldown, triggerSurprised]);
 
@@ -201,7 +193,6 @@ export function useInteractionState(opts?: {
         if (isCoolingDown("doubleClick")) return;
         startCooldown("doubleClick");
         bumpCounter("doubleClick");
-        onQuipRef.current?.("surprised");
         triggerSurprised();
         return;
       }
@@ -220,7 +211,6 @@ export function useInteractionState(opts?: {
         if (isCoolingDown("petted")) return;
         startCooldown("petted");
         bumpCounter("petted");
-        onQuipRef.current?.("tickled");
         clearTimer("happy");
         clearTimer("petted");
         setState({ kind: "petted" });
@@ -235,7 +225,6 @@ export function useInteractionState(opts?: {
       if (isCoolingDown("singleClick")) return;
       startCooldown("singleClick");
       bumpCounter("click");
-      onQuipRef.current?.("hi");
       clearTimer("happy");
       clearTimer("tilt");
       setState({ kind: "happy" });
@@ -256,7 +245,6 @@ export function useInteractionState(opts?: {
       if (isCoolingDown("doubleClick")) return;
       startCooldown("doubleClick");
       bumpCounter("doubleClick");
-      onQuipRef.current?.("surprised");
       triggerSurprised();
     },
     [isCoolingDown, startCooldown, triggerSurprised],
@@ -282,7 +270,6 @@ export function useInteractionState(opts?: {
         if (isCoolingDown("pettedSlow")) return;
         startCooldown("pettedSlow");
         bumpCounter("pettedSlow");
-        onQuipRef.current?.("chill");
         clearTimer("pettedSlow");
         setState({ kind: "pettedSlow" });
         notifyActivity();

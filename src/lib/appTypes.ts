@@ -37,13 +37,11 @@ export type AgentMessageDisplay = "all" | "latest";
 export type CooldownStyle = "short" | "normal" | "lazy";
 
 export type PetInteractionPrefs = {
-  enableQuips: boolean;
   enableClickSounds: boolean;
   cooldownStyle: CooldownStyle;
 };
 
 export const defaultPetInteractionPrefs: PetInteractionPrefs = {
-  enableQuips: true,
   enableClickSounds: false,
   cooldownStyle: "normal",
 };

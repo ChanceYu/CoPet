@@ -47,7 +47,6 @@ impl Default for CooldownStyle {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PetInteractionPrefs {
-    pub enable_quips: bool,
     pub enable_click_sounds: bool,
     pub cooldown_style: CooldownStyle,
 }
@@ -55,7 +54,6 @@ pub struct PetInteractionPrefs {
 impl Default for PetInteractionPrefs {
     fn default() -> Self {
         Self {
-            enable_quips: true,
             enable_click_sounds: false,
             cooldown_style: CooldownStyle::Normal,
         }

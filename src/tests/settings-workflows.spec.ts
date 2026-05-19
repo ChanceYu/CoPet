@@ -395,48 +395,6 @@ test("invalid local pet folder shows a toast and skips import", async ({ browser
   expect(harness.calls.some((call) => call.command === "import_pet_files")).toBe(false);
 });
 
-test("pet interactions enableQuips toggle hides interaction quips when off", async ({
-  browser,
-}) => {
-  const harness = await createAppHarness(browser, {
-    state: {
-      currentPetId: pethover.id,
-      pets: [pethover],
-      onboardingComplete: false,
-      locale: "en-US",
-      petInteractions: { enableQuips: false, enableClickSounds: false, cooldownStyle: "normal" },
-    },
-  });
-  const petPage = await harness.openPage("pet");
-  const spriteFrame = petPage.locator(".pet-sprite-frame");
-  const quip = petPage.locator("[data-testid=pet-interaction-quip]");
-
-  await spriteFrame.dispatchEvent("click", { button: 0, detail: 1 });
-  await petPage.waitForTimeout(200);
-  await expect(quip).toBeHidden();
-});
-
-test("pet interactions enableQuips toggle shows interaction quips when on", async ({
-  browser,
-}) => {
-  const harness = await createAppHarness(browser, {
-    state: {
-      currentPetId: pethover.id,
-      pets: [pethover],
-      onboardingComplete: false,
-      locale: "en-US",
-      petInteractions: { enableQuips: true, enableClickSounds: false, cooldownStyle: "normal" },
-    },
-  });
-  const petPage = await harness.openPage("pet");
-  const spriteFrame = petPage.locator(".pet-sprite-frame");
-  const quip = petPage.locator("[data-testid=pet-interaction-quip]");
-
-  await spriteFrame.dispatchEvent("click", { button: 0, detail: 1 });
-  await petPage.waitForTimeout(200);
-  await expect(quip).toBeVisible();
-});
-
 test("pet interactions settings sub-section renders all controls", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
     state: {
@@ -444,14 +402,13 @@ test("pet interactions settings sub-section renders all controls", async ({ brow
       pets: [pethover],
       onboardingComplete: false,
       locale: "en-US",
-      petInteractions: { enableQuips: true, enableClickSounds: false, cooldownStyle: "normal" },
+      petInteractions: { enableClickSounds: false, cooldownStyle: "normal" },
     },
   });
   const page = await harness.openPage("settings");
   await page.getByRole("tab", { name: "Preferences" }).click();
 
   await expect(page.getByText("Pet interactions")).toBeVisible();
-  await expect(page.getByRole("switch", { name: "Enable interaction quips" })).toBeVisible();
   await expect(page.getByRole("switch", { name: "Enable click sounds" })).toBeDisabled();
   await expect(page.getByText("Coming soon")).toBeVisible();
   const cooldownGroup = page.getByRole("radiogroup", { name: "Interaction cooldown" });
@@ -469,7 +426,7 @@ test("pet interactions cooldown radio calls set_pet_interactions", async ({ brow
       pets: [pethover],
       onboardingComplete: false,
       locale: "en-US",
-      petInteractions: { enableQuips: true, enableClickSounds: false, cooldownStyle: "normal" },
+      petInteractions: { enableClickSounds: false, cooldownStyle: "normal" },
     },
   });
   const page = await harness.openPage("settings");
@@ -481,7 +438,7 @@ test("pet interactions cooldown radio calls set_pet_interactions", async ({ brow
   expect(harness.calls).toContainEqual({
     command: "set_pet_interactions",
     args: {
-      prefs: { enableQuips: true, enableClickSounds: false, cooldownStyle: "lazy" },
+      prefs: { enableClickSounds: false, cooldownStyle: "lazy" },
     },
   });
 });

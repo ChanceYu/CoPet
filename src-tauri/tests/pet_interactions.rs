@@ -16,7 +16,6 @@ fn make_store(temp: &tempfile::TempDir) -> ConfigStore {
 fn pet_interaction_prefs_default_values() {
     let prefs = PetInteractionPrefs::default();
 
-    assert!(prefs.enable_quips);
     assert!(!prefs.enable_click_sounds);
     assert_eq!(prefs.cooldown_style, CooldownStyle::Normal);
 }
@@ -24,7 +23,6 @@ fn pet_interaction_prefs_default_values() {
 #[test]
 fn pet_interaction_prefs_round_trips_via_json() {
     let prefs = PetInteractionPrefs {
-        enable_quips: false,
         enable_click_sounds: false,
         cooldown_style: CooldownStyle::Lazy,
     };
@@ -60,7 +58,6 @@ fn set_pet_interactions_persists_and_round_trips() {
     store.ensure_ready().unwrap();
 
     let prefs = PetInteractionPrefs {
-        enable_quips: false,
         enable_click_sounds: false,
         cooldown_style: CooldownStyle::Short,
     };

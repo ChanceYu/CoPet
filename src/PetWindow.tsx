@@ -46,7 +46,7 @@ export function PetWindow() {
     typeof navigator !== "undefined" &&
     /Mac/i.test(navigator.userAgent) &&
     typeof (window as { __TAURI__?: unknown }).__TAURI__ !== "undefined";
-  const { composed, bindInput, bindMotion, quipText } = useLayeredPetState({
+  const { composed, bindInput, bindMotion } = useLayeredPetState({
     onLongPress: isMac ? () => setMenuOpen(true) : undefined,
   });
 
@@ -200,7 +200,7 @@ export function PetWindow() {
     >
       <div
         className="pet-window-stack"
-        data-fit-pet={agentMessages.length === 0 && !quipText}
+        data-fit-pet={agentMessages.length === 0}
         ref={stackRef}
         style={
           selectedPet
@@ -212,11 +212,6 @@ export function PetWindow() {
             : undefined
         }
       >
-        {quipText ? (
-          <div className="pet-interaction-quip" data-testid="pet-interaction-quip">
-            {quipText}
-          </div>
-        ) : null}
         {agentMessages.length > 0 ? (
           <AgentMessages messages={agentMessages} onDismiss={dismissAgentMessage} />
         ) : null}

@@ -14,19 +14,6 @@ const messages = {
     customBadge: "Custom",
     english: "English",
     importLocalFolder: "Import folder",
-    interactionQuipChill1: "…",
-    interactionQuipChill2: "Mmm",
-    interactionQuipHi1: "Hi!",
-    interactionQuipHi2: "Hey there",
-    interactionQuipHi3: "Yo",
-    interactionQuipSurprised1: "Yes?",
-    interactionQuipSurprised2: "Hm?",
-    interactionQuipSurprised3: "Huh?",
-    interactionQuipTickled1: "Tickled!",
-    interactionQuipTickled2: "Hehe",
-    interactionQuipTickled3: "Stop it!",
-    interactionQuipWheee1: "Wheee!",
-    interactionQuipWheee2: "Whoa!",
     contextMenuPauseOn: "Pause messages",
     contextMenuPauseOff: "Resume messages",
     contextMenuOpenSettings: "Open Settings",
@@ -47,8 +34,6 @@ const messages = {
     pauseStateOn: "On",
     pauseStateOff: "Off",
     petInteractionsHeading: "Pet interactions",
-    enableInteractionQuips: "Enable interaction quips",
-    enableInteractionQuipsDescription: "Show small bubbles when you pet or poke your pet.",
     enableClickSounds: "Enable click sounds",
     enableClickSoundsBadge: "Coming soon",
     interactionCooldown: "Interaction cooldown",
@@ -83,19 +68,6 @@ const messages = {
     customBadge: "自定义",
     english: "English",
     importLocalFolder: "导入文件夹",
-    interactionQuipChill1: "……",
-    interactionQuipChill2: "嗯～",
-    interactionQuipHi1: "嗨！",
-    interactionQuipHi2: "你好呀",
-    interactionQuipHi3: "唷",
-    interactionQuipSurprised1: "嗯？",
-    interactionQuipSurprised2: "怎么了？",
-    interactionQuipSurprised3: "哎？",
-    interactionQuipTickled1: "好痒！",
-    interactionQuipTickled2: "嘿嘿",
-    interactionQuipTickled3: "别挠了！",
-    interactionQuipWheee1: "哇！",
-    interactionQuipWheee2: "嗖～",
     contextMenuPauseOn: "暂停消息",
     contextMenuPauseOff: "恢复消息",
     contextMenuOpenSettings: "打开设置",
@@ -116,8 +88,6 @@ const messages = {
     pauseStateOn: "已开启",
     pauseStateOff: "已关闭",
     petInteractionsHeading: "互动设置",
-    enableInteractionQuips: "启用互动气泡",
-    enableInteractionQuipsDescription: "摸宠物时显示小气泡。",
     enableClickSounds: "启用点击音效",
     enableClickSoundsBadge: "即将推出",
     interactionCooldown: "互动冷却",
@@ -155,22 +125,4 @@ export function detectBrowserLocale(): Locale {
 export function createTranslator(locale: string | null | undefined) {
   const activeLocale = normalizeLocale(locale);
   return (key: MessageKey) => messages[activeLocale][key];
-}
-
-export type InteractionQuipPool = "hi" | "surprised" | "tickled" | "chill" | "wheee";
-
-export function interactionQuipPool(locale: Locale, pool: InteractionQuipPool): string[] {
-  const m = messages[locale];
-  switch (pool) {
-    case "hi":
-      return [m.interactionQuipHi1, m.interactionQuipHi2, m.interactionQuipHi3];
-    case "surprised":
-      return [m.interactionQuipSurprised1, m.interactionQuipSurprised2, m.interactionQuipSurprised3];
-    case "tickled":
-      return [m.interactionQuipTickled1, m.interactionQuipTickled2, m.interactionQuipTickled3];
-    case "chill":
-      return [m.interactionQuipChill1, m.interactionQuipChill2];
-    case "wheee":
-      return [m.interactionQuipWheee1, m.interactionQuipWheee2];
-  }
 }

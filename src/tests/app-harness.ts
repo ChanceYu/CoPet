@@ -14,7 +14,6 @@ export type PetSummary = {
 };
 
 export type PetInteractionPrefs = {
-  enableQuips: boolean;
   enableClickSounds: boolean;
   cooldownStyle: "short" | "normal" | "lazy";
 };
@@ -158,7 +157,7 @@ export async function createAppHarness(browser: Browser, options: HarnessOptions
   if (state.petInteractions === undefined) {
     state = {
       ...state,
-      petInteractions: { enableQuips: true, enableClickSounds: false, cooldownStyle: "normal" },
+      petInteractions: { enableClickSounds: false, cooldownStyle: "normal" },
     };
   }
   let adapters = options.adapters ?? [];
