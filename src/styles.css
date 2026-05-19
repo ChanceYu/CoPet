@@ -441,6 +441,11 @@ select {
   gap: 14px;
 }
 
+.settings-pets {
+  height: 100%;
+  min-height: 0;
+}
+
 .settings-preferences {
   gap: 14px;
 }
@@ -1342,7 +1347,9 @@ select {
 
 .pet-list-region {
   position: relative;
-  height: clamp(270px, calc(100vh - 360px), 460px);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .pet-list-region > [data-slot="empty"] {
@@ -1351,6 +1358,7 @@ select {
 }
 
 .pet-virtuoso {
+  height: 100%;
   min-height: 0;
 }
 
