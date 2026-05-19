@@ -17,13 +17,12 @@ use i18n::{default_locale, t, Locale, LocalePreference, MessageKey};
 use pet_package::PetSummary;
 use runtime_server::{RuntimeManager, RuntimeSnapshot, RuntimeUpdate};
 use std::path::PathBuf;
-use std::sync::mpsc;
 use std::time::Duration;
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu},
     path::BaseDirectory,
     tray::{TrayIcon, TrayIconBuilder},
-    AppHandle, Emitter, EventTarget, Listener, Manager, State, Wry,
+    AppHandle, Emitter, EventTarget, Manager, State, Wry,
 };
 #[cfg(target_os = "macos")]
 use tauri_nspanel::WebviewWindowExt;
@@ -67,12 +66,11 @@ const SETTINGS_SECTION_PREFERENCES: &str = "preferences";
 const SETTINGS_SECTION_ABOUT: &str = "about";
 
 const SETTINGS_NAVIGATE_EVENT: &str = "pethover-navigate-to-section";
-const SETTINGS_SECTION_READY_EVENT: &str = "pethover-settings-section-ready";
-// Upper bound on how long we wait for the React webview to ack a navigate
-// before we show the window anyway. Long enough to cover a slow first paint
-// on a cold settings webview; short enough that a non-responsive webview
-// doesn't strand the menu click.
-const SETTINGS_NAVIGATE_ACK_TIMEOUT: Duration = Duration::from_millis(300);
+// One vsync frame at 60 Hz, plus a small pad for IPC + React commit. The
+// webview receives the navigate event and paints the target tab within this
+// window on a hot React tree; if it doesn't, a brief flicker is the worst
+// case, never a wrong-tab paint after a longer wait.
+const SETTINGS_NAVIGATE_PAINT_DELAY: Duration = Duration::from_millis(20);
 
 struct TrayMenuHandles {
     brand: MenuItem<Wry>,
@@ -247,37 +245,23 @@ fn handle_set_locale(app: &AppHandle, preference: LocalePreference) -> Result<()
 }
 
 fn navigate_to_settings_section(app: &AppHandle, section: &'static str) -> Result<(), String> {
-    // Emit the navigate event first, wait for the React webview to ack that
-    // the target tab has rendered, then show the window. This avoids a
-    // perceptible "previous tab → target tab" flicker that happened when the
-    // OS revealed the cached webview surface before React processed the
-    // navigate event. If the ack does not arrive within the timeout (slow
-    // webview, no listener yet), we show the window anyway.
-    let (tx, rx) = mpsc::sync_channel::<()>(1);
-    let listener_id = app.listen(SETTINGS_SECTION_READY_EVENT, move |_event| {
-        let _ = tx.try_send(());
-    });
-
-    let emit_result = app
-        .emit_to(
-            EventTarget::webview_window("settings"),
-            SETTINGS_NAVIGATE_EVENT,
-            section,
-        )
-        .map_err(|error| error.to_string());
-
-    if emit_result.is_ok() {
-        let _ = rx.recv_timeout(SETTINGS_NAVIGATE_ACK_TIMEOUT);
-    }
-    app.unlisten(listener_id);
-    emit_result?;
-
+    // Emit the navigate event first so the (already-running) webview can
+    // process it and paint the target tab concurrently. After one frame's
+    // worth of delay the painted surface reflects the new state, so the OS
+    // `show` reveals the correct tab — no flicker, no IPC ack round trip.
+    app.emit_to(
+        EventTarget::webview_window("settings"),
+        SETTINGS_NAVIGATE_EVENT,
+        section,
+    )
+    .map_err(|error| error.to_string())?;
+    std::thread::sleep(SETTINGS_NAVIGATE_PAINT_DELAY);
     show_settings_window(app)
 }
 
 fn spawn_navigate_to_settings_section(app: &AppHandle, section: &'static str) {
-    // Run the navigate-then-show flow on a worker thread so the menu handler
-    // returns immediately and the main thread doesn't block on the ack wait.
+    // Run on a worker thread so the tray-menu handler returns immediately
+    // and the main thread isn't blocked by the paint-delay sleep.
     let app_clone = app.clone();
     std::thread::spawn(move || {
         let _ = navigate_to_settings_section(&app_clone, section);
