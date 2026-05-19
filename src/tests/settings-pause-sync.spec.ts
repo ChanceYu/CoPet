@@ -74,3 +74,33 @@ test("pet visibility switch toggles the pet window", async ({ browser }) => {
   ).toHaveLength(2);
   await expect(visibilityToggle).toHaveAttribute("aria-checked", "true");
 });
+
+test("pet visibility switch follows system menu visibility changes", async ({ browser }) => {
+  const harness = await createAppHarness(browser, {
+    state: {
+      currentPetId: pethover.id,
+      locale: "en-US",
+      localePreference: "en-US",
+      pets: [pethover],
+      onboardingComplete: false,
+      petWindowSize: 30,
+      responsePaused: false,
+    },
+  });
+
+  const settingsPage = await harness.openPage("settings");
+  await settingsPage.getByRole("tab", { name: "General" }).click();
+
+  const visibilityToggle = settingsPage.getByRole("switch", { name: "Show pet" });
+  await expect(visibilityToggle).toHaveAttribute("aria-checked", "true");
+
+  await settingsPage.evaluate(() => {
+    window.__pethoverTestEmit("pethover-pet-window-visibility-changed", false);
+  });
+  await expect(visibilityToggle).toHaveAttribute("aria-checked", "false");
+
+  await settingsPage.evaluate(() => {
+    window.__pethoverTestEmit("pethover-pet-window-visibility-changed", true);
+  });
+  await expect(visibilityToggle).toHaveAttribute("aria-checked", "true");
+});

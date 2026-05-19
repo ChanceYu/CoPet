@@ -34,6 +34,7 @@ use window_placement::{
 };
 
 const APP_STATE_CHANGED_EVENT: &str = "pethover-app-state-changed";
+const PET_WINDOW_VISIBILITY_CHANGED_EVENT: &str = "pethover-pet-window-visibility-changed";
 
 fn resolve_builtin_pets_dir(app: &tauri::App) -> Option<PathBuf> {
     if let Ok(path) = app.path().resolve("assets/pets", BaseDirectory::Resource) {
@@ -379,7 +380,9 @@ fn toggle_pet_window_visibility(app: tauri::AppHandle) -> Result<bool, String> {
         .and_then(|store| store.app_state())
         .map_err(localize_store_error)?;
     refresh_tray_menu(&app, &state);
-    Ok(!visible)
+    let next_visible = !visible;
+    emit_pet_window_visibility_changed(&app, next_visible);
+    Ok(next_visible)
 }
 
 #[tauri::command]
@@ -491,6 +494,14 @@ fn emit_app_state_changed(app: &tauri::AppHandle, state: &AppState) -> Result<()
         .map_err(|error| error.to_string())?;
     }
     Ok(())
+}
+
+fn emit_pet_window_visibility_changed(app: &tauri::AppHandle, visible: bool) {
+    let _ = app.emit_to(
+        EventTarget::webview_window("settings"),
+        PET_WINDOW_VISIBILITY_CHANGED_EVENT,
+        visible,
+    );
 }
 
 fn emit_runtime_update(app: &tauri::AppHandle, state: RuntimeUpdate) {

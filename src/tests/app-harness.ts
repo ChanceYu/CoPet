@@ -350,6 +350,17 @@ export async function createAppHarness(browser: Browser, options: HarnessOptions
         }
         if (command === "toggle_pet_window_visibility") {
           petVisible = !petVisible;
+          await Promise.all(
+            pages.map((targetPage) =>
+              targetPage.evaluate(
+                ({ event, payload }) => window.__pethoverTestEmit(event, payload),
+                {
+                  event: "pethover-pet-window-visibility-changed",
+                  payload: petVisible,
+                },
+              ),
+            ),
+          );
           return petVisible;
         }
         if (command === "set_pet_interactions") {

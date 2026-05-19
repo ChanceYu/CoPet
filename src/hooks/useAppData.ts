@@ -23,6 +23,7 @@ export type LoadState =
   | { status: "error"; message: string };
 
 const APP_STATE_CHANGED_EVENT = "pethover-app-state-changed";
+const PET_WINDOW_VISIBILITY_CHANGED_EVENT = "pethover-pet-window-visibility-changed";
 
 function agentMessageKey(message: AgentMessage) {
   return `${message.agent}:${message.updatedAtMs}:${message.text}`;
@@ -87,6 +88,7 @@ export function useAppData() {
   useEffect(() => {
     let unlistenPetState: (() => void) | undefined;
     let unlistenAppState: (() => void) | undefined;
+    let unlistenPetVisibility: (() => void) | undefined;
 
     void getCurrentWebviewWindow().listen<RuntimeUpdate>("pet-state-changed", (event) => {
       pethoverDevLog("frontend.event.pet-state-changed", {
@@ -109,9 +111,19 @@ export function useAppData() {
       unlistenAppState = cleanup;
     });
 
+    void getCurrentWebviewWindow().listen<boolean>(
+      PET_WINDOW_VISIBILITY_CHANGED_EVENT,
+      (event) => {
+        setPetVisibleState(event.payload);
+      },
+    ).then((cleanup) => {
+      unlistenPetVisibility = cleanup;
+    });
+
     return () => {
       unlistenPetState?.();
       unlistenAppState?.();
+      unlistenPetVisibility?.();
     };
   }, []);
 
