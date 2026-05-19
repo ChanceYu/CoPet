@@ -344,6 +344,24 @@ test("a second double-click within cooldown is a no-op", async ({ browser }) => 
   await expect(sprite).toHaveAttribute("data-pet-state", "idle");
 });
 
+test("clicking the pet emits an interaction quip bubble", async ({ browser }) => {
+  const harness = await createAppHarness(browser, {
+    state: {
+      currentPetId: pethover.id,
+      pets: [pethover],
+      onboardingComplete: false,
+      locale: "en-US",
+    },
+  });
+  const page = await harness.openPage("pet");
+  const spriteFrame = page.locator(".pet-sprite-frame");
+  const quip = page.locator("[data-testid=pet-interaction-quip]");
+
+  await spriteFrame.dispatchEvent("click", { button: 0, detail: 1 });
+  await expect(quip).toBeVisible();
+  await expect(quip).toContainText(/Hi|Hey|Yo/);
+});
+
 test("interaction counters increment after successful gestures", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
     state: {

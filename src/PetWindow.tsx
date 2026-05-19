@@ -33,7 +33,7 @@ export function PetWindow() {
     loadState,
     selectedPet,
   } = useAppData();
-  const { composed, bindInput, bindMotion } = useLayeredPetState();
+  const { composed, bindInput, bindMotion, quipText } = useLayeredPetState();
 
   const stackRef = useRef<HTMLDivElement | null>(null);
   const sliderDraggingRef = useRef(false);
@@ -175,7 +175,7 @@ export function PetWindow() {
     >
       <div
         className="pet-window-stack"
-        data-fit-pet={agentMessages.length === 0}
+        data-fit-pet={agentMessages.length === 0 && !quipText}
         ref={stackRef}
         style={
           selectedPet
@@ -187,6 +187,11 @@ export function PetWindow() {
             : undefined
         }
       >
+        {quipText ? (
+          <div className="pet-interaction-quip" data-testid="pet-interaction-quip">
+            {quipText}
+          </div>
+        ) : null}
         {agentMessages.length > 0 ? (
           <AgentMessages messages={agentMessages} onDismiss={dismissAgentMessage} />
         ) : null}
