@@ -407,7 +407,7 @@ test("pet interactions settings sub-section renders all controls", async ({ brow
   await page.getByRole("tab", { name: "General" }).click();
 
   await expect(page.getByText("Pet interactions")).toBeVisible();
-  await expect(page.getByRole("switch", { name: "Enable pet sounds" })).toBeEnabled();
+  await expect(page.getByRole("switch", { name: "Pet sounds" })).toBeEnabled();
   await expect(page.getByText("Coming soon")).toHaveCount(0);
   const cooldownGroup = page.getByRole("radiogroup", { name: "Interaction cooldown" });
   await expect(cooldownGroup).toBeVisible();
@@ -454,7 +454,7 @@ test("pet sounds switch calls set_pet_interactions", async ({ browser }) => {
   const page = await harness.openPage("settings");
   await page.getByRole("tab", { name: "General" }).click();
 
-  const soundSwitch = page.getByRole("switch", { name: "Enable pet sounds" });
+  const soundSwitch = page.getByRole("switch", { name: "Pet sounds" });
   const soundRow = page.locator(".settings-switch-row").filter({ has: soundSwitch });
   await soundSwitch.click();
 

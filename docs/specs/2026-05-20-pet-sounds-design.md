@@ -32,7 +32,7 @@ through Tauri's asset protocol.
    `thinking`, `editing`, `inspecting`, `awaitingApproval`, `celebrating`, and
    `failed`.
 5. Turn the existing disabled "Enable click sounds" setting into a single
-   enabled "Enable pet sounds" switch that controls both sound groups.
+   enabled "Pet sounds" switch that controls both sound groups.
 6. Keep animation, state updates, and settings usable when sound files are
    missing, invalid, unsupported, or blocked by the browser.
 
@@ -236,8 +236,8 @@ that same path. User interaction sounds are not gated by `responsePaused`.
 Replace the disabled "Enable click sounds" row with an enabled global sound
 switch:
 
-- English label: `Enable pet sounds`
-- Chinese label: `启用宠物音效`
+- English label: `Pet sounds`
+- Chinese label: `宠物音效`
 - Remove the "Coming soon" badge.
 - Keep using `petInteractions.enableClickSounds` on disk for compatibility.
 - The switch calls existing `set_pet_interactions` with the current cooldown
