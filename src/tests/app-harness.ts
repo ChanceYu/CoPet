@@ -11,6 +11,29 @@ export type PetSummary = {
   gridRows: number;
   builtIn: boolean;
   spritePath: string;
+  sounds?: PetSounds;
+};
+
+export type PetInteractionSounds = {
+  click?: string;
+  doubleClick?: string;
+  petted?: string;
+  pettedSlow?: string;
+  dragLand?: string;
+};
+
+export type PetAgentSounds = {
+  thinking?: string;
+  editing?: string;
+  inspecting?: string;
+  awaitingApproval?: string;
+  celebrating?: string;
+  failed?: string;
+};
+
+export type PetSounds = {
+  interactionSounds?: PetInteractionSounds;
+  agentSounds?: PetAgentSounds;
 };
 
 export type PetInteractionPrefs = {
@@ -101,6 +124,27 @@ export const pethover: PetSummary = {
   gridRows: 9,
   builtIn: true,
   spritePath: "/pets/pethover/spritesheet.webp",
+};
+
+export const pethoverWithSounds: PetSummary = {
+  ...pethover,
+  sounds: {
+    interactionSounds: {
+      click: "/pets/pethover/pethover/audio/click.mp3",
+      doubleClick: "/pets/pethover/pethover/audio/surprised.mp3",
+      petted: "/pets/pethover/pethover/audio/purr.mp3",
+      pettedSlow: "/pets/pethover/pethover/audio/sigh.mp3",
+      dragLand: "/pets/pethover/pethover/audio/wheee.mp3",
+    },
+    agentSounds: {
+      thinking: "/pets/pethover/pethover/audio/hmm.mp3",
+      editing: "/pets/pethover/pethover/audio/tap.mp3",
+      inspecting: "/pets/pethover/pethover/audio/peek.mp3",
+      awaitingApproval: "/pets/pethover/pethover/audio/wait.mp3",
+      celebrating: "/pets/pethover/pethover/audio/yay.mp3",
+      failed: "/pets/pethover/pethover/audio/oof.mp3",
+    },
+  },
 };
 
 export const goku: PetSummary = {
@@ -476,6 +520,18 @@ export async function createAppHarness(browser: Browser, options: HarnessOptions
       const callbacks = new Map<number, (payload: unknown) => void>();
       const listeners: Listener[] = [];
 
+      window.__pethoverPlayedAudioUrls = [];
+      HTMLMediaElement.prototype.play = function () {
+        const rawSrc = (this as HTMLAudioElement).getAttribute("src");
+        window.__pethoverPlayedAudioUrls.push(
+          rawSrc || (this as HTMLAudioElement).currentSrc || (this as HTMLAudioElement).src,
+        );
+        return Promise.resolve();
+      };
+      HTMLMediaElement.prototype.pause = function () {
+        return undefined;
+      };
+
       window.__TAURI_EVENT_PLUGIN_INTERNALS__ = {
         unregisterListener: (_event: string, eventId: number) => {
           const index = listeners.findIndex((listener) => listener.handlerId === eventId);
@@ -571,9 +627,20 @@ export async function createAppHarness(browser: Browser, options: HarnessOptions
     );
   }
 
+  async function playedAudioUrls(page: Page) {
+    return page.evaluate(() => window.__pethoverPlayedAudioUrls);
+  }
+
+  async function clearPlayedAudioUrls(page: Page) {
+    await page.evaluate(() => {
+      window.__pethoverPlayedAudioUrls = [];
+    });
+  }
+
   return {
     calls,
     context,
+    clearPlayedAudioUrls,
     emitPetContextMenuAction: async (
       action: "togglePause" | "openSettings" | "hidePet",
     ) => {
@@ -589,6 +656,7 @@ export async function createAppHarness(browser: Browser, options: HarnessOptions
     emitRuntimeUpdate,
     invocations: (command: string) => calls.filter((call) => call.command === command),
     openPage,
+    playedAudioUrls,
     state: () => state,
   };
 }
@@ -609,6 +677,7 @@ declare global {
       invoke: (command: string, args?: Record<string, unknown>) => Promise<unknown>;
     };
     __pethoverInvoke: (command: string, args?: Record<string, unknown>) => Promise<unknown>;
+    __pethoverPlayedAudioUrls: string[];
     __pethoverScrolledPetIds: string[];
     __pethoverTestEmit: (event: string, payload: unknown) => void;
   }

@@ -16,6 +16,28 @@ export type PetState = {
   durationMs: number;
 };
 
+export type PetInteractionSounds = {
+  click?: string;
+  doubleClick?: string;
+  petted?: string;
+  pettedSlow?: string;
+  dragLand?: string;
+};
+
+export type PetAgentSounds = {
+  thinking?: string;
+  editing?: string;
+  inspecting?: string;
+  awaitingApproval?: string;
+  celebrating?: string;
+  failed?: string;
+};
+
+export type PetSounds = {
+  interactionSounds?: PetInteractionSounds;
+  agentSounds?: PetAgentSounds;
+};
+
 export type PetSummary = {
   id: string;
   slug: string;
@@ -27,6 +49,7 @@ export type PetSummary = {
   gridRows: number;
   builtIn: boolean;
   spritePath: string;
+  sounds?: PetSounds;
 };
 
 export type Locale = "en-US" | "zh-CN";

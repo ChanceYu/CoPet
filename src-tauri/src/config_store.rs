@@ -5,7 +5,7 @@ use crate::{
         MIN_PET_WINDOW_SIZE,
     },
     i18n::{default_locale, Locale, LocalePreference},
-    pet_package::{find_sprite_path, PetManifest, PetPackage, PetSummary},
+    pet_package::{collect_pet_sounds, find_sprite_path, PetManifest, PetPackage, PetSummary},
     pet_registry::BUILTIN_PET_ID,
 };
 use serde::{
@@ -419,24 +419,36 @@ impl ConfigStore {
             ));
         }
 
-        let manifest_json = fs::read_to_string(source_dir.join("pet.json")).map_err(|_| {
+        let mut package = read_pet_package(source_dir).ok_or_else(|| {
             StoreError::InvalidPetPackage(
                 "folder must contain pet.json and spritesheet.webp or spritesheet.png".to_string(),
             )
         })?;
-        let sprite_path = find_sprite_path(source_dir).ok_or_else(|| {
-            StoreError::InvalidPetPackage(
-                "folder must contain pet.json and spritesheet.webp or spritesheet.png".to_string(),
-            )
-        })?;
-        let sprite_file_name = sprite_path
-            .file_name()
-            .and_then(|name| name.to_str())
-            .ok_or_else(|| StoreError::InvalidPetPackage("sprite filename is invalid".to_string()))?
-            .to_string();
-        let sprite_bytes = fs::read(sprite_path)?;
+        if package.manifest.id.trim().is_empty() {
+            return Err(StoreError::InvalidPetPackage(
+                "pet id cannot be empty".to_string(),
+            ));
+        }
+        self.reject_if_builtin_id(&package.manifest.id)?;
+        if fs::metadata(&package.sprite_path)?.len() == 0 {
+            return Err(StoreError::InvalidPetPackage(
+                "sprite file cannot be empty".to_string(),
+            ));
+        }
 
-        self.import_pet_files(&manifest_json, &sprite_file_name, sprite_bytes)
+        package.manifest.built_in = false;
+        if package.manifest.slug.is_empty() {
+            package.manifest.slug = package.manifest.id.clone();
+        }
+
+        let target_dir = self.pets_dir().join(&package.manifest.id);
+        copy_pet_package(source_dir, &target_dir, &package)?;
+        fs::write(
+            target_dir.join("pet.json"),
+            serde_json::to_vec_pretty(&package.manifest)?,
+        )?;
+
+        self.select_pet(&package.manifest.id)
     }
 
     pub fn remove_pet(&self, pet_id: &str) -> Result<AppState, StoreError> {
@@ -629,15 +641,82 @@ fn copy_pet_package(
     target_dir: &Path,
     package: &PetPackage,
 ) -> Result<(), StoreError> {
-    if target_dir.exists() {
-        fs::remove_dir_all(target_dir)?;
+    let source_root = fs::canonicalize(source_dir)?;
+    let staging_dir = sibling_work_dir(target_dir, "staging")?;
+    let backup_dir = sibling_work_dir(target_dir, "backup")?;
+
+    let stage_result = (|| -> Result<(), StoreError> {
+        if staging_dir.exists() {
+            fs::remove_dir_all(&staging_dir)?;
+        }
+        fs::create_dir_all(&staging_dir)?;
+        fs::copy(source_root.join("pet.json"), staging_dir.join("pet.json"))?;
+        if let Some(sprite_name) = package.sprite_path.file_name() {
+            fs::copy(&package.sprite_path, staging_dir.join(sprite_name))?;
+        }
+        for sound_path in package.sound_file_paths() {
+            let canonical_sound_path = fs::canonicalize(&sound_path)?;
+            let relative_path = canonical_sound_path
+                .strip_prefix(&source_root)
+                .map_err(|_| {
+                    StoreError::InvalidPetPackage(format!(
+                        "sound file must be inside package: {}",
+                        sound_path.display()
+                    ))
+                })?;
+            let staged_path = staging_dir.join(relative_path);
+            if let Some(parent) = staged_path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            fs::copy(canonical_sound_path, staged_path)?;
+        }
+        Ok(())
+    })();
+
+    if let Err(error) = stage_result {
+        let _ = fs::remove_dir_all(&staging_dir);
+        return Err(error);
     }
-    fs::create_dir_all(target_dir)?;
-    fs::copy(source_dir.join("pet.json"), target_dir.join("pet.json"))?;
-    if let Some(sprite_name) = package.sprite_path.file_name() {
-        fs::copy(&package.sprite_path, target_dir.join(sprite_name))?;
+
+    let replace_result = (|| -> Result<(), StoreError> {
+        if backup_dir.exists() {
+            fs::remove_dir_all(&backup_dir)?;
+        }
+        if target_dir.exists() {
+            fs::rename(target_dir, &backup_dir)?;
+        }
+        if let Err(error) = fs::rename(&staging_dir, target_dir) {
+            if backup_dir.exists() {
+                let _ = fs::rename(&backup_dir, target_dir);
+            }
+            return Err(StoreError::Io(error));
+        }
+        if backup_dir.exists() {
+            let _ = fs::remove_dir_all(&backup_dir);
+        }
+        Ok(())
+    })();
+
+    if let Err(error) = replace_result {
+        let _ = fs::remove_dir_all(&staging_dir);
+        return Err(error);
     }
+
     Ok(())
+}
+
+fn sibling_work_dir(target_dir: &Path, suffix: &str) -> Result<PathBuf, StoreError> {
+    let parent = target_dir.parent().ok_or_else(|| {
+        StoreError::InvalidPetPackage("pet target directory is invalid".to_string())
+    })?;
+    let target_name = target_dir
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| {
+            StoreError::InvalidPetPackage("pet target directory is invalid".to_string())
+        })?;
+
+    Ok(parent.join(format!(".{target_name}.{suffix}")))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -739,9 +818,11 @@ fn read_pet_package(dir: &Path) -> Option<PetPackage> {
         manifest.slug = manifest.id.clone();
     }
     let sprite_path = find_sprite_path(dir)?;
+    let sounds = collect_pet_sounds(&manifest, dir);
 
     Some(PetPackage {
         manifest,
         sprite_path,
+        sounds,
     })
 }

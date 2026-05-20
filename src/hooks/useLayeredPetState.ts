@@ -6,6 +6,7 @@ import { useBaseState } from "./useBaseState";
 import { useEmotionState } from "./useEmotionState";
 import { useInteractionState } from "./useInteractionState";
 import { useMotionState } from "./useMotionState";
+import type { InteractionSoundKey } from "./usePetSounds";
 import { composeLayers } from "../lib/petAnimation";
 import type {
   ComposedView,
@@ -27,6 +28,7 @@ export type UseLayeredPetStateResult = {
 
 export function useLayeredPetState(opts?: {
   onLongPress?: (origin: { x: number; y: number }) => void;
+  onInteractionSound?: (kind: InteractionSoundKey) => void;
 }): UseLayeredPetStateResult {
   const { petState, agentMessages, loadState } = useAppData();
   const cooldownStyle: CooldownStyle = loadState.status === "ready"
@@ -34,7 +36,11 @@ export function useLayeredPetState(opts?: {
     : "normal";
 
   const agent = useAgentState({ petState, agentMessages });
-  const interaction = useInteractionState({ onLongPress: opts?.onLongPress, cooldownStyle });
+  const interaction = useInteractionState({
+    onLongPress: opts?.onLongPress,
+    onInteractionSound: opts?.onInteractionSound,
+    cooldownStyle,
+  });
   const motion = useMotionState({
     onDragLand: () => interaction.notifyDragLand(),
   });
