@@ -16,12 +16,12 @@ This implicitly carries the **default visual style** (see SKILL.md "Default visu
 
 ## Sprite source resolution
 
-This sub-task needs an existing spritesheet to use as both visual style **and** character-identity reference. Resolve the source in priority order:
+This sub-task needs an existing spritesheet to use as both visual style **and** character-identity reference. Resolve the source in priority order — both sources resolve to a path inside `<staging-dir>` (not the live package directory):
 
-1. **Fresh sprite from this run** — if the sprite sub-task (3a) is also selected, omni waits for 3a to finish, then reads the spritesheet 3a just wrote.
-2. **Existing package spritesheet** — if 3a is not selected, omni reads the spritesheet at `spritesheetPath` from the existing `pet.json`.
+1. **Fresh sprite from this run** — if the sprite sub-task (3a) is also selected, omni waits for 3a to finish, then reads the spritesheet 3a just wrote into `<staging-dir>/spritesheet.webp` (or `.png`).
+2. **Seeded existing package spritesheet** — if 3a is not selected, omni reads `<staging-dir>/<spritesheetPath>`, where `<spritesheetPath>` came from the seeded `<staging-dir>/pet.json` that was copied from the live package at the start of step 3.
 
-If neither source resolves to a real spritesheet, step 2 of the pipeline should have already prevented this sub-task from being runnable; treat reaching this code path with no spritesheet as a generation error.
+If neither source resolves to a real spritesheet in `<staging-dir>`, step 2 of the pipeline should have already prevented this sub-task from being runnable; treat reaching this code path with no spritesheet as a generation error.
 
 ## How to enforce the character match during generation
 
@@ -45,8 +45,10 @@ Use **`balanced`** by default. Honor an explicit user override if the user reque
 
 ## Artifacts produced
 
-1. **`pethover/omni-spritesheet.webp`** — a vertical atlas. Each row is `frameHeight` tall (208 px by default) and `gridColumns × frameWidth` wide (8 × 192 = 1536 px by default). Rows are stacked top-to-bottom in the order the manifest declares them. Pad unused row tail-columns with full transparency; do not stretch art across the row.
-2. **`pethover/eyes.webp`** — a small 96 × 96 atlas: a 3 × 3 grid of 32 × 32 pupil-position cells (NW / N / NE / W / center / E / SW / S / SE, read left-to-right, top-to-bottom). The center cell is the "looking straight ahead" pose.
+Write all artifacts under `<staging-dir>/pethover/...` — where `<staging-dir> = $HOME/.pethover/tmp/pet-<unix-epoch>-<pet-id>/` is the per-run staging directory set up at the start of step 3. **Never** write directly under `$HOME/.pethover/pets/<pet-id>/`; that location is read-only until the atomic promotion at the end of step 5.
+
+1. **`<staging-dir>/pethover/omni-spritesheet.webp`** — a vertical atlas. Each row is `frameHeight` tall (208 px by default) and `gridColumns × frameWidth` wide (8 × 192 = 1536 px by default). Rows are stacked top-to-bottom in the order the manifest declares them. Pad unused row tail-columns with full transparency; do not stretch art across the row. The manifest fragment references this file as the relative path `pethover/omni-spritesheet.webp`.
+2. **`<staging-dir>/pethover/eyes.webp`** — a small 96 × 96 atlas: a 3 × 3 grid of 32 × 32 pupil-position cells (NW / N / NE / W / center / E / SW / S / SE, read left-to-right, top-to-bottom). The center cell is the "looking straight ahead" pose. The manifest fragment references this file as the relative path `pethover/eyes.webp`.
 3. **Anchor table** in the manifest fragment (one `[x, y]` per body direction): the pixel offset of the eye center within the body frame. Defaults around `[96, 84]` work for most centered character art.
 
 ## Direction set and mirror declarations

@@ -61,7 +61,9 @@ A full PetHover audio set is the 11 clips below. Omit keys that are not generate
 
 See [`gesture-sound-map.md`](./gesture-sound-map.md) for suggested sound *roles* (advisory) and [`audio-asset-format.md`](./audio-asset-format.md) for binding asset rules (MP3 only, size cap, loudness target, silence trimming).
 
-Save each generated clip under `pethover/audio/`. Filenames are free-form; the manifest fragment references them by relative path. Do **not** add a manifest key for a missing or failed clip.
+Save each generated clip under `<staging-dir>/pethover/audio/` — where `<staging-dir> = $HOME/.pethover/tmp/pet-<unix-epoch>-<pet-id>/` is the per-run staging directory set up at the start of step 3. **Never** write directly under `$HOME/.pethover/pets/<pet-id>/`; that location is read-only until the atomic promotion at the end of step 5.
+
+Filenames are free-form; the manifest fragment references them by relative path under `pethover/audio/...`. Do **not** add a manifest key for a missing or failed clip.
 
 ## Audio manifest fragment
 

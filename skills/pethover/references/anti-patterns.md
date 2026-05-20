@@ -33,19 +33,34 @@ Grouped by concern. Each "Don't" is a hard rule; violating it is a generation er
 - Don't apply different visual styles to sprite and omni in the same package. Omni inherits style from sprite via image conditioning; a style mismatch between the two atlases breaks the character-continuity guarantee.
 - Don't fail to log the style override. When the user opts out of the default, record both the user's wording and the resulting `--style-preset` value in the run log so the result can be cited if it looks wrong.
 
-## `$hatch-pet` parameter discipline
+## Translation discipline
 
+- **Don't translate inside the sprite sub-task.** Sub-task 3a's job is end-to-end English: derive the English `displayName` and `description`, hand them to `$hatch-pet`, write them to the sprite fragment unchanged. Chinese siblings (`pethover.displayNameZh`, `pethover.descriptionZh`) are derived during step 4 sub-step 6 — never inside any sub-task.
+- **Don't include `displayNameZh` or `descriptionZh` in any fragment.** No sub-task owns these keys. A fragment that carries them violates the ownership matrix and is a generation error.
+- **Don't translate twice in the same run.** Sub-step 6 is the only translation pass. If audio or omni sub-tasks somehow infer Chinese strings as a side-effect, drop them — only sub-step 6's output reaches the merged manifest.
+- **Don't re-translate when the English source is unchanged.** The merge step's preserve-vs-retranslate rule keeps the base's Chinese siblings byte-identical when the merged English equals the base's English. Re-translating gratuitously produces visible churn in `displayNameZh` / `descriptionZh` across runs that didn't change the source.
+- **Don't ship a manifest with missing or empty Chinese siblings.** Translation failure is a merge failure — abort the run, leave the staging dir for debugging. Never ship `pet.json` with `displayNameZh: ""` or absent.
+
+## `$hatch-pet` boundary discipline (treat it as a black box)
+
+The most important rule first: **influence `$hatch-pet` only through its documented input flags and consume its documented outputs. Never reach into its internal execution.** Everything below is a specific instance of that principle.
+
+- **Don't inspect or mutate `$hatch-pet`'s scratch beyond the documented output files.** `imagegen-jobs.json`, `decoded/`, `frames/`, `prompts/`, layout-guide PNGs, and the QA artifacts that feed its internal Final-QA worker are all internal state. The only files in `<staging-dir>/.hatch-run/` that this skill reads are `final/spritesheet.webp` (or `.png`), `pet.json`, and `qa/review.json`. Anything else is off-limits.
+- **Don't manipulate `imagegen-jobs.json` to selectively retry rows.** `$hatch-pet` has its own retry policy ("If `$imagegen` returns Bad Request for a row, retry once with `retry_prompt_file`; stop after second failure"). Layering a PetHover-side retry on top is exactly the kind of internal-decision-from-outside the boundary rule forbids. If `$hatch-pet`'s output is rejected, the only PetHover-side recovery is to re-run the entire sprite sub-task with `--force` — that is itself a fresh `$hatch-pet` invocation, not a partial re-execution of the previous one.
+- **Don't re-evaluate the contact sheet or preview GIFs from the PetHover side.** `$hatch-pet`'s Final-QA worker already inspects those and emits its verdict into `qa/review.json`. Re-judging the visual artifacts from PetHover side means we and `$hatch-pet` could disagree about acceptance — fertile ground for brittle interop. Trust `review.json`'s `errors` count as the verdict; nothing more.
+- **Don't choose `$hatch-pet`'s extract-frame method, prompt template, worker model, parallelism cap, or QA threshold.** Those are internal choices it makes from its inputs. The flags we pass are the only contract.
 - **Don't omit `--pet-name`.** PetHover owns the package directory name (`$HOME/.pethover/pets/<pet-id>/`); we must pass the canonical kebab-case id to `$hatch-pet` so its manifest's `id` matches ours. Letting `$hatch-pet` auto-generate a name leads to a manifest/path mismatch and a downstream merge error.
 - **Don't omit `--description`.** We already derive the one-sentence English description (≤ 140 chars) during sub-task 3a; pass it via `--description` so `$hatch-pet`'s manifest matches ours. Two independent description strings would be a manifest inconsistency.
 - **Don't put style-related prose into `--pet-notes`.** `--pet-notes` is the "Stable pet description or avatar seed" field — *species, color, personality, distinguishing features*. Style guidance (e.g. "smooth gradient shading") goes in `--style-notes`. Crossing these channels makes `$hatch-pet`'s auto-inference noisier.
 - **Don't put subject-related prose into `--style-notes`.** Subject (what the pet *is*) belongs in `--pet-notes`; style (how it's rendered) belongs in `--style-notes`. Notes only ever refine *within* the chosen preset's aesthetic.
 - **Don't pass an uploaded image as part of a prompt string.** Use the `--reference <absolute-path>` flag. Reference images carry positional/structural cues that prose cannot reproduce.
 - **Don't skip the brand pre-flight when the user input names a brand.** If the user mentions a brand/product/company by name, run the brand-discovery worker before `prepare_pet_run.py` and pass `--brand-name`, `--brand-brief`, `--brand-source`, `--brand-discovery-file`. Without these, `$hatch-pet` cannot ground brand details. Also switch `--style-preset` to `brand-inspired` for brand pets.
-- **Don't omit `--output-dir` and let `$hatch-pet` auto-place its run-dir.** Pass an absolute path inside our own scratch (`$HOME/.pethover/pets/<pet-id>/.hatch-run/`) so cleanup is local to the package directory, and step 4 sub-step 7's reconciliation can delete it.
+- **Don't omit `--output-dir` and let `$hatch-pet` auto-place its run-dir.** Pass an absolute path inside the current run's staging area: `<staging-dir>/.hatch-run/`. This keeps `$hatch-pet`'s scratch inside the per-run staging directory so step 4 sub-step 8's reconciliation deletes it before promotion, and so a failed run leaves the scratch in `$HOME/.pethover/tmp/` for debugging without ever touching the live `$HOME/.pethover/pets/<pet-id>/`.
 - **Don't omit `--force` when regenerating sprite on an existing package.** Without it, `$hatch-pet` refuses to overwrite the run-dir and the sub-task fails. Re-running sprite is an explicit user opt-in in step 2, so `--force` is the correct semantics.
-- **Don't accept `$hatch-pet`'s output without checking `qa/review.json` AND `qa/contact-sheet.png`.** `review.json` reporting zero errors is necessary but not sufficient; the contact sheet can still show cropped references, repeated tiles, white backgrounds, identity drift, style drift, or size popping. All six are visual-only failures that `review.json` does not catch.
-- **Don't trust `$hatch-pet`'s manifest when its `id` or `description` disagrees with what we passed.** Treat any mismatch as a generation error; `$hatch-pet` should echo our values, not invent new ones.
-- **Don't leave `.hatch-run/` in the final package.** That directory is `$hatch-pet`'s scratch; step 4 sub-step 7 deletes it before the package-cleanliness check.
+- **Don't reject `$hatch-pet`'s output for any reason beyond the three documented consumer checks**: (a) zero exit status, (b) `qa/review.json` with `errors == 0`, (c) the documented output files exist. Inventing extra rejection criteria — even well-meaning ones — is influencing `$hatch-pet`'s acceptance threshold from outside.
+- **Don't trust `$hatch-pet`'s manifest when its `id` or `description` disagrees with what we passed.** Treat any mismatch as a generation error; `$hatch-pet` should echo our values, not invent new ones. (This is verifying the input contract, not re-judging the visual output.)
+- **Don't leave `.hatch-run/` or `.hatch-codex/` in the final package.** Both are `$hatch-pet`'s scratch under the staging directory (`.hatch-run/` = run-dir, `.hatch-codex/` = redirected `CODEX_HOME`); step 4 sub-step 8 deletes both before the package-cleanliness check.
+- **Don't let `$hatch-pet` write to `$HOME/.codex/pets/<pet-id>/`.** Its **Final Packaged Output** step targets `${CODEX_HOME:-$HOME/.codex}/pets/<pet-id>/` by default — without the `CODEX_HOME=<staging-dir>/.hatch-codex` env-var redirection, those files escape the staging directory and violate the staging invariant. The `CODEX_HOME` redirection is a documented `$hatch-pet` input, not internal influence; we are choosing its value.
 
 ## Manifest discipline
 
@@ -55,6 +70,17 @@ Grouped by concern. Each "Don't" is a hard rule; violating it is a generation er
 - Don't write the final PetHover package under `$HOME/.codex/pets/`.
 - Don't rewrite `pet.json` from a template or delete unowned top-level fields — other ecosystems may share this manifest.
 - Don't let two sub-task fragments write the same key (see the ownership matrix in `merge-and-validate.md`). Overlapping writes are a generation error.
+
+## Atomic staging
+
+- **Don't write any artifact into `$HOME/.pethover/pets/<pet-id>/` between the start of step 3 and the end of step 5.** Every sub-task writes into `<staging-dir> = $HOME/.pethover/tmp/pet-<unix-epoch>-<pet-id>/`. The live package is read-only until the atomic promotion at the end of step 5. Writing to the live location mid-run defeats the entire "failure leaves the live package unchanged" guarantee.
+- **Don't pass live-package paths into sub-task tools.** `$hatch-pet`'s `--output-dir`, audio-clip output paths, omni atlas paths, and the merge step's `pet.json` write must all be under `<staging-dir>`. A single path that escapes the staging directory breaks atomicity even if everything else is correct.
+- **Don't skip the seed-copy for existing-package updates.** When `$HOME/.pethover/pets/<pet-id>/` exists at the start of step 3, copy its full contents into `<staging-dir>` before any sub-task runs. Otherwise the merge step's "preserve unowned keys" rule has no base to read from, and sub-tasks that did not run this time will appear to have been deleted after promotion.
+- **Don't reuse a fixed staging directory name across runs.** Use the timestamp + pet-id naming so back-to-back regenerations on the same pet do not collide and so a still-running prior invocation's staging is not clobbered by a new one.
+- **Don't promote before validation passes.** Validation is the gate. If validation fails, leave `<staging-dir>` in place for the operator to inspect; never attempt a partial promotion or per-file copy as a "best effort".
+- **Don't perform the promotion via copy-and-delete.** The promotion is a `rename(2)` (or pair of renames for Case B in `references/merge-and-validate.md`). Copy-and-delete is not atomic; an interrupted copy leaves the live location in a partially-written state — the exact failure mode the staging mechanism exists to prevent.
+- **Don't delete `<staging-dir>` on failure.** Leave it for debugging. Failed runs are diagnostic gold; deleting the staging dir destroys evidence of what went wrong.
+- **Don't leave the backup directory behind after a successful Case B promotion.** Once the new package is in place at `<live-dir>` and verified there, delete `<backup-dir>` from `$HOME/.pethover/tmp/`. Leaving it leaks disk over time.
 
 ## Package cleanliness
 
