@@ -7,14 +7,14 @@ description: Use when generating or updating a PetHover-compatible Codex pet pac
 
 ## Overview
 
-This skill is the **single orchestration entry point** for creating a PetHover pet. Given either an uploaded reference image or a textual description, it:
+This skill is the **single orchestration entry point** for creating or updating a PetHover pet. Given either an uploaded reference image or a textual description, it:
 
-1. Calls the upstream `$hatch-pet` skill to generate the Codex-compatible **sprite atlas** and canonical 9-row behavior vocabulary.
-2. Uses the `$hatch-pet` package manifest as the source of truth for Codex top-level fields: `id`, `displayName`, `description`, and `spritesheetPath`.
-3. Adds PetHover-only metadata under the top-level `pethover` key: Chinese display strings, optional audio bindings, and optional behavior metadata.
-4. Writes the final package only to `$HOME/.pethover/pets/<pet-id>/`, including `pet.json`, the spritesheet, and any `pethover/` resources.
+1. **Presents a task checklist** with three independently-selectable task domains: **Sprite atlas** (codex-compatible spritesheet + display strings via `$hatch-pet`), **PetHover audio** (interaction & agent MP3 clips), and **PetHover omni** (8-direction body atlas + eye overlay). The two PetHover-branded tasks correspond to PetHover-runtime-only features; the sprite task is the codex-compatible base shared with other ecosystems.
+2. **Executes the selected tasks honoring their dependencies.** Sprite and PetHover audio are both driven directly from the user's raw input and run **in parallel** when both are selected. PetHover omni needs a spritesheet for **character identity and visual style** — it depicts the same character as the sprite atlas at additional viewing angles — so it runs after the sprite task (or directly, reading the existing package's spritesheet for visual conditioning, when sprite is not selected). All sub-tasks emit in-memory manifest fragments only — they do not write `pet.json` themselves.
+3. **Merges** each task's manifest fragments into a single `pet.json` under `$HOME/.pethover/pets/<pet-id>/`, alongside the generated assets, using a write-temp-then-rename atomic pattern, then reconciles the package directory to remove any file not referenced by the final manifest.
+4. **Validates** the merged manifest and the on-disk directory as a single coherent package before returning.
 
-It is the only PetHover skill. All PetHover-side configuration lives under the `pethover` top-level key of `pet.json`.
+It is the only PetHover skill. All PetHover-side configuration lives under the top-level `pethover` key of `pet.json`. Codex-compatible top-level fields (`id`, `displayName`, `description`, `spritesheetPath`, frame geometry) are owned by the sprite task; PetHover audio and PetHover omni each own a disjoint subtree under `pethover`.
 
 ## Upstream skill
 
@@ -24,7 +24,9 @@ This skill depends on the sibling **`$hatch-pet`** skill. Every `$hatch-pet` ref
 2. **Codex install** — `$HOME/.codex/skills/hatch-pet/`.
 3. **Upstream source** — fetch / install from <https://github.com/openai/skills/blob/main/skills/.curated/hatch-pet/SKILL.md>.
 
-Stop at the first hit. If none of the three resolves, the pipeline cannot run.
+Stop at the first hit. If none of the three resolves, the sprite sub-task cannot run; audio is still runnable on its own.
+
+**Always invoke `$hatch-pet` with explicit parameters.** Specifically: `--style-preset`, `--pet-name`, `--description`, `--output-dir`, and (per input) `--reference`, `--pet-notes`, `--style-notes`, `--force`, and the brand-discovery flag set. Never rely on `$hatch-pet`'s default `auto` modes — they infer from the surrounding sprite-atlas context, which leads to pixel-art output even when prose describes a 3D rendering. See [`references/sub-task-sprite.md`](./references/sub-task-sprite.md) for the full parameter table and example invocations.
 
 ## Pet package layout
 
@@ -33,11 +35,13 @@ $HOME/.pethover/pets/<pet-id>/
 ├── pet.json
 ├── spritesheet.webp            ← or spritesheet.png; Codex 8×9 atlas, 192×208 per cell
 └── pethover/
-    └── audio/                  ← optional generated MP3 clips
-        ├── click.mp3
-        ├── surprised.mp3
-        ├── purr.mp3
-        └── ...
+    ├── audio/                  ← optional generated MP3 clips
+    │   ├── click.mp3
+    │   ├── surprised.mp3
+    │   ├── purr.mp3
+    │   └── ...
+    ├── omni-spritesheet.webp   ← optional 8-direction atlas (see references/sub-task-omni.md)
+    └── eyes.webp               ← optional 3×3 pupil overlay for omni pets
 ```
 
 `<pet-id>` is a kebab-case identifier, unique within `$HOME/.pethover/pets/`. Built-in pets ship in the app bundle using the same layout. This skill writes its final package only to `$HOME/.pethover/pets/<pet-id>/`; do not write or mirror the finished PetHover package into `$HOME/.codex/pets/`.
@@ -51,149 +55,133 @@ $HOME/.pethover/pets/<pet-id>/
 
 Exactly one input kind per generation. An image with an optional caption is allowed; the caption is treated as additional text context but the image is the primary signal.
 
+## Default visual style
+
+All generated sprite art — both the sprite atlas (3a) and the omni directional frames (3c) — defaults to the `$hatch-pet` style preset **`3d-toy`**: a rounded 3D toy pet character — smooth gradient shading, soft edges, plush-figurine proportions, friendly silhouette, transparent background. No sharp pixel-art outlines, no photorealism, no rough sketch lines, no flat-shaded vector look. This default is what gives the PetHover gallery a consistent identity across pets — the existing built-in PetHover (the default mascot) is itself "a cheerful blue-purple gradient fox pet inspired by a rounded 3D toy reference," and new generations match that family by default.
+
+**Always invoke `$hatch-pet` with an explicit `--style-preset`. Never rely on its `auto` mode.** Without an explicit preset, `$hatch-pet` infers the style from prompt context, and the surrounding sprite-atlas vocabulary (`192×208 cell`, `8×9 grid`, `frames per row`) biases auto-inference toward `pixel` regardless of any prose style description in the user prompt or `--style-notes`. The flag is the load-bearing signal; prose alone does not override `auto`.
+
+**Style → preset mapping** (use these mappings when the user signals an override):
+
+| User signal | `--style-preset` | Notes |
+|---|---|---|
+| (default — no explicit style request) | `3d-toy` | Always pass; this is the load-bearing fix. |
+| "pixel art", "8-bit", "retro sprite" | `pixel` | |
+| "plush", "stuffed toy", "felt" | `plush` | |
+| "claymation", "stop-motion", "clay" | `clay` | |
+| "sticker", "die-cut", "thick outline" | `sticker` | |
+| "flat vector", "minimal vector", "logo-style" | `flat-vector` | |
+| "watercolor", "painterly", "painted" | `painterly` | |
+| "brand X style" (named real brand) | `brand-inspired` | Pass the brand name in `--style-notes` |
+
+Use `--style-notes` to pass supplementary prose ("rounded plush figurine", "blue-purple gradient", etc.) **on top of** the explicit preset — notes refine within a preset's aesthetic, they do not switch presets.
+
+**Apply the default `3d-toy` preset unless the user explicitly opts out.** Override triggers (any one is sufficient):
+
+- The user's text or caption explicitly names a different art style — e.g. *"make it pixel art"*, *"watercolor style"*, *"flat anime"*, *"low-poly"*, *"photorealistic"*, *"line drawing"*. Treat phrases that merely describe the subject's traits (*"chubby"*, *"glowing"*, *"steampunk-themed"*) as **not** style overrides — those modify the pet's appearance within the rounded 3D toy aesthetic.
+- The user uploads a reference image **and** explicitly asks to match the image's art style (e.g. *"keep the same art style as this picture"*).
+
+**Default behavior for a reference image whose style differs from the rounded 3D toy aesthetic:** treat the image as a **subject reference** (species, color palette, accessories, pose) rather than a style reference. Pass `--style-preset 3d-toy` regardless of the image's own style; the image becomes a *subject* reference image, not a *style* reference image. Do not silently inherit pixel-art / sketch / photo styling from the upload; the user expects PetHover's gallery look.
+
+This default propagates to every visual sub-task in the run. Sprite (3a) bakes the style into the codex spritesheet via the `--style-preset` it passes to `$hatch-pet`. Omni (3c) inherits the style automatically because it uses the sprite atlas as visual conditioning. Audio (3b) is unaffected — it has no visual style.
+
+When an override is in effect, record the chosen style and the resulting preset explicitly in the run log so the result can be cited if it looks wrong.
+
 ## Pipeline
+
+The pipeline has five steps: **validate → select → execute → merge → validate**. The execution step runs the user-selected task subset on a small dependency DAG, parallelizing independent sub-tasks.
 
 ### 1. Validate input
 
 - **Image**: decodable, within size cap, not transparent-only.
 - **Text**: non-empty, within character cap, not pure whitespace.
 
-Reject otherwise with a clear error; do not call `$hatch-pet` on invalid input.
+Reject otherwise with a clear error; do not invoke any sub-task on invalid input.
 
-### 2. Invoke `$hatch-pet`
+### 2. Determine package state and present task selection
 
-Pass the validated input to the upstream `$hatch-pet` skill. Expect a Codex-compatible pet package containing:
+First, check whether the package already exists at `$HOME/.pethover/pets/<pet-id>/`. The result determines which sub-tasks are independently runnable:
 
-- An **8 × 9 sprite atlas** at 192 px × 208 px per cell (9 behavior rows × 8 frames per row), encoded as either **PNG or WebP** — whichever `$hatch-pet` produced for this pet.
-- A `pet.json` manifest with top-level `id`, `displayName`, `description`, and `spritesheetPath`.
-- The canonical 9-row Codex behavior vocabulary.
+- **New package** (no `pet.json` at the target path) — **sprite** and **PetHover audio** can each run independently from the user's image/text input. **PetHover omni** requires a spritesheet for visual style, so it can only run if the sprite task is also selected in the same run.
+- **Existing package** (valid `pet.json` present, with `spritesheetPath` resolving to an actual file) — all three sub-tasks are independently optional. Re-running sprite replaces the spritesheet and identity; re-running PetHover audio replaces previously generated MP3 clips; re-running PetHover omni replaces omni assets and reads the existing spritesheet for visual style reference.
 
-Use the `$hatch-pet` output package as the base package. Copy its spritesheet into the PetHover package root as `spritesheet.png` or `spritesheet.webp`, matching `$hatch-pet`'s output format. The file name's extension determines the format. Keep the generated manifest fields as the Codex source of truth; the next steps add PetHover metadata.
+Then **present the task checklist to the user** and wait for confirmation before doing any generation. Use a UI affordance that supports multi-select (checkboxes, prompts with multi-pick, etc.). The wording of the options must keep the **PetHover** brand visible for the two PetHover-owned sub-tasks (audio, omni), since those features are specific to the PetHover runtime — codex-compatible consumers ignore them. Use this exact phrasing for the prompt, translated into the user's language:
 
-### 3. Generate display strings
+> Which PetHover generation tasks should I run?
+>   ☐ **Sprite atlas** — codex-compatible spritesheet pet package (via `$hatch-pet`)
+>   ☐ **PetHover audio** — interaction & agent MP3 clips played by the PetHover runtime
+>   ☐ **PetHover omni** — 8-direction body atlas + eye overlay for cursor-aware rendering in PetHover
 
-Use the `$hatch-pet` manifest and the original user input to confirm two short pieces of copy in **English** for the Codex top-level fields:
+For a new package, pre-check **Sprite atlas** and present the two PetHover-branded options as opt-in. For an existing package, present all three unchecked. Disable (or surface a clear message for) the **PetHover omni** option when no spritesheet would be present after this run — i.e. when the existing package lacks `spritesheetPath` *and* the user has not selected sprite atlas. Reject a submission that selects zero tasks with a clear error ("nothing to do").
 
-- **`displayName`** — a friendly, human-readable name for the pet (≤ 24 chars). Distinct from the machine `id` / `name`.
-- **`description`** — a one-sentence summary of the pet's appearance and personality (≤ 140 chars).
+The selected subset drives step 3. Do **not** prompt the user again for sub-task profile choices (e.g. omni `balanced` vs `rich`) unless the user explicitly asked for control; use the defaults documented in each sub-task reference.
 
-Then translate the top-level fields into Chinese: **`pethover.displayNameZh`** is the Chinese translation of `displayName`, and **`pethover.descriptionZh`** is the Chinese translation of `description`. Translations must preserve tone (playful, warm, regal, etc.) and stay within the same length budget — they are translations of the English, not retellings. All four fields are required for PetHover-generated packages; missing any one is a generation failure.
+### 3. Execute selected tasks
 
-The English originals stay in the Codex-compatible top-level fields. The Chinese siblings live under `pethover` — see the schema in step 5.
+The three sub-tasks form a small dependency DAG. Schedule them so independent sub-tasks run **in parallel** from the moment their inputs are available; only block where a real dependency exists.
 
-### 4. Generate audio
+| Sub-task | Inputs | Depends on | Reference |
+|---|---|---|---|
+| Sprite atlas (3a) | Raw user input (image / text) | nothing | [`references/sub-task-sprite.md`](./references/sub-task-sprite.md) |
+| PetHover audio (3b) | Raw user input (image / text) | nothing — derives the target animal class / sound character from the user's input directly, not from sprite output | [`references/sub-task-audio.md`](./references/sub-task-audio.md) |
+| PetHover omni (3c) | A spritesheet (either freshly produced by 3a in this run, *or* read from an existing `pet.json`) | Sprite atlas (3a) if it is also selected; otherwise the existing package's `spritesheetPath` | [`references/sub-task-omni.md`](./references/sub-task-omni.md) |
 
-Using the generated pet identity, synthesize short MP3 clips for the events this package supports. A full PetHover package may include the default 11 clips below; omit keys that are not generated.
+**Concrete scheduling rules.**
 
-**Interaction sounds (5):**
+- If sprite and audio are both selected, they **MUST start together** and run in parallel — audio does not wait for sprite.
+- If omni is selected and sprite is **also** selected, omni waits for sprite to finish, then runs concurrently with whatever else is still running (typically just audio).
+- If omni is selected and sprite is **not** selected, omni reads the existing package's spritesheet for style reference and starts immediately, concurrently with audio.
+- If only one sub-task is selected, run it alone.
 
-| Key | When it plays |
-|---|---|
-| `click` | Single user click |
-| `doubleClick` | Two clicks within the double-click window |
-| `petted` | Rapid repeated clicks |
-| `pettedSlow` | Sustained long-press |
-| `dragLand` | Pet dropped after a drag |
+Each sub-task produces:
 
-**Agent-state sounds (6):**
+1. A set of asset files written under the pet package directory (the spritesheet at the package root for sprite; MP3 clips for audio; omni atlas + eyes for omni).
+2. A **manifest fragment** — a JSON object describing only the keys that sub-task owns. The fragment is held in memory until step 4 (merge).
 
-| Key | When it plays |
-|---|---|
-| `celebrating` | Agent finished a task |
-| `failed` | Agent task failed |
-| `thinking` | Agent reasoning / planning |
-| `editing` | Agent writing code |
-| `inspecting` | Agent reading code |
-| `awaitingApproval` | Agent waiting on user |
+Sub-tasks **MUST NOT** write `pet.json` themselves. They produce assets + an in-memory fragment; the merge step is the sole writer. If a sub-task fails after the others have started, abort the whole run and surface the error — do not write a partial `pet.json`. Any already-written asset files from sibling sub-tasks may be left in place (the next run's merge will reconcile them) but `pet.json` itself must not be touched.
 
-See [`gesture-sound-map.md`](./references/gesture-sound-map.md) for suggested sound *roles* (advisory) and [`audio-asset-format.md`](./references/audio-asset-format.md) for binding asset rules (MP3 only, size cap, loudness target, silence trimming).
+For per-sub-task details (inputs, prompts, output artifacts, manifest fragment shape), read the matching reference doc above before invoking that sub-task.
 
-Save each generated clip under `pethover/audio/`. Filenames are free-form; the manifest references them by relative path. Do not add a manifest key for a missing or failed clip.
+### 4. Merge manifest fragments into `pet.json`
 
-### 5. Write `pet.json`
+The merge collects the fragments produced by the selected sub-tasks (any subset of sprite, audio, omni) into a single `pet.json` at `$HOME/.pethover/pets/<pet-id>/pet.json`. This is the only final output location for the PetHover package.
 
-Write the manifest at `$HOME/.pethover/pets/<pet-id>/pet.json`. Start from the `$hatch-pet` manifest when available, then add or replace only the top-level `pethover` object. The top-level fields must remain Codex-compatible; PetHover extensions must stay inside `pethover`. This is the only final output location for the PetHover package.
+The merge step is also the only writer of `pet.json` and the only point that reconciles the on-disk package directory.
 
-Recommended package schema:
+**Read the full algorithm in [`references/merge-and-validate.md`](./references/merge-and-validate.md).** It covers:
 
-```json
-{
-  "id": "sparky",
-  "displayName": "Sparky",
-  "description": "An energetic orange fox who loves to bounce.",
-  "spritesheetPath": "spritesheet.webp",
-  "frameWidth": 192,
-  "frameHeight": 208,
-  "gridColumns": 8,
-  "gridRows": 9,
-  "pethover": {
-    "schemaVersion": 1,
-    "displayNameZh": "小火花",
-    "descriptionZh": "一只精力旺盛、爱蹦跳的橙色小狐狸。",
-    "audio": {
-      "interactionSounds": {
-        "click":       "pethover/audio/click.mp3",
-        "doubleClick": "pethover/audio/surprised.mp3",
-        "petted":      "pethover/audio/purr.mp3",
-        "pettedSlow":  "pethover/audio/sigh.mp3",
-        "dragLand":    "pethover/audio/wheee.mp3"
-      },
-      "agentSounds": {
-        "celebrating":      "pethover/audio/yay.mp3",
-        "failed":           "pethover/audio/oof.mp3",
-        "thinking":         "pethover/audio/hmm.mp3",
-        "editing":          "pethover/audio/tap.mp3",
-        "inspecting":       "pethover/audio/peek.mp3",
-        "awaitingApproval": "pethover/audio/wait.mp3"
-      }
-    },
-    "behaviors": {
-      "stateRows": {
-        "idle":          { "row": 0, "frames": 6, "durationMs": 1100 },
-        "running-right": { "row": 1, "frames": 8, "durationMs": 1060 },
-        "running-left":  { "row": 2, "frames": 8, "durationMs": 1060 },
-        "waving":        { "row": 3, "frames": 4, "durationMs": 700 },
-        "jumping":       { "row": 4, "frames": 5, "durationMs": 840 },
-        "failed":        { "row": 5, "frames": 8, "durationMs": 1220 },
-        "waiting":       { "row": 6, "frames": 6, "durationMs": 1010 },
-        "running":       { "row": 7, "frames": 6, "durationMs": 820 },
-        "review":        { "row": 8, "frames": 6, "durationMs": 1030 }
-      }
-    }
-  }
-}
-```
+- The fragment ownership matrix (which sub-task owns which manifest keys).
+- The 7-step merge algorithm (read base → apply sprite → apply audio → apply omni → preserve unowned keys → atomic write → reconcile directory).
+- The package directory reconciliation rules (keep-set + deletion rules + empty-directory cleanup + temp-file cleanup) that ensure the final directory contains exactly what the manifest references — no orphaned spritesheets in stale formats, no staging directories, no leftover audio clips from previous runs.
+- The fully-merged package schema as a reference.
 
-All paths are relative to the pet package root (the directory containing `pet.json`). Absolute paths or `../` segments are rejected.
+### 5. Validate the merged manifest
 
-Top-level `displayName` and `description` are required non-empty English strings within the length budgets defined in step 3. `pethover.displayNameZh` must be the Chinese translation of `displayName`; `pethover.descriptionZh` must be the Chinese translation of `description`. Further locales should follow the same suffix pattern, such as `displayNameJa` or `descriptionKo`; do not introduce nested locale objects in this schema version.
+Run all checks on the **merged `pet.json` and the on-disk artifacts together** — not on individual fragments. Validation is the final gate before the skill returns success; a failure here is a generation failure, not a warning. Validation runs even when only one sub-task ran, because the full document must be coherent.
 
-`spritesheetPath` is the Codex-compatible top-level path to the file written in step 2 — either `"spritesheet.png"` or `"spritesheet.webp"` depending on `$hatch-pet`'s output format. Do not duplicate that value as `pethover.spritesheet`.
+**Read the full validation checklist in [`references/merge-and-validate.md`](./references/merge-and-validate.md).** It covers:
 
-All keys under `pethover.audio.interactionSounds` and `pethover.audio.agentSounds` are optional. A missing key means no package-provided sound for that event.
+- Manifest shape checks (JSON well-formed; required top-level fields; PetHover-namespace required fields; schema version; path safety).
+- Sprite artifact checks (file exists, dimensions match frame geometry, stateRows in bounds).
+- Audio artifact checks (file paths resolve under `pethover/audio/`; MP3 format and size).
+- Omni artifact checks (file exists; dimensions; frame geometry matches sprite atlas; omniStateRows bounds; mirror entries resolve; no chains; defaultFacing valid).
+- Eyes artifact checks (file exists; dimensions; all 8 anchors present).
+- **Package cleanliness checks**: the directory contains exactly the files the manifest references — no more, no less. No stale spritesheets, no staging directories, no `.tmp` / `.bak` / `.DS_Store`, no orphaned audio clips.
 
-`pethover.behaviors` is optional metadata for future PetHover behavior support. In schema version 1, `stateRows` mirrors the canonical 9-row Codex vocabulary and may be omitted when the package uses the default rows. If provided, it must not contradict the actual atlas geometry.
-
-### 6. Validate the result
-
-- The spritesheet file referenced by top-level `spritesheetPath` (either `spritesheet.png` or `spritesheet.webp`) exists at the pet package root and matches `$hatch-pet`'s dimensions.
-- Top-level `displayName` and `pethover.displayNameZh` are non-empty strings, each ≤ 24 chars.
-- Top-level `description` and `pethover.descriptionZh` are non-empty strings, each ≤ 140 chars.
-- Every audio path under `pethover.audio` resolves to a file inside `pethover/audio/`.
-- Every audio file is `.mp3`, ≤ 16 MB, and within the loudness target.
-- If `pethover.behaviors.stateRows` is present, every row value is within the atlas bounds and every frame count is positive.
+If any check fails, treat the run as failed and surface the specific failing bullet. Never return success with a partially-valid manifest or an unclean package.
 
 ## Write principle
 
-When creating a new package, write the Codex-compatible top-level fields and the `pethover` section together. When updating an existing package, only overwrite the value of the `pethover` key unless you are filling missing Codex-required fields for a package this skill is creating.
+The merge step (step 4) is the **only place** `pet.json` is written to disk. Sub-tasks emit in-memory fragments; they never write the manifest themselves. This invariant is what makes the parallel execution of any independent sub-tasks (sprite ∥ audio, or audio ∥ omni, or all three respecting omni's dependency on sprite) safe — N concurrent writers to the same `pet.json` would race; N concurrent fragment producers feeding a single serialized merge cannot.
 
 Implementations must:
 
 - Read the existing `pet.json` (treat a missing file as `{}`).
-- Ensure `id`, `displayName`, `description`, and `spritesheetPath` exist for packages this skill creates, preferably copied from the `$hatch-pet` manifest.
-- Replace or set the `pethover` field.
-- Preserve every unrelated top-level key verbatim, including its value and (where practical) its formatting.
-- Write the final package only under `$HOME/.pethover/pets/<pet-id>/`.
+- Apply only the fragments that this run produced. Fields owned by sub-tasks that were not selected are preserved verbatim from the base manifest.
+- Ensure `id`, `displayName`, `description`, and `spritesheetPath` are present in the final manifest. For a new package these come from the sprite fragment; for an existing package they come from the base.
+- Preserve every unrelated top-level key (and every unowned key under `pethover`) verbatim from the base — both value and, where practical, formatting.
+- Write the final package only under `$HOME/.pethover/pets/<pet-id>/`, using a write-temp-then-rename atomic pattern so a crash mid-write never leaves a half-merged manifest.
+- Reconcile the on-disk directory after writing `pet.json`, per the rules in [`references/merge-and-validate.md`](./references/merge-and-validate.md). The package must not ship leftover files.
 
 Never rewrite the whole file from a hard-coded template, and never delete sibling keys whose schema this skill does not own.
 
@@ -214,16 +202,20 @@ Agent sounds have no cooldown coupling — they fire as agent events arrive (sub
 
 ## Anti-patterns
 
-- Don't generate audio before `$hatch-pet` has produced the pet manifest and sprite identity — the audio must reflect the pet's traits.
-- Don't reference files outside the pet package (absolute paths, `../` segments, URLs).
-- Don't put PetHover fields at the top level except for the single `pethover` object.
-- Don't duplicate `spritesheetPath` as a PetHover-only spritesheet field.
-- Don't write the final PetHover package under `$HOME/.codex/pets/`.
-- Don't author long clips. ≤ 1 second is plenty for gesture feedback; longer is fine for ambient agent sounds but rare.
-- Don't include silence padding — trim at generation time.
-- Don't rewrite `pet.json` from a template or delete unowned top-level fields — other ecosystems may share this manifest.
+**Read the full grouped anti-pattern list in [`references/anti-patterns.md`](./references/anti-patterns.md)** — pipeline orchestration, audio sourcing, manifest discipline, package cleanliness, and omni-specific groups.
+
+Three cross-cutting reminders worth keeping in front of you:
+
+- **Don't write `pet.json` from inside a sub-task.** Sub-tasks emit in-memory fragments only; step 4 is the sole writer.
+- **Don't return success before step 5 validates the merged manifest and the on-disk package.** Manifest correctness and package cleanliness are independent checks; both must pass.
+- **Don't generate a "similar" or "themed" character for omni — generate the SAME character as the sprite atlas.** Pass the sprite atlas (or a frame from it) as visual conditioning to the image generator; text-only prompts are insufficient.
 
 ## References
 
-- [`audio-asset-format.md`](./references/audio-asset-format.md) — MP3 format rules, size caps, loudness target, silence trimming, validation notes.
-- [`gesture-sound-map.md`](./references/gesture-sound-map.md) — suggested gesture-to-sound-role mapping (advisory).
+- [`references/sub-task-sprite.md`](./references/sub-task-sprite.md) — Sprite atlas sub-task (3a): `$hatch-pet` invocation, English/Chinese display strings, manifest fragment.
+- [`references/sub-task-audio.md`](./references/sub-task-audio.md) — PetHover audio sub-task (3b): animal-class inference from raw input, vocal palette, 11-clip set, manifest fragment.
+- [`references/sub-task-omni.md`](./references/sub-task-omni.md) — PetHover omni sub-task (3c): character-consistency requirement, image conditioning, layout, mirror declarations, encoding, manifest fragment.
+- [`references/merge-and-validate.md`](./references/merge-and-validate.md) — Step 4 merge algorithm + directory reconciliation rules + step 5 validation checklist + fully-merged schema reference.
+- [`references/anti-patterns.md`](./references/anti-patterns.md) — Full grouped anti-pattern list.
+- [`references/audio-asset-format.md`](./references/audio-asset-format.md) — MP3 format rules, size caps, loudness target, silence trimming, validation notes.
+- [`references/gesture-sound-map.md`](./references/gesture-sound-map.md) — suggested gesture-to-sound-role mapping (advisory).
