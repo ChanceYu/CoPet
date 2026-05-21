@@ -1,0 +1,20 @@
+{
+  "id": "copet",
+  "displayName": "CoPet",
+  "schemaVersion": 1,
+  "interactionSounds": {
+    "click": "click.mp3",
+    "doubleClick": "surprised.mp3",
+    "petted": "purr.mp3",
+    "pettedSlow": "sigh.mp3",
+    "dragLand": "wheee.mp3"
+  },
+  "agentSounds": {
+    "thinking": "hmm.mp3",
+    "editing": "tap.mp3",
+    "inspecting": "peek.mp3",
+    "awaitingApproval": "wait.mp3",
+    "celebrating": "yay.mp3",
+    "failed": "oof.mp3"
+  }
+}
