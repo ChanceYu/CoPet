@@ -1,7 +1,6 @@
 {
   "id": "celebrate-confetti",
   "displayName": "Confetti Burst",
-  "displayNameZh": "彩纸爆炸",
   "schemaVersion": 1,
   "kind": "burst",
   "slot": "over",

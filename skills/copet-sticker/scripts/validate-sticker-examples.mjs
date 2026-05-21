@@ -40,7 +40,6 @@ const emotionStates = new Set([
 const allowedTopLevelKeys = new Set([
   "id",
   "displayName",
-  "displayNameZh",
   "schemaVersion",
   "kind",
   "slot",
@@ -178,7 +177,6 @@ function validateManifest(manifest, label) {
   assertString(manifest.id, `${label}.id`);
   assert(/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(manifest.id), `${label}.id must be kebab-case`);
   assertString(manifest.displayName, `${label}.displayName`);
-  assertString(manifest.displayNameZh, `${label}.displayNameZh`);
   assert(manifest.schemaVersion === 1, `${label}.schemaVersion must be 1`);
   assert(["persistent", "burst"].includes(manifest.kind), `${label}.kind must be persistent or burst`);
   assert(["behind", "over", "corner"].includes(manifest.slot), `${label}.slot must be behind, over, or corner`);

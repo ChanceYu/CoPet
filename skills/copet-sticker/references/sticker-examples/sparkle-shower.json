@@ -1,7 +1,6 @@
 {
   "id": "sparkle-shower",
   "displayName": "Sparkle Shower",
-  "displayNameZh": "星光雨",
   "schemaVersion": 1,
   "kind": "persistent",
   "slot": "over",

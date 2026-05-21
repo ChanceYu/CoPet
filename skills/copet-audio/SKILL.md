@@ -17,7 +17,7 @@ Every shipped MP3 must come from a real audio-generation backend, text-to-speech
 $HOME/.copet/
 └── audios/
     └── <audio-pack-id>/
-        ├── audio-pack.json
+        ├── audio.json
         ├── click.mp3
         ├── surprised.mp3
         ├── purr.mp3
@@ -53,20 +53,20 @@ Determine the response language before showing user-facing text:
 - Image-only input: use the current conversation language, or the user's latest message language if the conversation language is unclear.
 - Mixed-language input: use the language that carries the request intent.
 
-Render validation rejections, clarifying questions, failure reports, and success summaries in that language. Do not localize machine-readable values: directory names, filenames, JSON keys, enum values, `id`, and fixed manifest structure stay exactly as specified. `displayName` remains a short English name and `displayNameZh` remains a natural Chinese name because both are schema fields.
+Render validation rejections, clarifying questions, failure reports, and success summaries in that language. Do not localize machine-readable values: directory names, filenames, JSON keys, enum values, `id`, and fixed manifest structure stay exactly as specified. `displayName` remains a short English name because it is a schema field.
 
 ## Workflow
 
 1. Validate the input.
 2. Infer animal class, object class, material, size, energy, personality, and voice character from the raw user input.
-3. Derive `displayName`, `displayNameZh`, and `id`.
-4. Create one empty staging directory:
+3. Derive `displayName` and `id`.
+4. Create one empty staging directory in the caller's default writable temporary directory:
 
-```text
-$HOME/.copet/tmp/audios-<unix-epoch>-<audio-pack-id>/
+```sh
+STAGING_DIR=$(mktemp -d "${TMPDIR:-/tmp}/copet-audios-<audio-pack-id>.XXXXXX")
 ```
 
-Create `$HOME/.copet/tmp/` if needed. The live `$HOME/.copet/audios/<audio-pack-id>/` directory is read-only until validation passes.
+Do not stage under `$HOME/.copet/tmp/`; that can trigger config-directory authorization before validation. The live `$HOME/.copet/audios/<audio-pack-id>/` directory is read-only until validation passes.
 
 5. Generate exactly 11 authored MP3 clips:
 
@@ -84,9 +84,9 @@ Create `$HOME/.copet/tmp/` if needed. The live `$HOME/.copet/audios/<audio-pack-
 | `agentSounds.celebrating` | `yay.mp3` |
 | `agentSounds.failed` | `oof.mp3` |
 
-6. Compose `audio-pack.json` in the staging root using `references/audio-pack-schema.md`.
+6. Compose `audio.json` in the staging root using `references/audio-pack-schema.md`.
 7. Validate the full staging directory before promotion.
-8. On success, atomically rename staging to:
+8. On success, promote staging to:
 
 ```text
 $HOME/.copet/audios/<audio-pack-id>/
@@ -105,7 +105,7 @@ If the required backend is unavailable or the output cannot satisfy the discipli
 ## References
 
 - `references/audio-pack-generation.md` - detailed audio pack workflow.
-- `references/audio-pack-schema.md` - `audio-pack.json` schema and validation.
+- `references/audio-pack-schema.md` - `audio.json` schema and validation.
 - `references/audio-asset-format.md` - MP3 format guidance.
 - `references/gesture-sound-map.md` - advisory interaction sound roles.
 - `references/anti-patterns.md` - hard failure rules.

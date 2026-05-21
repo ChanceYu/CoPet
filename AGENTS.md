@@ -64,6 +64,7 @@ Examples:
 - Do not force-add ignored files. Never use `git add -f` or `git add --force` unless the user explicitly names the ignored file and asks for it to be tracked.
 - Respect `.gitignore` as authoritative.
 - Before every commit, check `git diff --cached --name-status` and verify the staged files match the user-requested scope.
+- Before every commit, you must explicitly check every staged path against ignore rules with `git check-ignore -v --no-index -- <path>`. This check is mandatory and cannot be skipped, waived, inferred from `git status`, or replaced with any other form of reasoning. If any staged path matches `.gitignore` or another ignore source, stop and do not commit until the ignored path is unstaged or the user explicitly changes the ignore rules.
 
 ### 7. Definition of done
 

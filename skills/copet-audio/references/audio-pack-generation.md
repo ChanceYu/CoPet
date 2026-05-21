@@ -32,20 +32,19 @@ Forbidden substitutes include:
 Derive:
 
 - `displayName`: short English name for the pack.
-- `displayNameZh`: natural Chinese display name.
 - `id`: kebab-case slug from `displayName`.
 
 If `$HOME/.copet/audios/<id>/` already exists, append `-2`, `-3`, and continue until the final destination is unique.
 
 ## Staging
 
-Write all in-flight files to:
+Write all in-flight files to a staging directory in the caller's default writable temporary directory:
 
-```text
-$HOME/.copet/tmp/audios-<unix-epoch>-<audio-pack-id>/
+```sh
+STAGING_DIR=$(mktemp -d "${TMPDIR:-/tmp}/copet-audios-<audio-pack-id>.XXXXXX")
 ```
 
-Create `$HOME/.copet/tmp/` if needed. The live `$HOME/.copet/audios/<audio-pack-id>/` directory is read-only until validation passes.
+Do not stage under `$HOME/.copet/tmp/`; that can trigger config-directory authorization before validation. The live `$HOME/.copet/audios/<audio-pack-id>/` directory is read-only until validation passes.
 
 ## Audio target inference
 
@@ -77,19 +76,18 @@ Generate exactly 11 MP3 clips:
 | `agentSounds.celebrating` | `yay.mp3` |
 | `agentSounds.failed` | `oof.mp3` |
 
-Interaction clips should be short and reactive. Agent clips can be a little softer and more ambient, but still compact.
+Target each clip at 1-2 seconds after trimming leading and trailing silence. Interaction clips should stay reactive; agent clips can be a little softer and more ambient, but still compact.
 
 Read `audio-asset-format.md` for MP3 format, loudness, trimming, and size recommendations. Read `gesture-sound-map.md` for advisory interaction sound roles.
 
 ## Manifest
 
-Compose `audio-pack.json` in the staging root:
+Compose `audio.json` in the staging root:
 
 ```json
 {
   "id": "playful-fox",
   "displayName": "Playful Fox",
-  "displayNameZh": "顽皮狐狸",
   "schemaVersion": 1,
   "interactionSounds": {
     "click": "click.mp3",
@@ -109,16 +107,16 @@ Compose `audio-pack.json` in the staging root:
 }
 ```
 
-Use the actual derived `id`, `displayName`, and `displayNameZh`; keep the fixed filenames and key structure.
+Use the actual derived `id` and `displayName`; keep the fixed filenames and key structure.
 
 ## Validate and promote
 
 Before promotion, validate the staging directory with `audio-pack-schema.md`.
 
-On success, atomically rename:
+On success, promote:
 
 ```text
-$HOME/.copet/tmp/audios-<unix-epoch>-<audio-pack-id>/
+$STAGING_DIR/
 ```
 
 to:

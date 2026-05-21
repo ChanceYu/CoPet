@@ -1,7 +1,6 @@
 {
   "id": "heart-burst",
   "displayName": "Heart Burst",
-  "displayNameZh": "爱心绽放",
   "schemaVersion": 1,
   "kind": "burst",
   "slot": "corner",

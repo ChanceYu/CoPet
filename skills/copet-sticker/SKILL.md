@@ -43,26 +43,26 @@ Determine the response language before showing user-facing text:
 - Image-only input: use the current conversation language, or the user's latest message language if the conversation language is unclear.
 - Mixed-language input: use the language that carries the request intent.
 
-Render validation rejections, clarifying questions, failure reports, and success summaries in that language. Do not localize machine-readable values: directory names, filenames, JSON keys, enum values, `id`, `animationPath`, and fixed manifest structure stay exactly as specified. `displayName` remains a short English name and `displayNameZh` remains a natural Chinese name because both are schema fields.
+Render validation rejections, clarifying questions, failure reports, and success summaries in that language. Do not localize machine-readable values: directory names, filenames, JSON keys, enum values, `id`, `animationPath`, and fixed manifest structure stay exactly as specified. `displayName` remains a short English name because it is a schema field.
 
 ## Workflow
 
 1. Validate the input before staging or generation.
 2. Classify `kind`, `slot`, and `trigger` or `visibility` with `references/sticker-classification.md`.
 3. If the input is ambiguous, ask exactly one clarifying question in the response language. The question must ask whether the sticker should be a one-shot burst for a specific moment or a persistent decoration that stays visible across states. Do not reuse English wording for non-English requests.
-4. Derive `displayName`, `displayNameZh`, and `id`.
-5. Create one empty staging directory:
+4. Derive `displayName` and `id`.
+5. Create one empty staging directory in the caller's default writable temporary directory:
 
-```text
-$HOME/.copet/tmp/stickers-<unix-epoch>-<sticker-id>/
+```sh
+STAGING_DIR=$(mktemp -d "${TMPDIR:-/tmp}/copet-stickers-<sticker-id>.XXXXXX")
 ```
 
-Create `$HOME/.copet/tmp/` if needed. The live `$HOME/.copet/stickers/<sticker-id>/` directory is read-only until validation passes.
+Do not stage under `$HOME/.copet/tmp/`; that can trigger config-directory authorization before validation. The live `$HOME/.copet/stickers/<sticker-id>/` directory is read-only until validation passes.
 
 6. Emit `animation.svg` directly as SVG XML in one authoring pass. Read `references/svg-authoring.md` before authoring. Programmatic SVG assembly is forbidden.
 7. Compose `sticker.json` in the staging root. `kind="burst"` requires `trigger` and forbids `visibility`; `kind="persistent"` requires `visibility` and forbids `trigger`.
 8. Validate the full staging directory before promotion.
-9. On success, atomically rename staging to:
+9. On success, promote staging to:
 
 ```text
 $HOME/.copet/stickers/<sticker-id>/

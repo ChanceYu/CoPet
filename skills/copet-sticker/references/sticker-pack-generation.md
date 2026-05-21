@@ -38,20 +38,19 @@ Do not guess.
 Derive:
 
 - `displayName`: short English name for the sticker.
-- `displayNameZh`: natural Chinese display name.
 - `id`: kebab-case slug from `displayName`.
 
 If `$HOME/.copet/stickers/<id>/` already exists, append `-2`, `-3`, and continue until the final destination is unique.
 
 ## Staging
 
-Write all in-flight files to:
+Write all in-flight files to a staging directory in the caller's default writable temporary directory:
 
-```text
-$HOME/.copet/tmp/stickers-<unix-epoch>-<sticker-id>/
+```sh
+STAGING_DIR=$(mktemp -d "${TMPDIR:-/tmp}/copet-stickers-<sticker-id>.XXXXXX")
 ```
 
-Create `$HOME/.copet/tmp/` if needed. The live `$HOME/.copet/stickers/<sticker-id>/` directory is read-only until validation passes.
+Do not stage under `$HOME/.copet/tmp/`; that can trigger config-directory authorization before validation. The live `$HOME/.copet/stickers/<sticker-id>/` directory is read-only until validation passes.
 
 ## Generate `animation.svg`
 
@@ -81,7 +80,6 @@ For a burst sticker:
 {
   "id": "celebrate-confetti",
   "displayName": "Confetti Burst",
-  "displayNameZh": "彩纸爆炸",
   "schemaVersion": 1,
   "kind": "burst",
   "slot": "over",
@@ -100,7 +98,6 @@ For a persistent sticker:
 {
   "id": "snow-persistent",
   "displayName": "Soft Snow",
-  "displayNameZh": "柔雪",
   "schemaVersion": 1,
   "kind": "persistent",
   "slot": "behind",
@@ -136,10 +133,10 @@ Before promotion, validate:
 - Decoration-only subject boundary.
 - Staging directory cleanliness: exactly `sticker.json` and `animation.svg`.
 
-On success, atomically rename:
+On success, promote:
 
 ```text
-$HOME/.copet/tmp/stickers-<unix-epoch>-<sticker-id>/
+$STAGING_DIR/
 ```
 
 to:

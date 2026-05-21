@@ -1,7 +1,6 @@
 {
   "id": "halo-glow",
   "displayName": "Halo Glow",
-  "displayNameZh": "光环辉光",
   "schemaVersion": 1,
   "kind": "persistent",
   "slot": "behind",

@@ -1,7 +1,6 @@
 {
   "id": "snow-persistent",
   "displayName": "Soft Snow",
-  "displayNameZh": "柔雪",
   "schemaVersion": 1,
   "kind": "persistent",
   "slot": "behind",

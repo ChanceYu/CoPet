@@ -4,7 +4,7 @@ Rules **established by `copet-audio`** (no upstream source). Source of truth for
 
 ## Formats
 
-**MP3 only.** Every file declared by `audio-pack.json` must be `.mp3` (MPEG-1 Layer 3). No other container or codec is accepted. In v1, all MP3 files live beside `audio-pack.json` at the audio pack root; nested audio paths are invalid.
+**MP3 only.** Every file declared by `audio.json` must be `.mp3` (MPEG-1 Layer 3). No other container or codec is accepted. In v1, all MP3 files live beside `audio.json` at the audio pack root; nested audio paths are invalid.
 
 The webview decodes via the HTML5 `<audio>` element.
 
@@ -18,7 +18,7 @@ Encoding recommendations:
 
 Per file: **16 MB**. Mirrors the CoPet spritesheet cap — a single sound file should never exceed what a single sprite atlas may.
 
-A typical short interaction sound (≤ 1 second, mono, MP3 @ 64 kbps) is ~8 KB. Anything in the hundreds of KB warrants a second look.
+A typical short interaction sound (1-2 seconds, mono, MP3 @ 64 kbps) is usually under 20 KB. Anything in the hundreds of KB warrants a second look.
 
 ## Loudness
 

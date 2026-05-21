@@ -1,6 +1,6 @@
 # Audio Pack Schema
 
-**Read this when:** composing or validating `audio-pack.json` for a global CoPet audio pack.
+**Read this when:** composing or validating `audio.json` for a global CoPet audio pack.
 
 Audio packs live under `$HOME/.copet/audios/<audio-pack-id>/`. They are self-contained and never merge into a pet package.
 
@@ -8,7 +8,7 @@ Audio packs live under `$HOME/.copet/audios/<audio-pack-id>/`. They are self-con
 
 ```text
 $HOME/.copet/audios/<audio-pack-id>/
-├── audio-pack.json
+├── audio.json
 ├── click.mp3
 ├── surprised.mp3
 ├── purr.mp3
@@ -30,7 +30,6 @@ $HOME/.copet/audios/<audio-pack-id>/
 {
   "id": "playful-fox",
   "displayName": "Playful Fox",
-  "displayNameZh": "顽皮狐狸",
   "schemaVersion": 1,
   "interactionSounds": {
     "click": "click.mp3",
@@ -56,7 +55,6 @@ Top-level keys are exactly:
 
 - `id`
 - `displayName`
-- `displayNameZh`
 - `schemaVersion`
 - `interactionSounds`
 - `agentSounds`
@@ -84,8 +82,8 @@ Each value is a path relative to the audio pack root. All paths must end in `.mp
 
 ## Validation checklist
 
-- `audio-pack.json` parses as JSON.
-- `id`, `displayName`, `displayNameZh`, `schemaVersion`, `interactionSounds`, and `agentSounds` are present.
+- `audio.json` parses as JSON.
+- `id`, `displayName`, `schemaVersion`, `interactionSounds`, and `agentSounds` are present.
 - No unexpected top-level key is present.
 - `schemaVersion === 1`.
 - `id` is kebab-case.
@@ -94,5 +92,5 @@ Each value is a path relative to the audio pack root. All paths must end in `.mp
 - Every declared MP3 file exists inside the staging root.
 - Every declared path is relative, has no directory separators, contains no `..`, and ends in `.mp3`.
 - Every MP3 file is at most 16 MB.
-- The staging directory contains exactly `audio-pack.json` and the 11 declared MP3 files.
+- The staging directory contains exactly `audio.json` and the 11 declared MP3 files.
 - No `.tmp`, `.bak`, `.swp`, `.DS_Store`, `.hatch-run`, `.hatch-codex`, or stray source file is present.

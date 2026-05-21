@@ -1,0 +1,4 @@
+interface:
+  display_name: "CoPet Gen"
+  short_description: "Create CoPet pet packages"
+  default_prompt: "Use $copet-gen to create a CoPet pet package and install it into the CoPet app, using hatch-pet subagents as needed."

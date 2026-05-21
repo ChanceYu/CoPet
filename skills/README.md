@@ -2,20 +2,25 @@
 
 CoPet-specific skill packages. Each skill documents one global CoPet pack type and is installable on its own.
 
-Today there are two CoPet skills:
+Today there are three CoPet skills:
 
 - [`copet-audio`](./copet-audio/SKILL.md) creates global 11-clip MP3 audio packs.
+- [`copet-gen`](./copet-gen/SKILL.md) creates CoPet pet packages by delegating generation to `$hatch-pet`, allowing its subagents, and installing the result.
 - [`copet-sticker`](./copet-sticker/SKILL.md) creates decorative animated SVG sticker packs.
 
-These skills do not generate pet spritesheets, omni directional body atlases, pet packages, or `pet.json`. For a fresh Codex-compatible pet spritesheet, use the upstream `$hatch-pet` skill instead.
+Only `copet-gen` installs pet spritesheets and `pet.json`; it does so by requiring the upstream `$hatch-pet` skill to generate and validate the source package first.
 
 ## Global Package Layout
 
 ```text
 $HOME/.copet/
+├── pets/
+│   └── <pet-id>/
+│       ├── pet.json
+│       └── spritesheet.webp
 ├── audios/
 │   └── <audio-pack-id>/
-│       ├── audio-pack.json
+│       ├── audio.json
 │       ├── click.mp3
 │       ├── surprised.mp3
 │       ├── purr.mp3
@@ -39,7 +44,8 @@ Pack ids are kebab-case slugs derived from `displayName`. If a slug collides in 
 
 | Folder | `name` | `displayName` | Owns |
 |---|---|---|---|
-| [`copet-audio/`](./copet-audio/SKILL.md) | `copet-audio` | CoPet Audio | `$HOME/.copet/audios/<audio-pack-id>/`, `audio-pack.json`, and the 11 required MP3 clips. |
+| [`copet-audio/`](./copet-audio/SKILL.md) | `copet-audio` | CoPet Audio | `$HOME/.copet/audios/<audio-pack-id>/`, `audio.json`, and the 11 required MP3 clips. |
+| [`copet-gen/`](./copet-gen/SKILL.md) | `copet-gen` | CoPet Gen | `$HOME/.copet/pets/<pet-id>/`, `pet.json`, and `spritesheet.webp` copied from a completed `$hatch-pet` package. |
 | [`copet-sticker/`](./copet-sticker/SKILL.md) | `copet-sticker` | CoPet Sticker | `$HOME/.copet/stickers/<sticker-id>/`, `sticker.json`, and `animation.svg`. |
 
 ## Single-Responsibility Policy

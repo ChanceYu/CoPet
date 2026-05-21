@@ -11,7 +11,8 @@ Each "Don't" is a hard rule. Violating it is a failed run.
 - Don't generate audio packs, sprite atlases, omni directional body atlases, pet packages, pet body art, or `pet.json`.
 - Don't read or write `$HOME/.copet/pets/`.
 - Don't write into the live `$HOME/.copet/stickers/` directory before validation passes.
-- Don't promote staging via copy-and-delete. Promotion is a directory rename.
+- Don't create staging under `$HOME/.copet/tmp/`; use the caller's default writable temporary directory instead.
+- Don't leave a partial live directory behind if promotion fails.
 - Don't delete staging on failure. Leave it available for debugging.
 
 ## Sticker Packs

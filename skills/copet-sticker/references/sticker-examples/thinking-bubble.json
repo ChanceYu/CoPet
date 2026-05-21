@@ -1,7 +1,6 @@
 {
   "id": "thinking-bubble",
   "displayName": "Thinking Bubble",
-  "displayNameZh": "思考泡泡",
   "schemaVersion": 1,
   "kind": "burst",
   "slot": "corner",
