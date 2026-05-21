@@ -62,6 +62,26 @@ test("agent integration switch stays off and shows a toast when install fails", 
   });
 });
 
+test("agent integration config path abbreviates mac home paths", async ({ browser }) => {
+  const harness = await createAppHarness(browser, {
+    adapters: [
+      {
+        ...codexAdapter,
+        configPath: "/Users/elu/.codex/hooks.json",
+        installed: true,
+        healthy: true,
+        message: "CoPet hook installed",
+      },
+    ],
+  });
+  const page = await harness.openPage("settings");
+  await page.getByRole("tab", { name: "Agents" }).click();
+
+  const configPath = page.locator(".adapter-config-path");
+  await expect(configPath.locator("code")).toHaveText("~/.codex/hooks.json");
+  await expect(configPath).toHaveAttribute("title", "/Users/elu/.codex/hooks.json");
+});
+
 test("settings page uses Chinese copy from app locale", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
     state: {

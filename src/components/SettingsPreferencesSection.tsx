@@ -25,6 +25,8 @@ import { Switch } from "./ui/switch";
 
 import type { Translator } from "../lib/settingsTypes";
 
+const SUCCESS_TOAST_DURATION_MS = 1800;
+
 interface SettingsPreferencesSectionProps {
   agentMessageDisplay: AgentMessageDisplay;
   setAgentMessageDisplay: (next: AgentMessageDisplay) => void;
@@ -120,7 +122,7 @@ export function SettingsPreferencesSection({
         toast.error(errorMessage);
         return;
       }
-      toast.success(t("resetPositionSuccess"));
+      toast.success(t("resetPositionSuccess"), { duration: SUCCESS_TOAST_DURATION_MS });
     } finally {
       setResetting(false);
     }

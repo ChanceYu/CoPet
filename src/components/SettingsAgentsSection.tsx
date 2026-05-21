@@ -127,7 +127,7 @@ export function SettingsAgentsSection({
                         <span className="adapter-config-path-label">
                           {t("agentConfigPathLabel")}
                         </span>
-                        <code>{adapter.configPath}</code>
+                        <code>{formatAdapterConfigPath(adapter.configPath)}</code>
                       </span>
                     ) : null}
                   </div>
@@ -180,4 +180,10 @@ function renderFootnoteWithLink(
       {after}
     </>
   );
+}
+
+function formatAdapterConfigPath(configPath: string): string {
+  const match = /^\/Users\/[^/]+(?:\/(.*))?$/.exec(configPath);
+  if (!match) return configPath;
+  return match[1] ? `~/${match[1]}` : "~";
 }

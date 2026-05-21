@@ -64,7 +64,7 @@ const messages = {
     settingsDescription: "Toggle each agent CLI integration on or off.",
     settingsNavLabel: "Settings sections",
     showPet: "Show pet",
-    size: "Size",
+    size: "Pet size",
     zhCn: "中文",
   },
   "zh-CN": {
@@ -129,7 +129,7 @@ const messages = {
     settingsDescription: "为每个 Agent CLI 开启或关闭集成",
     settingsNavLabel: "设置分区",
     showPet: "显示宠物",
-    size: "尺寸",
+    size: "宠物尺寸",
     zhCn: "中文",
   },
 } as const;

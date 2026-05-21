@@ -63,7 +63,10 @@ test("Reset position invokes reset_pet_window_position and shows success toast",
   await page.getByRole("tab", { name: "General" }).click();
   await page.getByRole("button", { name: "Reset position" }).click();
 
-  await expect(page.getByText("Pet returned to the bottom-right.")).toBeVisible();
+  const successToast = page.getByText("Pet returned to the bottom-right.");
+  await expect(successToast).toBeVisible();
+  await page.waitForTimeout(2500);
+  await expect(successToast).toHaveCount(0, { timeout: 100 });
   expect(harness.calls).toContainEqual({
     command: "reset_pet_window_position",
     args: {},
