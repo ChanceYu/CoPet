@@ -417,6 +417,25 @@ test("import local button opens a native directory dialog", async ({ browser }) 
   });
 });
 
+test("settings tip box presents custom pet guidance without an import button", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser);
+  const page = await harness.openPage("settings");
+
+  await expect(
+    page.getByRole("heading", { name: "Create your own pet" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Bring your imagination to life. Create or import your own Codex-compatible pet package.",
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Import package" }),
+  ).toHaveCount(0);
+});
+
 test("invalid local pet folder shows a toast and skips import", async ({ browser }) => {
   const harness = await createAppHarness(browser);
   const page = await harness.openPage("settings");

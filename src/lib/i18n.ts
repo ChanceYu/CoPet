@@ -63,6 +63,9 @@ const messages = {
     resetPositionSuccess: "Pet returned to the bottom-right.",
     settingsDescription: "Toggle each agent CLI integration on or off.",
     settingsNavLabel: "Settings sections",
+    settingsTipDescription:
+      "Bring your imagination to life. Create or import your own Codex-compatible pet package.",
+    settingsTipTitle: "Create your own pet",
     showPet: "Show pet",
     size: "Pet size",
     zhCn: "中文",
@@ -128,6 +131,9 @@ const messages = {
     resetPositionSuccess: "桌面宠物已回到屏幕右下方",
     settingsDescription: "为每个 Agent CLI 开启或关闭集成",
     settingsNavLabel: "设置分区",
+    settingsTipDescription:
+      "让想象力变成桌面伙伴。创建或导入你自己的 Codex 兼容宠物包",
+    settingsTipTitle: "创建你的宠物",
     showPet: "显示宠物",
     size: "宠物尺寸",
     zhCn: "中文",

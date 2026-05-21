@@ -400,6 +400,97 @@ select {
   white-space: nowrap;
 }
 
+.settings-tip-box {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex: 0 1 430px;
+  flex-direction: column;
+  min-height: 340px;
+  height: clamp(340px, calc(100vh - 318px), 430px);
+  margin: auto 6px 14px;
+  padding: 24px 16px 10px;
+  overflow: hidden;
+  border: 1px solid hsl(216 86% 88% / 0.95);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 14% 8%, hsl(198 100% 91% / 0.56), transparent 36%),
+    radial-gradient(circle at 90% 4%, hsl(300 94% 94% / 0.78), transparent 44%),
+    linear-gradient(180deg, hsl(220 100% 99.4%), hsl(283 100% 98%));
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.9),
+    0 12px 24px hsl(226 54% 12% / 0.035);
+}
+
+.settings-tip-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+}
+
+.settings-tip-title {
+  max-width: 124px;
+  margin: 0;
+  color: hsl(226 54% 12%);
+  font-size: 19px;
+  font-weight: 760;
+  letter-spacing: 0;
+  line-height: 1.32;
+}
+
+.settings-tip-description {
+  margin: 18px 0 0;
+  color: hsl(226 18% 48%);
+  font-size: 13px;
+  font-weight: 560;
+  line-height: 1.56;
+}
+
+.settings-tip-media {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 0;
+  margin: 14px -16px 0;
+  pointer-events: none;
+}
+
+.settings-tip-img {
+  width: min(160px, calc(100% + 8px));
+  max-width: none;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 18px hsl(226 54% 12% / 0.08));
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+@media (max-height: 680px) {
+  .settings-tip-box {
+    min-height: 300px;
+    height: clamp(300px, calc(100vh - 304px), 390px);
+    padding-top: 18px;
+  }
+
+  .settings-tip-description {
+    margin-top: 12px;
+    line-height: 1.48;
+  }
+
+  .settings-tip-media {
+    margin-top: 10px;
+  }
+
+  .settings-tip-img {
+    width: min(138px, calc(100% + 4px));
+  }
+}
+
 .settings-section {
   grid-row: 2;
   grid-column: 2;

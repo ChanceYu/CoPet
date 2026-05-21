@@ -10,6 +10,7 @@ import { ErrorView, LoadingView } from "./components/AppShell";
 import { SettingsAboutSection } from "./components/SettingsAboutSection";
 import { SettingsAgentsSection } from "./components/SettingsAgentsSection";
 import { SettingsNav } from "./components/SettingsNav";
+import { SettingsTipBox } from "./components/SettingsTipBox";
 import { SettingsPetsSection } from "./components/SettingsPetsSection";
 import { SettingsPreferencesSection } from "./components/SettingsPreferencesSection";
 import { SettingsSectionHost } from "./components/SettingsSectionHost";
@@ -195,6 +196,7 @@ export function SettingsWindow() {
             panelId={SETTINGS_PANEL_ID}
             t={t}
           />
+          <SettingsTipBox t={t} />
         </aside>
 
         <header
