@@ -2,7 +2,7 @@
 
 [简体中文](./architecture.zh.md)
 
-CoPet is a Tauri-based desktop pet client for AI Agent CLI workflows including Claude Code, Codex, Gemini, and OpenCode. The app ships with a built-in pet that's available on first launch; enabling any Agent CLI from Settings causes CoPet to write that CLI's hooks and map its lifecycle events into a layered pet state.
+CoPet is a Tauri-based desktop pet client for AI Agent CLI workflows including Claude Code, Codex, Gemini, and OpenCode. The app ships with a built-in pet that's available on first launch. On first startup, CoPet checks for supported Agent CLI executables and automatically writes hooks for detected agents; after that, Settings remains the manual source of truth for enabling, disabling, and repairing hooks. CoPet maps Agent lifecycle events into a layered pet state.
 
 ## Overall structure
 
@@ -43,7 +43,7 @@ All CoPet-owned data lives under `~/.copet`:
 
 ```text
 ~/.copet/
-  config.json          # prefs: active pet, enabled adapters, window size, locale
+  config.json          # preferences and one-time migration flags
   runtime/             # volatile runtime (token, logs, diagnostics) — rebuildable
   pets/                # user-installed pets (incl. copies imported from ~/.codex/pets)
   backups/<adapter>/   # original bytes captured before any CLI config edit
@@ -99,6 +99,8 @@ trait AgentAdapter {
 ```
 
 Adapters are responsible for: resolving platform-specific config paths; parsing existing config without dropping user settings; writing only CoPet-owned entries (with a stable id); backing originals up to `~/.copet/backups/<adapter-id>/` before modification; and recording metadata to `~/.copet/adapters/<id>.json`. Core is responsible for: generating the hook command, providing the runtime endpoint/token, mapping events to state, and localizing errors.
+
+Startup auto-install is executable-based, not config-file-based: CoPet checks adapter `executable_names()` once per config directory, installs hooks for detected CLIs that are not already installed, records completion in `config.json`, and does not auto-install again after a user manually disables an adapter.
 
 Default config locations: Claude Code → `~/.claude/settings.json`; Codex → `~/.codex/hooks.json` + `config.toml`; Gemini → per the official docs; OpenCode honors `OPENCODE_CONFIG_DIR` / `XDG_CONFIG_HOME`.
 

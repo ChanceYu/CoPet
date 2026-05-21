@@ -2,7 +2,7 @@
 
 [English](./architecture.md)
 
-CoPet 是基于 Tauri 的桌面电子宠物客户端，面向 Claude Code、Codex、Gemini、OpenCode 等 Agent CLI 工作流。应用首次启动可使用内置宠物；在设置中启用任一 Agent CLI 后，CoPet 写入对应 CLI 的 hooks，并把 Agent 生命周期事件映射为分层宠物状态。
+CoPet 是基于 Tauri 的桌面电子宠物客户端，面向 Claude Code、Codex、Gemini、OpenCode 等 Agent CLI 工作流。应用首次启动可使用内置宠物；首次启动时，CoPet 会检查受支持 Agent CLI 的可执行文件，并为检测到的 Agent 自动写入 hooks；之后设置页仍是启用、关闭和修复 hooks 的手动入口。CoPet 会把 Agent 生命周期事件映射为分层宠物状态。
 
 ## 总体结构
 
@@ -43,7 +43,7 @@ CoPet 所有自有数据放在 `~/.copet`：
 
 ```text
 ~/.copet/
-  config.json          # 偏好：当前宠物、已启用 adapters、窗口尺寸、locale
+  config.json          # 偏好与一次性迁移标记
   runtime/             # 易变运行时（token、日志、诊断快照），可重建
   pets/                # 用户安装的宠物（含从 ~/.codex/pets 导入的副本）
   backups/<adapter>/   # 修改 CLI 配置前的原始字节快照
@@ -99,6 +99,8 @@ trait AgentAdapter {
 ```
 
 Adapter 负责：解析平台相关配置路径、解析已有配置且不丢弃用户设置、只写入带稳定 id 的 CoPet 条目、修改前备份到 `~/.copet/backups/<adapter-id>/`、记录元数据到 `~/.copet/adapters/<id>.json`。Core 负责：生成 hook command、提供 runtime endpoint/token、事件状态映射、错误本地化。
+
+启动期自动安装基于可执行文件检测，而不是配置文件检测：CoPet 对每个配置目录只检查一次 adapter 的 `executable_names()`，为检测到且尚未安装 CoPet hook 的 CLI 写入 hooks，在 `config.json` 记录完成状态，并且不会在用户手动关闭某个 adapter 后再次自动写回。
 
 各 adapter 默认配置位置：Claude Code → `~/.claude/settings.json`；Codex → `~/.codex/hooks.json` + `config.toml`；Gemini 按官方文档解析；OpenCode 尊重 `OPENCODE_CONFIG_DIR` / `XDG_CONFIG_HOME`。
 
