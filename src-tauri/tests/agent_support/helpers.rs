@@ -14,10 +14,18 @@ pub fn manager_with_fake_agents(
     root: impl Into<PathBuf>,
     home: impl Into<PathBuf>,
 ) -> AgentManager {
+    manager_with_fake_agent_names(root, home, &["claude", "codex", "gemini", "opencode"])
+}
+
+pub fn manager_with_fake_agent_names(
+    root: impl Into<PathBuf>,
+    home: impl Into<PathBuf>,
+    executables: &[&str],
+) -> AgentManager {
     let temp = tempfile::tempdir().unwrap();
     let bin = temp.keep().join("bin");
     fs::create_dir_all(&bin).unwrap();
-    for executable in ["claude", "codex", "gemini", "opencode"] {
+    for executable in executables {
         let path = bin.join(executable);
         fs::write(&path, "#!/bin/sh\nexit 0\n").unwrap();
         #[cfg(unix)]

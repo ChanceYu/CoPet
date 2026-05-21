@@ -35,6 +35,19 @@ pub struct AdapterOperationResult {
     pub adapter: AdapterSummary,
 }
 
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct AutoInstallSummary {
+    pub installed: Vec<String>,
+    pub skipped: Vec<String>,
+    pub failed: Vec<AutoInstallFailure>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AutoInstallFailure {
+    pub adapter_id: String,
+    pub error: String,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum AdapterError {
     #[error("unknown adapter '{0}'")]
@@ -153,6 +166,43 @@ impl AgentManager {
         self.install(id)
     }
 
+    pub fn auto_install_detected_agents(&self) -> AutoInstallSummary {
+        let mut summary = AutoInstallSummary::default();
+
+        for adapter in ADAPTERS {
+            let adapter_id = adapter.id().to_string();
+            if !self.adapter_executable_available(adapter) {
+                summary.skipped.push(adapter_id);
+                continue;
+            }
+
+            match self.inspect(adapter.id()) {
+                Ok(current) if current.installed => {
+                    summary.skipped.push(adapter_id);
+                    continue;
+                }
+                Ok(_) => {}
+                Err(error) => {
+                    summary.failed.push(AutoInstallFailure {
+                        adapter_id,
+                        error: error.to_string(),
+                    });
+                    continue;
+                }
+            }
+
+            match self.install(adapter.id()) {
+                Ok(_) => summary.installed.push(adapter_id),
+                Err(error) => summary.failed.push(AutoInstallFailure {
+                    adapter_id,
+                    error: error.to_string(),
+                }),
+            }
+        }
+
+        summary
+    }
+
     pub(crate) fn home(&self) -> &Path {
         &self.home
     }
@@ -161,12 +211,15 @@ impl AgentManager {
         self.copet_root.join("hooks").join(HELPER_NAME)
     }
 
-    fn ensure_agent_executable(&self, adapter: &dyn CliAdapter) -> Result<(), AdapterError> {
-        if adapter
+    fn adapter_executable_available(&self, adapter: &dyn CliAdapter) -> bool {
+        adapter
             .executable_names()
             .iter()
             .any(|name| self.executable_exists(name))
-        {
+    }
+
+    fn ensure_agent_executable(&self, adapter: &dyn CliAdapter) -> Result<(), AdapterError> {
+        if self.adapter_executable_available(adapter) {
             return Ok(());
         }
 
