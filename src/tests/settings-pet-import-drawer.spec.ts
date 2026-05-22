@@ -43,6 +43,8 @@ test("import pets opens a simple drawer", async ({ browser }) => {
   await expect(drawer).toBeVisible();
   await expect(drawer.getByRole("button", { name: "From Codex" })).toBeVisible();
   await expect(drawer.getByRole("button", { name: "From folders" })).toBeVisible();
+  await expect(drawer.getByText("No preview pets yet.")).toBeVisible();
+  await expect(drawer.getByRole("button", { name: "Choose folders" })).toHaveCount(0);
   await expect(drawer.getByRole("button", { name: "Choose zip" })).toHaveCount(0);
 });
 
@@ -57,6 +59,9 @@ test("codex import previews pets selected by default", async ({ browser }) => {
 
   await expect(page.getByRole("button", { name: "Local Fox" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Local Panda" })).toBeVisible();
+  const foxCard = page.locator(".pet-card").filter({ hasText: "Local Fox" });
+  await expect(foxCard).toContainText("Compact martial arts pet");
+  await expect(foxCard).not.toContainText("Codex · user:local-fox");
   const foxCheckbox = page.getByRole("checkbox", {
     name: "Select preview pet Local Fox",
   });
@@ -74,6 +79,44 @@ test("codex import previews pets selected by default", async ({ browser }) => {
   expect(harness.calls).toContainEqual({
     command: "preview_codex_pet_imports",
     args: { sessionId: "session-1" },
+  });
+});
+
+test("select all checkbox toggles all previews", async ({ browser }) => {
+  const harness = await createAppHarness(browser, {
+    importPreviews: [previewFox, previewPanda],
+  });
+  const page = await harness.openPage("settings");
+
+  await page.getByRole("button", { name: "Import pets" }).click();
+  const drawer = page.getByRole("dialog", { name: "Import pets" });
+  await drawer.getByRole("button", { name: "From Codex" }).click();
+
+  const selectAll = drawer.getByRole("checkbox", { name: "Select all" });
+  await expect(selectAll).toBeChecked();
+  await expect(drawer.getByText("2 selected")).toBeVisible();
+
+  await selectAll.click();
+
+  await expect(selectAll).not.toBeChecked();
+  await expect(
+    drawer.getByRole("checkbox", { name: "Select preview pet Local Fox" }),
+  ).not.toBeChecked();
+  await expect(
+    drawer.getByRole("checkbox", { name: "Select preview pet Local Panda" }),
+  ).not.toBeChecked();
+  await expect(drawer.getByText("0 selected")).toBeVisible();
+  await expect(drawer.getByRole("button", { name: "Import selected" })).toBeDisabled();
+
+  await selectAll.click();
+  await drawer.getByRole("button", { name: "Import selected" }).click();
+
+  expect(harness.calls).toContainEqual({
+    command: "commit_pet_import_previews",
+    args: {
+      sessionId: "session-1",
+      previewIds: ["preview-fox", "preview-panda"],
+    },
   });
 });
 
@@ -151,12 +194,14 @@ test("duplicate preview summary ids render and act independently", async ({ brow
   const drawer = page.getByRole("dialog", { name: "Import pets" });
   await drawer.getByRole("button", { name: "From Codex" }).click();
 
-  const firstCard = drawer.locator(".pet-card").filter({ hasText: "Folder A" });
-  const secondCard = drawer.locator(".pet-card").filter({ hasText: "Folder B" });
+  const firstCard = drawer.locator('[data-pet-id="shared-preview-first"]');
+  const secondCard = drawer.locator('[data-pet-id="shared-preview-second"]');
   await expect(firstCard).toHaveCount(1);
   await expect(secondCard).toHaveCount(1);
-  await expect(firstCard).toContainText("user:shared-fox");
-  await expect(secondCard).toContainText("user:shared-fox");
+  await expect(firstCard).toContainText("Compact martial arts pet");
+  await expect(secondCard).toContainText("Compact martial arts pet");
+  await expect(firstCard).not.toContainText("Folder A");
+  await expect(secondCard).not.toContainText("Folder B");
 
   await firstCard.hover();
   await firstCard.getByTitle("Remove from preview").click();
@@ -164,7 +209,7 @@ test("duplicate preview summary ids render and act independently", async ({ brow
   await expect(firstCard).toHaveCount(0);
   await expect(secondCard).toHaveCount(1);
   await secondCard.getByRole("checkbox", { name: "Select preview pet Shared Fox" }).click();
-  await drawer.getByRole("button", { name: "Select all" }).click();
+  await drawer.getByRole("checkbox", { name: "Select all" }).click();
   await drawer.getByRole("button", { name: "Import selected" }).click();
 
   expect(harness.calls).toContainEqual({
@@ -279,7 +324,7 @@ test("closing the drawer discards the preview session", async ({ browser }) => {
   });
 });
 
-test("local source choice only triggers the folder dialog", async ({ browser }) => {
+test("folder source button directly triggers the folder dialog", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
     dialogOpenPaths: [["/pets/folder-one", "/pets/folder-two"]],
     importPreviews: [previewFox],
@@ -289,7 +334,7 @@ test("local source choice only triggers the folder dialog", async ({ browser }) 
   await page.getByRole("button", { name: "Import pets" }).click();
   const drawer = page.getByRole("dialog");
   await drawer.getByRole("button", { name: "From folders" }).click();
-  await drawer.getByRole("button", { name: "Choose folders" }).click();
+  await expect(drawer.getByRole("button", { name: "Choose folders" })).toHaveCount(0);
   await expect(drawer.getByRole("button", { name: "Choose zip" })).toHaveCount(0);
   await expect
     .poll(() =>

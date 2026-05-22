@@ -352,7 +352,7 @@ test("import pets drawer opens a native directory preview dialog", async ({ brow
   await page.getByRole("button", { name: "Import pets" }).click();
   const drawer = page.getByRole("dialog", { name: "Import pets" });
   await drawer.getByRole("button", { name: "From folders" }).click();
-  await drawer.getByRole("button", { name: "Choose folders" }).click();
+  await expect(drawer.getByRole("button", { name: "Choose folders" })).toHaveCount(0);
   await expect
     .poll(() =>
       harness.calls.some((call) => call.command === "preview_pet_import_folders"),

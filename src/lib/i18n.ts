@@ -62,7 +62,8 @@ const messages = {
     petsDescription: "Pick a pet, or import a Codex-compatible pet package.",
     petWindowHeading: "Pet window",
     preferencesTitle: "General",
-    previewImportsEmpty: "Choose a source to preview pets before installing.",
+    previewImportsEmpty:
+      "No preview pets yet. Choose Codex or a local folder to review compatible pets before importing.",
     remove: "Remove",
     removePreview: "Remove from preview",
     refreshList: "Refresh list",
@@ -141,7 +142,8 @@ const messages = {
     petsDescription: "选择一个宠物，或导入兼容 Codex 的宠物包",
     petWindowHeading: "宠物窗口",
     preferencesTitle: "通用",
-    previewImportsEmpty: "选择一个来源，安装前先预览宠物",
+    previewImportsEmpty:
+      "暂无预览宠物。选择 Codex 或本地文件夹后，会在这里显示可导入的宠物。",
     remove: "移除",
     removePreview: "从预览中移除",
     refreshList: "刷新列表",

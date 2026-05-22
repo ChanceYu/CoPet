@@ -907,15 +907,16 @@ select {
   position: relative;
   z-index: 1;
   display: grid;
-  width: min(420px, calc(100vw - 24px));
-  height: calc(100% - 24px);
+  width: min(420px, 100vw);
+  height: 100%;
   min-height: 0;
   grid-template-rows: auto 1fr;
-  align-self: center;
-  margin-right: 12px;
+  align-self: stretch;
+  margin-right: 0;
   overflow: hidden;
   border: 1px solid hsl(var(--border) / 0.78);
-  border-radius: var(--radius);
+  border-right: 0;
+  border-radius: var(--radius) 0 0 var(--radius);
   background:
     linear-gradient(180deg, hsl(var(--card) / 0.96), hsl(214 86% 98% / 0.95));
   box-shadow:
@@ -1793,23 +1794,10 @@ select {
 }
 
 .pet-import-actions .ui-button,
-.pet-import-local-actions .ui-button,
 .pet-import-toolbar .ui-button {
   min-width: 0;
   width: 100%;
   white-space: nowrap;
-}
-
-.pet-import-local-actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 8px;
-  padding: 8px;
-  border: 1px solid hsl(var(--border) / 0.72);
-  border-radius: var(--radius);
-  background:
-    linear-gradient(180deg, hsl(var(--card) / 0.78), hsl(var(--card) / 0.58));
-  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.62) inset;
 }
 
 .pet-import-toolbar {
@@ -1835,6 +1823,34 @@ select {
 
 .pet-import-toolbar-main {
   flex: 1 1 auto;
+}
+
+.pet-import-selected-count {
+  color: hsl(var(--muted-foreground) / 0.72);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.pet-import-select-all.ui-checkbox {
+  width: 15px;
+  height: 15px;
+}
+
+.pet-import-drawer-body [data-slot="empty"] {
+  color: hsl(var(--muted-foreground) / 0.72);
+}
+
+.pet-import-drawer-body [data-slot="empty-icon"] {
+  color: hsl(var(--muted-foreground) / 0.46);
+}
+
+.pet-import-drawer-body [data-slot="empty-title"] {
+  max-width: 240px;
+  color: hsl(var(--muted-foreground) / 0.78);
+  font-size: 11px;
+  font-weight: 560;
+  line-height: 1.45;
 }
 
 .pet-import-toolbar-actions {

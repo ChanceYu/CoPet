@@ -494,13 +494,18 @@ export function usePetImport(options: UsePetImportOptions = {}) {
     [setPreviewStateSafely],
   );
 
-  const selectAll = useCallback(() => {
-    setPreviewStateSafely((current) => ({
-      ...current,
-      selectedPreviewIds: new Set(
-        current.previews.map((preview) => preview.previewId),
-      ),
-    }));
+  const toggleAll = useCallback(() => {
+    setPreviewStateSafely((current) => {
+      const allSelected =
+        current.previews.length > 0 &&
+        current.selectedPreviewIds.size === current.previews.length;
+      return {
+        ...current,
+        selectedPreviewIds: allSelected
+          ? new Set()
+          : new Set(current.previews.map((preview) => preview.previewId)),
+      };
+    });
   }, [setPreviewStateSafely]);
 
   const clearError = useCallback(() => {
@@ -555,10 +560,10 @@ export function usePetImport(options: UsePetImportOptions = {}) {
       previewFolders,
       previews,
       removePreview,
-      selectAll,
       selectedCount,
       selectedPreviewIds: new Set(selectedPreviewIds),
       session,
+      toggleAll,
       togglePreview,
     }),
     [
@@ -573,10 +578,10 @@ export function usePetImport(options: UsePetImportOptions = {}) {
       previewFolders,
       previews,
       removePreview,
-      selectAll,
       selectedCount,
       selectedPreviewIds,
       session,
+      toggleAll,
       togglePreview,
     ],
   );

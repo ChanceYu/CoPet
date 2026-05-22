@@ -1,5 +1,5 @@
 import { FolderOpen, PackageOpen } from "lucide-react";
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo } from "react";
 import { toast } from "sonner";
 
 import { usePetImport } from "../hooks/usePetImport";
@@ -7,6 +7,7 @@ import type { PetSummary } from "../lib/appTypes";
 import type { Translator } from "../lib/settingsTypes";
 import { PetPackageGrid } from "./PetPackageGrid";
 import { Button } from "./ui/button";
+import { Checkbox } from "./ui/checkbox";
 import {
   Drawer,
   DrawerBody,
@@ -28,7 +29,6 @@ export function SettingsPetImportDrawer({
 }: SettingsPetImportDrawerProps) {
   const titleId = useId();
   const descriptionId = useId();
-  const [showLocalChoices, setShowLocalChoices] = useState(false);
   const petImport = usePetImport({
     strings: {
       chooseFoldersTitle: t("chooseFolders"),
@@ -77,7 +77,6 @@ export function SettingsPetImportDrawer({
 
     void petImport.closeSession().then((closed) => {
       if (closed) {
-        setShowLocalChoices(false);
         onOpenChange(false);
       }
     });
@@ -88,6 +87,8 @@ export function SettingsPetImportDrawer({
     id: preview.previewId,
   }));
   const hasPreviews = previewPets.length > 0;
+  const allPreviewsSelected =
+    hasPreviews && petImport.selectedCount === petImport.previews.length;
 
   return (
     <Drawer
@@ -118,10 +119,9 @@ export function SettingsPetImportDrawer({
             {t("fromCodex")}
           </Button>
           <Button
-            aria-expanded={showLocalChoices}
             className="pet-toolbar-button"
             disabled={petImport.isBusy}
-            onClick={() => setShowLocalChoices((current) => !current)}
+            onClick={() => void runImportAction(petImport.previewFolders)}
             size="sm"
             type="button"
             variant="outline"
@@ -131,36 +131,17 @@ export function SettingsPetImportDrawer({
           </Button>
         </div>
 
-        {showLocalChoices ? (
-          <div className="pet-import-local-actions">
-            <Button
-              className="pet-toolbar-button"
-              disabled={petImport.isBusy}
-              onClick={() => void runImportAction(petImport.previewFolders)}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <FolderOpen aria-hidden="true" />
-              {t("chooseFolders")}
-            </Button>
-          </div>
-        ) : null}
-
         {hasPreviews ? (
           <div className="pet-import-toolbar">
             <div className="pet-import-toolbar-main">
-              <Button
-                className="pet-toolbar-button"
+              <Checkbox
+                aria-label={t("selectAll")}
+                checked={allPreviewsSelected}
+                className="pet-import-select-all"
                 disabled={petImport.isBusy}
-                onClick={petImport.selectAll}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                {t("selectAll")}
-              </Button>
-              <span aria-live="polite">
+                onCheckedChange={petImport.toggleAll}
+              />
+              <span aria-live="polite" className="pet-import-selected-count">
                 {t("selectedPreviewCount").replace(
                   "{count}",
                   String(petImport.selectedCount),
@@ -214,9 +195,7 @@ export function SettingsPetImportDrawer({
             pets={previewPets}
             renderSecondaryText={(pet) => {
               const preview = previewByPreviewId.get(pet.id);
-              return preview
-                ? `${preview.sourceLabel} · ${preview.intendedPetId}`
-                : pet.description;
+              return preview?.summary.description ?? pet.description;
             }}
             strings={petCardStrings}
             cardProps={(pet: PetSummary) => {
