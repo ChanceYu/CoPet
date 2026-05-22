@@ -327,6 +327,100 @@ fn antigravity_helper_comment_does_not_mask_prefix_kind_invocation() {
 }
 
 #[test]
+fn antigravity_helper_comment_does_not_mask_other_invocation() {
+    let temp = tempfile::tempdir().unwrap();
+    let home = temp.path().join("home");
+    let hooks_path = home.join(".gemini/config/hooks.json");
+    fs::create_dir_all(hooks_path.parent().unwrap()).unwrap();
+    fs::write(
+        &hooks_path,
+        r##"{
+  "copet-antigravity": {
+    "PreToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "if [ -f '/tmp/copet-hook.sh' ]; then '/tmp/copet-hook.sh' antigravity tool.before; else echo \"{}\"; fi",
+        "timeout": 1
+      }]
+    }],
+    "PostToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "if [ -f '/tmp/copet-hook.sh' ]; then # /tmp/copet-hook.sh\n'/tmp/other.sh' antigravity tool.after; else echo \"{}\"; fi",
+        "timeout": 1
+      }]
+    }],
+    "PostInvocation": [{
+      "type": "command",
+      "command": "if [ -f '/tmp/copet-hook.sh' ]; then '/tmp/copet-hook.sh' antigravity user.prompt; else echo \"{}\"; fi",
+      "timeout": 1
+    }],
+    "Stop": [{
+      "type": "command",
+      "command": "if [ -f '/tmp/copet-hook.sh' ]; then '/tmp/copet-hook.sh' antigravity session.stop; else echo \"{}\"; fi",
+      "timeout": 1
+    }]
+  }
+}"##,
+    )
+    .unwrap();
+    let manager = AgentManager::new(temp.path().join(".copet"), home);
+
+    let summary = manager.inspect("antigravity").unwrap();
+
+    assert!(!summary.installed);
+}
+
+#[test]
+fn antigravity_helper_name_must_match_exactly() {
+    let temp = tempfile::tempdir().unwrap();
+    let home = temp.path().join("home");
+    let hooks_path = home.join(".gemini/config/hooks.json");
+    fs::create_dir_all(hooks_path.parent().unwrap()).unwrap();
+    fs::write(
+        &hooks_path,
+        r##"{
+  "copet-antigravity": {
+    "PreToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "if [ -f '/tmp/copet-hook.sh' ]; then '/tmp/copet-hook.sh' antigravity tool.before; else echo \"{}\"; fi",
+        "timeout": 1
+      }]
+    }],
+    "PostToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "if [ -f '/tmp/copet-hook.sh' ]; then '/tmp/not-copet-hook.sh' antigravity tool.after; else echo \"{}\"; fi",
+        "timeout": 1
+      }]
+    }],
+    "PostInvocation": [{
+      "type": "command",
+      "command": "if [ -f '/tmp/copet-hook.sh' ]; then '/tmp/copet-hook.sh' antigravity user.prompt; else echo \"{}\"; fi",
+      "timeout": 1
+    }],
+    "Stop": [{
+      "type": "command",
+      "command": "if [ -f '/tmp/copet-hook.sh' ]; then '/tmp/copet-hook.sh' antigravity session.stop; else echo \"{}\"; fi",
+      "timeout": 1
+    }]
+  }
+}"##,
+    )
+    .unwrap();
+    let manager = AgentManager::new(temp.path().join(".copet"), home);
+
+    let summary = manager.inspect("antigravity").unwrap();
+
+    assert!(!summary.installed);
+}
+
+#[test]
 fn antigravity_hook_command_exits_successfully_when_helper_is_missing() {
     let temp = tempfile::tempdir().unwrap();
     let home = temp.path().join("home");

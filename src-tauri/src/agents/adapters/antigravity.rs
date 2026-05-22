@@ -166,9 +166,26 @@ fn is_antigravity_copet_command(command: &str, adapter_id: &str, kind: &str) -> 
         segment
             .trim()
             .strip_prefix("then ")
-            .is_some_and(|invocation| {
-                invocation.contains(HELPER_NAME)
-                    && invocation.ends_with(&format!(" {adapter_id} {kind}"))
-            })
+            .is_some_and(|invocation| invocation_matches_copet_helper(invocation, adapter_id, kind))
     })
+}
+
+fn invocation_matches_copet_helper(invocation: &str, adapter_id: &str, kind: &str) -> bool {
+    let Some(rest) = invocation.strip_prefix('\'') else {
+        return false;
+    };
+    let Some(end_quote) = rest.find('\'') else {
+        return false;
+    };
+
+    let helper_path = &rest[..end_quote];
+    let helper_file_name = Path::new(helper_path)
+        .file_name()
+        .and_then(|name| name.to_str());
+    if helper_file_name != Some(HELPER_NAME) {
+        return false;
+    }
+
+    let args = rest[end_quote + 1..].trim();
+    args == format!("{adapter_id} {kind}")
 }
