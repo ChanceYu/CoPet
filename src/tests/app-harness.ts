@@ -195,6 +195,15 @@ export const antigravityAdapter: AdapterSummary = {
   message: "Configuration path not created yet",
 };
 
+export const copilotAdapter: AdapterSummary = {
+  id: "copilot",
+  displayName: "Copilot CLI",
+  configPath: "/home/.copilot/hooks/copet.json",
+  installed: false,
+  healthy: false,
+  message: "Configuration path not created yet",
+};
+
 export async function createAppHarness(browser: Browser, options: AppHarnessOptions = {}) {
   const context = await browser.newContext();
   const pages: Page[] = [];

@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import {
   antigravityAdapter,
   codexAdapter,
+  copilotAdapter,
   createAppHarness,
   goku,
   nebula,
@@ -80,7 +81,7 @@ test("agent integration config path abbreviates mac home paths", async ({ browse
   await expect(configPath).toHaveAttribute("title", "/Users/elu/.codex/hooks.json");
 });
 
-test("agent integrations render Antigravity as the third adapter", async ({
+test("agent integrations render Copilot CLI before Gemini", async ({
   browser,
 }) => {
   const harness = await createAppHarness(browser, {
@@ -103,6 +104,7 @@ test("agent integrations render Antigravity as the third adapter", async ({
         healthy: false,
         message: "Configuration path not created yet",
       },
+      copilotAdapter,
       {
         id: "gemini",
         displayName: "Gemini",
@@ -121,7 +123,43 @@ test("agent integrations render Antigravity as the third adapter", async ({
     "Codex",
     "Antigravity",
     "OpenCode",
+    "Copilot CLI",
     "Gemini",
+  ]);
+  await expect(page.getByText("GitHub Copilot's terminal agent.")).toBeVisible();
+});
+
+test("copilot cli integration switch installs and uninstalls the adapter", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser, {
+    adapters: [copilotAdapter],
+  });
+  const page = await harness.openPage("settings");
+  await page.getByRole("tab", { name: "Agents" }).click();
+  const copilotSwitch = page.getByRole("switch", { name: "Copilot CLI" });
+
+  await expect(copilotSwitch).toHaveAttribute("aria-checked", "false");
+  await copilotSwitch.click();
+  await expect(copilotSwitch).toHaveAttribute("aria-checked", "true");
+
+  await copilotSwitch.click();
+  await expect(copilotSwitch).toHaveAttribute("aria-checked", "false");
+
+  const adapterCalls = harness.calls.filter(
+    (call) =>
+      call.command === "install_agent_adapter" ||
+      call.command === "uninstall_agent_adapter",
+  );
+  expect(adapterCalls).toEqual([
+    {
+      command: "install_agent_adapter",
+      args: { adapterId: "copilot" },
+    },
+    {
+      command: "uninstall_agent_adapter",
+      args: { adapterId: "copilot" },
+    },
   ]);
 });
 

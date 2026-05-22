@@ -1,6 +1,12 @@
 import type { Translator } from "./settingsTypes";
 
-export type AgentMetaKey = "antigravity" | "claude-code" | "codex" | "gemini" | "opencode";
+export type AgentMetaKey =
+  | "antigravity"
+  | "claude-code"
+  | "codex"
+  | "copilot"
+  | "gemini"
+  | "opencode";
 
 type AgentMetaCopy = {
   vendor: string;
@@ -19,6 +25,10 @@ const AGENT_META: Record<AgentMetaKey, AgentMetaCopy> = {
   codex: {
     vendor: "OpenAI",
     descriptionKey: "agentCodexDescription",
+  },
+  copilot: {
+    vendor: "GitHub",
+    descriptionKey: "agentCopilotDescription",
   },
   gemini: {
     vendor: "Google",
