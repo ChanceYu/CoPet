@@ -582,9 +582,9 @@ export function usePetImport(options: UsePetImportOptions = {}) {
     setErrors([]);
   }, []);
 
-  const closeSession = useCallback(async () => {
+  const closeSession = useCallback(async (): Promise<boolean> => {
     if (commitOperationIdsRef.current.size > 0) {
-      return;
+      return false;
     }
 
     generationRef.current += 1;
@@ -613,6 +613,8 @@ export function usePetImport(options: UsePetImportOptions = {}) {
         await discardSessionBestEffort(result.session);
       }
     }
+
+    return true;
   }, [discardSessionBestEffort, setPreviewStateSafely, setSessionState]);
 
   return useMemo(

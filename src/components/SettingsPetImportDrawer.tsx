@@ -77,9 +77,11 @@ export function SettingsPetImportDrawer({
       return;
     }
 
-    void petImport.closeSession().then(() => {
-      setShowLocalChoices(false);
-      onOpenChange(false);
+    void petImport.closeSession().then((closed) => {
+      if (closed) {
+        setShowLocalChoices(false);
+        onOpenChange(false);
+      }
     });
   };
 

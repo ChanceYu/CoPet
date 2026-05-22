@@ -212,6 +212,18 @@ test("closing the drawer is ignored while preview commit is active", async ({ br
     harness.calls.some((call) => call.command === "discard_pet_import_previews"),
   ).toBe(false);
 
+  await drawer.getByRole("button", { name: "Close" }).dispatchEvent("click");
+  await expect(drawer).toBeVisible();
+  expect(
+    harness.calls.some((call) => call.command === "discard_pet_import_previews"),
+  ).toBe(false);
+
+  await page.locator(".ui-drawer-overlay").dispatchEvent("click");
+  await expect(drawer).toBeVisible();
+  expect(
+    harness.calls.some((call) => call.command === "discard_pet_import_previews"),
+  ).toBe(false);
+
   await expect(drawer.getByRole("button", { name: "Local Fox" })).toHaveCount(0);
   await drawer.getByRole("button", { name: "Close" }).click();
   await expect(drawer).toHaveCount(0);
