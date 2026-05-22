@@ -1,27 +1,7 @@
 import { open } from "@tauri-apps/plugin-dialog";
-import {
-  Check,
-  ChevronUp,
-  Import,
-  LocateFixed,
-  PawPrint,
-  RefreshCw,
-  Trash2,
-} from "lucide-react";
-import {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import type {
-  ChangeEvent,
-  CSSProperties,
-  MouseEvent as ReactMouseEvent,
-} from "react";
-import { Virtuoso } from "react-virtuoso";
-import type { VirtuosoHandle } from "react-virtuoso";
+import { Import, RefreshCw } from "lucide-react";
+import { useMemo, useState } from "react";
+import type { ChangeEvent } from "react";
 import { toast } from "sonner";
 
 import type { AppState, PetSummary } from "../lib/appTypes";
@@ -29,14 +9,8 @@ import {
   refreshListMinimumLoadingMs,
   wait,
 } from "../lib/petWindowUi";
-import { PetSprite } from "./PetSprite";
+import { PetPackageGrid } from "./PetPackageGrid";
 import { Button } from "./ui/button";
-import {
-  Empty,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "./ui/empty";
 
 import type { Translator } from "../lib/settingsTypes";
 
@@ -44,16 +18,6 @@ type LocalImportResult = {
   errorMessage: string | null;
   state: AppState | null;
 };
-
-// Width breakpoints for the pet grid. Each card targets a ~150px min width;
-// thresholds pad for the 10px gap between cards so we round up only when a
-// new column would still leave each card readable.
-function computeColumns(width: number): number {
-  if (width >= 640) return 4;
-  if (width >= 470) return 3;
-  if (width >= 310) return 2;
-  return 1;
-}
 
 interface SettingsPetsSectionProps {
   currentPetId: string;
@@ -84,167 +48,16 @@ export function SettingsPetsSection({
   t,
 }: SettingsPetsSectionProps) {
   const [refreshing, setRefreshing] = useState(false);
-  const [pendingScrollPetId, setPendingScrollPetId] = useState<string | null>(
-    null,
-  );
-  const [columns, setColumns] = useState(3);
-  const virtuosoRef = useRef<VirtuosoHandle>(null);
-  const listRegionRef = useRef<HTMLDivElement | null>(null);
-
-  useLayoutEffect(() => {
-    const node = listRegionRef.current;
-    if (!node) {
-      return;
-    }
-
-    const apply = (width: number) => {
-      setColumns(computeColumns(width));
-    };
-
-    apply(node.clientWidth);
-
-    if (typeof ResizeObserver === "undefined") {
-      return;
-    }
-
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        apply(entry.contentRect.width);
-      }
-    });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [installedPets.length === 0]);
-
-  useEffect(() => {
-    if (!pendingScrollPetId) {
-      return;
-    }
-    const index = installedPets.findIndex(
-      (pet) => pet.id === pendingScrollPetId,
-    );
-    if (index === -1) {
-      setPendingScrollPetId(null);
-      return;
-    }
-    virtuosoRef.current?.scrollToIndex({
-      index: Math.floor(index / columns),
-      align: "center",
-      behavior: "smooth",
-    });
-    setPendingScrollPetId(null);
-  }, [pendingScrollPetId, installedPets, columns]);
 
   const petCardStrings = useMemo(
     () => ({
+      backToTop: t("backToTop"),
       currentPet: t("currentPet"),
       customBadge: t("customBadge"),
       remove: t("remove"),
     }),
     [t],
   );
-
-  const scrollPetListToTop = () => {
-    virtuosoRef.current?.scrollToIndex({ index: 0, behavior: "smooth" });
-  };
-
-  const scrollToCurrentPet = () => {
-    const index = installedPets.findIndex((pet) => pet.id === currentPetId);
-    if (index === -1) {
-      return;
-    }
-    virtuosoRef.current?.scrollToIndex({
-      index: Math.floor(index / columns),
-      align: "center",
-      behavior: "smooth",
-    });
-  };
-
-  const activePetList = useMemo(() => {
-    if (installedPets.length === 0) {
-      return (
-        <div className="pet-list-region" ref={listRegionRef}>
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia>
-                <PawPrint aria-hidden="true" />
-              </EmptyMedia>
-              <EmptyTitle>{t("noInstalledPets")}</EmptyTitle>
-            </EmptyHeader>
-          </Empty>
-        </div>
-      );
-    }
-
-    const rows: PetSummary[][] = [];
-    for (let i = 0; i < installedPets.length; i += columns) {
-      rows.push(installedPets.slice(i, i + columns));
-    }
-
-    const gridStyle = {
-      "--pet-grid-columns": columns,
-    } as CSSProperties;
-
-    return (
-      <div className="pet-list-region" ref={listRegionRef}>
-        <Virtuoso
-          className="pet-virtuoso"
-          data={rows}
-          itemContent={(_index, row) => (
-            <div className="pet-grid" style={gridStyle}>
-              {row.map((pet) => {
-                const active = pet.id === currentPetId;
-                return (
-                  <PetPackageCard
-                    active={active}
-                    busy={petBusyId === pet.id || isSelecting}
-                    key={pet.id}
-                    onRemovePet={removePet}
-                    onSelectPet={selectPet}
-                    pet={pet}
-                    strings={petCardStrings}
-                  />
-                );
-              })}
-            </div>
-          )}
-          ref={virtuosoRef}
-        />
-        <Button
-          aria-label={t("backToTop")}
-          className="pet-list-back-to-top"
-          onClick={scrollPetListToTop}
-          size="icon"
-          title={t("backToTop")}
-          type="button"
-          variant="outline"
-        >
-          <ChevronUp aria-hidden="true" />
-        </Button>
-        <Button
-          aria-label={t("locateCurrent")}
-          className="pet-list-locate-current"
-          onClick={scrollToCurrentPet}
-          size="icon"
-          title={t("locateCurrent")}
-          type="button"
-          variant="outline"
-        >
-          <LocateFixed aria-hidden="true" />
-        </Button>
-      </div>
-    );
-  }, [
-    columns,
-    currentPetId,
-    installedPets,
-    isSelecting,
-    petBusyId,
-    petCardStrings,
-    removePet,
-    selectPet,
-    t,
-  ]);
 
   const handleRefresh = async () => {
     const startedAt = Date.now();
@@ -283,11 +96,6 @@ export function SettingsPetsSection({
       toast.error(result.errorMessage);
       return;
     }
-
-    const nextCurrentPetId = result.state?.currentPetId;
-    if (nextCurrentPetId) {
-      setPendingScrollPetId(nextCurrentPetId);
-    }
   };
 
   const handleImportLocalFolder = async () => {
@@ -312,11 +120,6 @@ export function SettingsPetsSection({
         : result.errorMessage;
       toast.error(message);
       return;
-    }
-
-    const nextCurrentPetId = result.state?.currentPetId;
-    if (nextCurrentPetId) {
-      setPendingScrollPetId(nextCurrentPetId);
     }
   };
 
@@ -362,98 +165,27 @@ export function SettingsPetsSection({
         type="file"
       />
 
-      {activePetList}
+      <PetPackageGrid
+        currentPetId={currentPetId}
+        emptyTitle={t("noInstalledPets")}
+        locateCurrentLabel={t("locateCurrent")}
+        pets={installedPets}
+        showCurrentLocator
+        strings={petCardStrings}
+        cardProps={(pet) => ({
+          active: pet.id === currentPetId,
+          busy: petBusyId === pet.id || isSelecting,
+          mode: "installed",
+          onRemove: !pet.builtIn
+            ? (target) => {
+                void removePet(target);
+              }
+            : undefined,
+          onSelect: (target) => {
+            void selectPet(target);
+          },
+        })}
+      />
     </div>
-  );
-}
-
-function PetPackageCard({
-  active,
-  busy,
-  onRemovePet,
-  onSelectPet,
-  pet,
-  strings,
-}: {
-  active: boolean;
-  busy: boolean;
-  onRemovePet: (pet: PetSummary) => Promise<void>;
-  onSelectPet: (pet: PetSummary) => Promise<void>;
-  pet: PetSummary;
-  strings: {
-    currentPet: string;
-    customBadge: string;
-    remove: string;
-  };
-}) {
-  const handleMainClick = () => {
-    void onSelectPet(pet);
-  };
-
-  const stopActionClick = (event: ReactMouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-  };
-
-  return (
-    <article className="pet-card" data-active={active} data-pet-id={pet.id}>
-      <div className="pet-card-top-actions">
-        {active ? (
-          <span
-            className="pet-card-pill pet-card-status pet-card-current-status"
-            title={strings.currentPet}
-          >
-            <Check aria-hidden="true" />
-          </span>
-        ) : null}
-        {!active && !pet.builtIn ? (
-          <button
-            className="pet-card-pill pet-card-action"
-            disabled={busy}
-            onClick={(event) => {
-              stopActionClick(event);
-              void onRemovePet(pet);
-            }}
-            title={strings.remove}
-            type="button"
-          >
-            <Trash2 aria-hidden="true" />
-          </button>
-        ) : null}
-      </div>
-      <button
-        aria-label={pet.displayName}
-        className="pet-card-main"
-        disabled={busy}
-        onClick={handleMainClick}
-        type="button"
-      >
-        <span className="pet-card-id">{pet.slug}</span>
-        <span className="pet-card-preview">
-          <PetSprite
-            pet={pet}
-            composed={{
-              bodySpriteRow: active ? "waving" : "idle",
-              emotionOverlay: null,
-              dragging: false,
-            }}
-            scale={0.34}
-          />
-        </span>
-        <span className="pet-card-copy">
-          <span className="pet-card-name">
-            <span className="pet-card-name-text">{pet.displayName}</span>
-            {!pet.builtIn ? (
-              <span
-                className="pet-card-custom-badge"
-                data-testid="pet-card-custom-badge"
-              >
-                {strings.customBadge}
-              </span>
-            ) : null}
-          </span>
-          <span className="pet-card-description">{pet.description}</span>
-        </span>
-      </button>
-    </article>
   );
 }
