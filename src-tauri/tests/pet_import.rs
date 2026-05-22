@@ -1,8 +1,10 @@
 use copet_lib::{
     config_store::ConfigStore,
+    i18n::Locale,
     pet_import::{
-        commit_import_previews, create_import_session, preview_codex_imports,
-        preview_folder_imports, preview_zip_imports, ZIP_PREVIEW_MAX_FILE_BYTES,
+        commit_import_previews, create_import_session, localize_commit_result_partial_errors,
+        localize_preview_batch_partial_errors, preview_codex_imports, preview_folder_imports,
+        preview_zip_imports, ZIP_PREVIEW_MAX_FILE_BYTES,
     },
 };
 use std::{
@@ -211,6 +213,30 @@ fn preview_zip_imports_rejects_path_traversal() {
         .errors
         .iter()
         .any(|error| error.contains("unsafe zip path")));
+}
+
+#[test]
+fn localizes_preview_batch_partial_errors_for_chinese_locale() {
+    let temp = tempfile::tempdir().unwrap();
+    let store = make_store(&temp);
+    let zip_path = temp.path().join("unsafe.zip");
+    write_zip(
+        &zip_path,
+        &[
+            ("pet.json", &manifest_bytes("root-pet", "Root Pet")),
+            ("spritesheet.png", b"sprite"),
+            ("../escape.txt", b"escape"),
+        ],
+    );
+
+    let session = create_import_session(&store).unwrap();
+    let batch = preview_zip_imports(&store, &session.session_id, &[zip_path.clone()]).unwrap();
+    let localized = localize_preview_batch_partial_errors(batch, Locale::ZhCn);
+
+    assert!(localized.previews.is_empty());
+    assert!(localized.errors[0].contains("ZIP 路径不安全"));
+    assert!(localized.errors[0].contains(&zip_path.display().to_string()));
+    assert!(localized.errors[0].contains("../escape.txt"));
 }
 
 #[test]
@@ -760,6 +786,30 @@ fn commit_import_previews_reports_missing_selected_preview_and_continues() {
         .error_message
         .contains("preview package is no longer available"));
     assert!(store.root().join("pets/alpha/pet.json").exists());
+}
+
+#[test]
+fn localizes_commit_partial_failures_for_chinese_locale() {
+    let temp = tempfile::tempdir().unwrap();
+    let store = make_store(&temp);
+    let source_dir = temp.path().join("alpha");
+    create_pet_package(temp.path(), "alpha", "alpha", "Alpha");
+
+    let session = create_import_session(&store).unwrap();
+    let batch = preview_folder_imports(&store, &session.session_id, &[source_dir]).unwrap();
+
+    let result = commit_import_previews(
+        &store,
+        &session.session_id,
+        &["missing".to_string(), batch.previews[0].preview_id.clone()],
+    )
+    .unwrap();
+    let localized = localize_commit_result_partial_errors(result, Locale::ZhCn);
+
+    assert_eq!(localized.imported.len(), 1);
+    assert_eq!(localized.failed.len(), 1);
+    assert_eq!(localized.failed[0].preview_id, "missing");
+    assert_eq!(localized.failed[0].error_message, "预览宠物包已不可用");
 }
 
 #[test]

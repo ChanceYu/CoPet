@@ -4,6 +4,7 @@ use crate::{
         copy_pet_package_for_import, read_pet_package_for_import, safe_pet_storage_id, ConfigStore,
         StoreError,
     },
+    i18n::Locale,
     pet_package::{user_pet_id, PetNamespace, PetPackage, PetSummary},
 };
 use serde::{Deserialize, Serialize};
@@ -328,6 +329,150 @@ pub fn commit_import_previews(
         failed,
         state: store.app_state()?,
     })
+}
+
+pub fn localize_preview_batch_partial_errors(
+    mut batch: PetImportPreviewBatch,
+    locale: Locale,
+) -> PetImportPreviewBatch {
+    batch.errors = batch
+        .errors
+        .into_iter()
+        .map(|error| localize_partial_error_message(&error, locale))
+        .collect();
+    batch
+}
+
+pub fn localize_commit_result_partial_errors(
+    mut result: PetImportCommitResult,
+    locale: Locale,
+) -> PetImportCommitResult {
+    for failure in &mut result.failed {
+        failure.error_message = localize_partial_error_message(&failure.error_message, locale);
+    }
+    result
+}
+
+fn localize_partial_error_message(message: &str, locale: Locale) -> String {
+    match locale {
+        Locale::EnUs => message.to_string(),
+        Locale::ZhCn => localize_partial_error_message_zh_cn(message),
+    }
+}
+
+fn localize_partial_error_message_zh_cn(message: &str) -> String {
+    if let Some(localized) = localize_known_exact_partial_error_zh_cn(message) {
+        return localized.to_string();
+    }
+
+    if let Some(path) = message.strip_prefix("selected path is not a folder: ") {
+        return format!("所选路径不是文件夹：{path}");
+    }
+    if let Some(path) = message.strip_prefix("no pet packages found in ") {
+        return format!("未在 {path} 中找到宠物包");
+    }
+    if let Some((path, error)) = message
+        .strip_prefix("could not read ")
+        .and_then(|rest| rest.rsplit_once(": "))
+    {
+        return format!(
+            "无法读取 {path}：{}",
+            localize_partial_error_message_zh_cn(error)
+        );
+    }
+    if let Some((path, error)) = message
+        .strip_prefix("could not open ")
+        .and_then(|rest| rest.rsplit_once(": "))
+    {
+        return format!(
+            "无法打开 {path}：{}",
+            localize_partial_error_message_zh_cn(error)
+        );
+    }
+    if let Some((path, error)) = message
+        .strip_prefix("could not stage ")
+        .and_then(|rest| rest.rsplit_once(": "))
+    {
+        return format!(
+            "无法暂存 {path}：{}",
+            localize_partial_error_message_zh_cn(error)
+        );
+    }
+    if let Some((path, error)) = message
+        .strip_prefix("could not preview ")
+        .and_then(|rest| rest.rsplit_once(": "))
+    {
+        return format!(
+            "无法预览 {path}：{}",
+            localize_partial_error_message_zh_cn(error)
+        );
+    }
+    if let Some((path, error)) = message
+        .strip_prefix("could not clean up preview scratch for ")
+        .and_then(|rest| rest.rsplit_once(": "))
+    {
+        return format!(
+            "无法清理 {path} 的预览临时文件：{}",
+            localize_partial_error_message_zh_cn(error)
+        );
+    }
+    if let Some((path, entry)) = message
+        .strip_prefix("unsafe zip path in ")
+        .and_then(|rest| rest.rsplit_once(": "))
+    {
+        return format!("ZIP 路径不安全：{path} 中的 {entry}");
+    }
+    if let Some((path, entry)) = message
+        .strip_prefix("duplicate zip path in ")
+        .and_then(|rest| rest.rsplit_once(": "))
+    {
+        return format!("ZIP 中存在重复路径：{path} 中的 {entry}");
+    }
+    if let Some((path, counts)) = message.split_once(" has too many zip entries: ") {
+        return format!("{path} 的 ZIP 条目过多：{counts}");
+    }
+    if let Some((entry, sizes)) = message.split_once(" exceeds zip entry size limit: ") {
+        return format!("{entry} 超过 ZIP 单个条目大小限制：{sizes}");
+    }
+    if let Some((path, sizes)) = message.split_once(" exceeds zip total size limit: ") {
+        return format!("{path} 超过 ZIP 总大小限制：{sizes}");
+    }
+    if let Some(error) = message.strip_prefix("imported pet but could not remove preview: ") {
+        return format!(
+            "已导入宠物，但无法移除预览：{}",
+            localize_partial_error_message_zh_cn(error)
+        );
+    }
+    if let Some(message) = message.strip_prefix("pet package is invalid: ") {
+        return format!(
+            "宠物包无效：{}",
+            localize_partial_error_message_zh_cn(message)
+        );
+    }
+    if let Some(error) = message.strip_prefix("I/O error: ") {
+        return format!("I/O 错误：{error}");
+    }
+    if let Some(error) = message.strip_prefix("JSON error: ") {
+        return format!("JSON 错误：{error}");
+    }
+
+    message.to_string()
+}
+
+fn localize_known_exact_partial_error_zh_cn(message: &str) -> Option<&'static str> {
+    match message {
+        "preview id is invalid" => Some("预览 ID 无效"),
+        "preview package is no longer available" => Some("预览宠物包已不可用"),
+        "preview package has an invalid pet id" => Some("预览宠物包的宠物 ID 无效"),
+        "preview metadata does not match selected preview" => Some("预览元数据与所选预览不匹配"),
+        "preview metadata has an invalid pet id" => Some("预览元数据包含无效的宠物 ID"),
+        "preview metadata does not match intended pet id" => Some("预览元数据与目标宠物 ID 不匹配"),
+        "import preview session id is invalid" => Some("导入预览会话 ID 无效"),
+        "import preview session was not found" => Some("未找到导入预览会话"),
+        "could not create a unique import preview session" => Some("无法创建唯一的导入预览会话"),
+        "pet id must be a safe storage id" => Some("宠物 ID 必须是安全的存储 ID"),
+        _ => None,
+    }
 }
 
 fn build_preview(

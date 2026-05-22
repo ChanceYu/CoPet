@@ -468,8 +468,10 @@ mod pet_import_commands {
 fn preview_codex_pet_imports(session_id: String) -> Result<PetImportPreviewBatch, String> {
     ConfigStore::from_home()
         .and_then(|store| {
+            let locale = store.effective_locale()?;
             let home = dirs::home_dir().ok_or(config_store::StoreError::MissingHome)?;
             pet_import::preview_codex_imports(&store, &session_id, &home.join(".codex/pets"))
+                .map(|batch| pet_import::localize_preview_batch_partial_errors(batch, locale))
         })
         .map_err(localize_store_error)
 }
@@ -484,7 +486,11 @@ fn preview_pet_import_folders(
         .map(PathBuf::from)
         .collect::<Vec<_>>();
     ConfigStore::from_home()
-        .and_then(|store| pet_import::preview_folder_imports(&store, &session_id, &paths))
+        .and_then(|store| {
+            let locale = store.effective_locale()?;
+            pet_import::preview_folder_imports(&store, &session_id, &paths)
+                .map(|batch| pet_import::localize_preview_batch_partial_errors(batch, locale))
+        })
         .map_err(localize_store_error)
 }
 
@@ -495,7 +501,11 @@ fn preview_pet_import_zips(
 ) -> Result<PetImportPreviewBatch, String> {
     let paths = zip_paths.into_iter().map(PathBuf::from).collect::<Vec<_>>();
     ConfigStore::from_home()
-        .and_then(|store| pet_import::preview_zip_imports(&store, &session_id, &paths))
+        .and_then(|store| {
+            let locale = store.effective_locale()?;
+            pet_import::preview_zip_imports(&store, &session_id, &paths)
+                .map(|batch| pet_import::localize_preview_batch_partial_errors(batch, locale))
+        })
         .map_err(localize_store_error)
 }
 
@@ -506,7 +516,11 @@ fn commit_pet_import_previews(
     preview_ids: Vec<String>,
 ) -> Result<PetImportCommitResult, String> {
     let result = ConfigStore::from_home()
-        .and_then(|store| pet_import::commit_import_previews(&store, &session_id, &preview_ids))
+        .and_then(|store| {
+            let locale = store.effective_locale()?;
+            pet_import::commit_import_previews(&store, &session_id, &preview_ids)
+                .map(|result| pet_import::localize_commit_result_partial_errors(result, locale))
+        })
         .map_err(localize_store_error)?;
     emit_app_state_changed(&app, &result.state)?;
     Ok(result)
