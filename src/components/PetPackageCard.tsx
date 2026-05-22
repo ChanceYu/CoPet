@@ -73,7 +73,7 @@ export function PetPackageCard({
             <Check aria-hidden="true" />
           </span>
         ) : null}
-        {mode === "installed" && !active && onRemove ? (
+        {onRemove ? (
           <button
             className="pet-card-pill pet-card-action"
             disabled={busy}

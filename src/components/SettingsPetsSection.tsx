@@ -176,7 +176,7 @@ export function SettingsPetsSection({
           active: pet.id === currentPetId,
           busy: petBusyId === pet.id || isSelecting,
           mode: "installed",
-          onRemove: !pet.builtIn
+          onRemove: !pet.builtIn && pet.id !== currentPetId
             ? (target) => {
                 void removePet(target);
               }
