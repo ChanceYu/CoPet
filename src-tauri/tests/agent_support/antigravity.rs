@@ -528,11 +528,11 @@ fn antigravity_helper_extracts_tool_call_details_from_official_payload() {
         .write_all(
             br#"{
   "toolCall": {
-    "name": "run_command",
     "args": {
       "CommandLine": "pnpm test:frontend src/tests/settings-workflows.spec.ts",
       "Cwd": "/repo"
-    }
+    },
+    "name": "run_command"
   },
   "stepIdx": 19,
   "conversationId": "ec33ebf9-0cba-4100-8142-c61503f6c587",
@@ -559,6 +559,85 @@ fn antigravity_helper_extracts_tool_call_details_from_official_payload() {
     assert!(request.contains(
         r#""toolInput":{"command":"pnpm test:frontend src/tests/settings-workflows.spec.ts"}"#
     ));
+}
+
+#[test]
+fn antigravity_helper_omits_empty_tool_name_from_payload() {
+    let _guard = PROXY_ENV_LOCK.lock().unwrap();
+    let temp = tempfile::tempdir().unwrap();
+    let home = temp.path().join("home");
+    let root = temp.path().join(".copet");
+    let runtime = temp.path().join("runtime");
+    let manager = manager_with_fake_agents(&root, &home);
+
+    manager.install("antigravity").unwrap();
+
+    let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    listener.set_nonblocking(true).unwrap();
+    let endpoint = format!(
+        "http://127.0.0.1:{}/v1/events",
+        listener.local_addr().unwrap().port()
+    );
+    fs::create_dir_all(&runtime).unwrap();
+    fs::write(runtime.join("event-endpoint"), &endpoint).unwrap();
+    fs::write(runtime.join("event-token"), "secret").unwrap();
+
+    let (sender, receiver) = mpsc::channel();
+    std::thread::spawn(move || {
+        let deadline = Instant::now() + Duration::from_secs(2);
+        loop {
+            match listener.accept() {
+                Ok((mut stream, _addr)) => {
+                    let mut buffer = [0_u8; 4096];
+                    let size = stream.read(&mut buffer).unwrap();
+                    let request = String::from_utf8_lossy(&buffer[..size]).to_string();
+                    let _ =
+                        stream.write_all(b"HTTP/1.1 202 Accepted\r\nContent-Length: 2\r\n\r\n{}");
+                    sender.send(Some(request)).unwrap();
+                    return;
+                }
+                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                    if Instant::now() >= deadline {
+                        sender.send(None).unwrap();
+                        return;
+                    }
+                    std::thread::sleep(Duration::from_millis(10));
+                }
+                Err(_) => {
+                    sender.send(None).unwrap();
+                    return;
+                }
+            }
+        }
+    });
+
+    let helper = root.join("hooks/copet-hook.sh");
+    let mut child = Command::new(helper)
+        .args(["antigravity", "tool.after"])
+        .env("COPET_RUNTIME_DIR", &runtime)
+        .env("HTTP_PROXY", "http://127.0.0.1:9")
+        .env("HTTPS_PROXY", "http://127.0.0.1:9")
+        .env("http_proxy", "http://127.0.0.1:9")
+        .env("https_proxy", "http://127.0.0.1:9")
+        .env_remove("NO_PROXY")
+        .env_remove("no_proxy")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+
+    child.stdin.as_mut().unwrap().write_all(b"{}").unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(output.status.success());
+    assert_eq!(String::from_utf8_lossy(&output.stdout), "{}\n");
+
+    let request = receiver
+        .recv_timeout(Duration::from_secs(3))
+        .unwrap()
+        .expect("runtime server should receive the Antigravity hook event");
+    assert!(request.contains(r#""agent":"antigravity""#));
+    assert!(request.contains(r#""kind":"tool.after""#));
+    assert!(!request.contains(r#""tool":"""#));
 }
 
 #[test]
