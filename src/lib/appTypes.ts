@@ -89,6 +89,34 @@ export type PetImportResult = {
   pets: PetSummary[];
 };
 
+export type PetImportSession = { sessionId: string };
+
+export type PetImportPreview = {
+  previewId: string;
+  summary: PetSummary;
+  sourceLabel: string;
+  intendedPetId: string;
+  selectedByDefault: boolean;
+  warning?: string;
+};
+
+export type PetImportPreviewBatch = {
+  previews: PetImportPreview[];
+  skipped: number;
+  errors: string[];
+};
+
+export type PetImportFailure = {
+  previewId: string;
+  errorMessage: string;
+};
+
+export type PetImportCommitResult = {
+  imported: PetSummary[];
+  failed: PetImportFailure[];
+  state: AppState;
+};
+
 export type DerivedPetState = {
   state: PetStateId;
   sinceMs: number;

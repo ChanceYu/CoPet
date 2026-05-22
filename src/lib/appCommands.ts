@@ -6,7 +6,10 @@ import type {
   AgentMessageDisplay,
   AppState,
   LocalePreference,
+  PetImportCommitResult,
   PetInteractionPrefs,
+  PetImportPreviewBatch,
+  PetImportSession,
   PetSummary,
   PetWindowSize,
   RuntimeStatus,
@@ -240,6 +243,97 @@ export async function importLocalPetFolder(
     return { errorMessage: toMessage(error), state: null };
   } finally {
     appStore.patch({ petBusyId: null });
+  }
+}
+
+export async function createPetImportSession(): Promise<
+  CommandResult & { session: PetImportSession | null }
+> {
+  try {
+    const session = await invoke<PetImportSession>("create_pet_import_session");
+    return { errorMessage: null, session };
+  } catch (error) {
+    return { errorMessage: toMessage(error), session: null };
+  }
+}
+
+async function previewPetImports(
+  command:
+    | "preview_codex_pet_imports"
+    | "preview_pet_import_folders"
+    | "preview_pet_import_zips",
+  args: Record<string, unknown>,
+): Promise<CommandResult & { batch: PetImportPreviewBatch | null }> {
+  appStore.patch({ petBusyId: "import-preview" });
+  try {
+    const batch = await invoke<PetImportPreviewBatch>(command, args);
+    return { errorMessage: null, batch };
+  } catch (error) {
+    return { errorMessage: toMessage(error), batch: null };
+  } finally {
+    appStore.patch({ petBusyId: null });
+  }
+}
+
+export async function previewCodexPetImports(
+  sessionId: string,
+): Promise<CommandResult & { batch: PetImportPreviewBatch | null }> {
+  return previewPetImports("preview_codex_pet_imports", { sessionId });
+}
+
+export async function previewPetImportFolders(
+  sessionId: string,
+  folderPaths: string[],
+): Promise<CommandResult & { batch: PetImportPreviewBatch | null }> {
+  return previewPetImports("preview_pet_import_folders", {
+    sessionId,
+    folderPaths,
+  });
+}
+
+export async function previewPetImportZips(
+  sessionId: string,
+  zipPaths: string[],
+): Promise<CommandResult & { batch: PetImportPreviewBatch | null }> {
+  return previewPetImports("preview_pet_import_zips", { sessionId, zipPaths });
+}
+
+export async function commitPetImportPreviews(
+  sessionId: string,
+  previewIds: string[],
+): Promise<CommandResult & { result: PetImportCommitResult | null }> {
+  appStore.patch({ petBusyId: "import-commit" });
+  try {
+    const result = await invoke<PetImportCommitResult>(
+      "commit_pet_import_previews",
+      { sessionId, previewIds },
+    );
+    appStore.patch({ appState: result.state });
+    await refreshPetListsInternal();
+    return { errorMessage: null, result };
+  } catch (error) {
+    return { errorMessage: toMessage(error), result: null };
+  } finally {
+    appStore.patch({ petBusyId: null });
+  }
+}
+
+export async function discardPetImportPreviews(
+  sessionId: string,
+): Promise<CommandResult> {
+  try {
+    await invoke("discard_pet_import_previews", { sessionId });
+    return { errorMessage: null };
+  } catch (error) {
+    return { errorMessage: toMessage(error) };
+  }
+}
+
+export async function getDownloadsDir(): Promise<string | null> {
+  try {
+    return await invoke<string | null>("get_downloads_dir");
+  } catch {
+    return null;
   }
 }
 

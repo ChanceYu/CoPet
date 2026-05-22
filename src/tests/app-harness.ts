@@ -1,4 +1,5 @@
 import type { Browser, BrowserContext, Page } from "@playwright/test";
+import type { PetImportPreview } from "../lib/appTypes";
 
 export type PetSummary = {
   id: string;
@@ -83,12 +84,15 @@ export type CommandCall = {
   args?: Record<string, unknown>;
 };
 
-type HarnessOptions = {
+export type AppHarnessOptions = {
   adapters?: AdapterSummary[];
   codexPets?: PetSummary[];
   commandErrors?: Partial<Record<string, string>>;
   commandDelayMs?: Partial<Record<string, number>>;
+  dialogOpenPaths?: Array<string | string[] | null>;
   dialogOpenPath?: string | null;
+  downloadsDir?: string | null;
+  importPreviews?: PetImportPreview[];
   monitor?: HarnessMonitor;
   monitorFromPointReturnsNull?: boolean;
   nativePetContextMenuError?: string;
@@ -182,10 +186,13 @@ export const codexAdapter: AdapterSummary = {
   message: "Configuration path not created yet",
 };
 
-export async function createAppHarness(browser: Browser, options: HarnessOptions = {}) {
+export async function createAppHarness(browser: Browser, options: AppHarnessOptions = {}) {
   const context = await browser.newContext();
   const pages: Page[] = [];
   const calls: CommandCall[] = [];
+  let importSessionCounter = 0;
+  let importPreviews = options.importPreviews ?? [];
+  const dialogOpenPaths = [...(options.dialogOpenPaths ?? [])];
   let state: AppState = options.state ?? {
     currentPetId: copet.id,
     locale: "en-US",
@@ -292,7 +299,50 @@ export async function createAppHarness(browser: Browser, options: HarnessOptions
           return petVisible;
         }
         if (command === "plugin:dialog|open") {
+          if (dialogOpenPaths.length > 0) {
+            return dialogOpenPaths.shift() ?? null;
+          }
           return options.dialogOpenPath ?? null;
+        }
+        if (command === "get_downloads_dir") {
+          return options.downloadsDir ?? "/Users/test/Downloads";
+        }
+        if (command === "create_pet_import_session") {
+          return { sessionId: `session-${++importSessionCounter}` };
+        }
+        if (
+          command === "preview_codex_pet_imports" ||
+          command === "preview_pet_import_folders" ||
+          command === "preview_pet_import_zips"
+        ) {
+          return { previews: importPreviews, skipped: 0, errors: [] };
+        }
+        if (command === "commit_pet_import_previews") {
+          const previewIds = (args.previewIds as string[] | undefined) ?? [];
+          const imported = importPreviews
+            .filter((preview) => previewIds.includes(preview.previewId))
+            .map((preview) => preview.summary);
+          if (imported.length > 0) {
+            state = {
+              ...state,
+              currentPetId: imported[0].id,
+              pets: [
+                ...state.pets.filter(
+                  (pet) => !imported.some((importedPet) => importedPet.id === pet.id),
+                ),
+                ...imported,
+              ],
+            };
+          }
+          importPreviews = importPreviews.filter(
+            (preview) => !previewIds.includes(preview.previewId),
+          );
+          await emitAppState();
+          return { imported, failed: [], state };
+        }
+        if (command === "discard_pet_import_previews") {
+          importPreviews = [];
+          return null;
         }
         if (command === "plugin:event|emit" || command === "plugin:event|emit_to") {
           await Promise.all(
