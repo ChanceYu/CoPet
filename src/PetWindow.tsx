@@ -69,6 +69,7 @@ export function PetWindow() {
   });
   const lastAgentSoundKeyRef = useRef<string | null>(null);
   const previousPetStateRef = useRef<string | null>(null);
+  const reportedLoadErrorRef = useRef<string | null>(null);
   const selectedPetIdRef = useRef<string | null>(null);
   // macOS NSPanel does not always deliver contextmenu to the webview; long-press
   // is a fallback path that opens the same native menu below the pet.
@@ -149,6 +150,18 @@ export function PetWindow() {
     void openPetContextMenu(petMenuAnchor());
   };
 
+  const reportLoadError = (errorMessage: string) => {
+    reportedLoadErrorRef.current = errorMessage;
+    toast.error(errorMessage, { id: "pet-load-error" });
+  };
+
+  const retryLoad = async () => {
+    const result = await reloadAppStore();
+    if (result.errorMessage) {
+      reportLoadError(result.errorMessage);
+    }
+  };
+
   useEffect(() => {
     petWindowSizeRef.current = petWindowSize;
     displayedPetScaleRef.current = petScale;
@@ -224,6 +237,19 @@ export function PetWindow() {
   }, []);
 
   useEffect(() => {
+    if (loadState.status !== "error") {
+      reportedLoadErrorRef.current = null;
+      return;
+    }
+    if (
+      loadState.error &&
+      reportedLoadErrorRef.current !== loadState.error
+    ) {
+      reportLoadError(loadState.error);
+    }
+  }, [loadState.error, loadState.status]);
+
+  useEffect(() => {
     let unlistenDrag: (() => void) | undefined;
 
     void listen<PetWindowSizeSliderDragPayload>(petWindowSizeSliderDragEvent, (event) => {
@@ -293,7 +319,12 @@ export function PetWindow() {
   }
 
   if (loadState.status === "error") {
-    return <ErrorView message={loadState.error ?? "Unknown error"} onRetry={() => void reloadAppStore()} />;
+    return (
+      <>
+        <ErrorView onRetry={() => void retryLoad()} />
+        <Toaster position="bottom-center" />
+      </>
+    );
   }
 
   const motionHandlers = bindMotion();

@@ -8,11 +8,10 @@ export function LoadingView() {
   );
 }
 
-export function ErrorView({ message, onRetry }: { message: string; onRetry: () => void }) {
+export function ErrorView({ onRetry }: { onRetry: () => void }) {
   return (
     <main className="app-shell error-shell">
       <AlertCircle aria-hidden="true" />
-      <p>{message}</p>
       <button className="icon-button" type="button" onClick={onRetry} aria-label="Refresh">
         <RefreshCw aria-hidden="true" />
       </button>

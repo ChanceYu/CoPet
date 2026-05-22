@@ -1887,19 +1887,6 @@ select {
   background: hsl(var(--card) / 0.72);
 }
 
-.pet-import-errors {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 8px 10px;
-  border: 1px solid hsl(0 72% 72% / 0.56);
-  border-radius: calc(var(--radius) - 2px);
-  color: hsl(0 72% 32%);
-  background: hsl(0 86% 97% / 0.9);
-  font-size: 12px;
-  line-height: 1.35;
-}
-
 .pet-card-checkbox.ui-checkbox {
   flex: 0 0 auto;
   width: 16px;

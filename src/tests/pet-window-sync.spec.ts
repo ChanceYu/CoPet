@@ -54,6 +54,23 @@ test("selecting a pet in settings updates the visible pet window immediately", a
   await expect(petPage.getByRole("img", { name: "Goku" })).toBeVisible();
 });
 
+test("pet window load failure shows error toast without rendering error details", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser, {
+    commandErrors: {
+      get_app_state: "pet bootstrap failed",
+    },
+  });
+  const page = await harness.openPage("pet");
+
+  await expect(page.locator("[data-sonner-toast]")).toContainText(
+    "pet bootstrap failed",
+  );
+  await expect(page.locator("main")).not.toContainText("pet bootstrap failed");
+  await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
+});
+
 test("settings header is a draggable window region", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
     state: {

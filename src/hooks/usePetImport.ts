@@ -52,6 +52,7 @@ export type PetImportStrings = {
 };
 
 export type UsePetImportOptions = {
+  onError?: (message: string) => void;
   strings?: Partial<PetImportStrings>;
 };
 
@@ -87,12 +88,12 @@ export function usePetImport(options: UsePetImportOptions = {}) {
     () => ({ ...defaultStrings, ...options.strings }),
     [options.strings],
   );
+  const onError = options.onError;
   const [session, setSession] = useState<PetImportSession | null>(null);
   const [previewState, setPreviewState] = useState<PreviewState>(() => ({
     previews: [],
     selectedPreviewIds: new Set(),
   }));
-  const [errors, setErrors] = useState<string[]>([]);
   const [isBusy, setIsBusy] = useState(false);
   const [isCommitting, setIsCommitting] = useState(false);
   const sessionRef = useRef<PetImportSession | null>(null);
@@ -130,12 +131,14 @@ export function usePetImport(options: UsePetImportOptions = {}) {
     [],
   );
 
-  const appendErrors = useCallback((messages: string[]) => {
+  const reportErrors = useCallback((messages: string[]) => {
     if (messages.length === 0) {
       return;
     }
-    setErrors((current) => [...current, ...messages]);
-  }, []);
+    for (const message of messages) {
+      onError?.(message);
+    }
+  }, [onError]);
 
   const isOperationCurrent = useCallback((operation: PetImportOperation) => {
     return (
@@ -157,7 +160,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
 
   const beginOperation = useCallback((): PetImportOperation | null => {
     if (activeOperationIdsRef.current.size > 0) {
-      appendErrors([strings.busy]);
+      reportErrors([strings.busy]);
       return null;
     }
 
@@ -168,7 +171,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
     activeOperationIdsRef.current.add(operation.id);
     setIsBusy(true);
     return operation;
-  }, [appendErrors, strings.busy]);
+  }, [reportErrors, strings.busy]);
 
   const finishOperation = useCallback((operation: PetImportOperation) => {
     activeOperationIdsRef.current.delete(operation.id);
@@ -205,7 +208,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
 
       if (result.errorMessage || !result.session) {
         const message = result.errorMessage ?? strings.createSessionFailed;
-        appendErrors([message]);
+        reportErrors([message]);
         return { errorMessage: message, session: null };
       }
 
@@ -213,9 +216,9 @@ export function usePetImport(options: UsePetImportOptions = {}) {
       return { errorMessage: null, session: result.session };
     },
     [
-      appendErrors,
       discardSessionBestEffort,
       isOperationCurrent,
+      reportErrors,
       setSessionState,
       strings.createSessionFailed,
     ],
@@ -238,7 +241,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
       } catch (error) {
         const message = toMessage(error);
         if (isOperationCurrent(operation)) {
-          appendErrors([message]);
+          reportErrors([message]);
         }
         return { errorMessage: message };
       } finally {
@@ -247,10 +250,10 @@ export function usePetImport(options: UsePetImportOptions = {}) {
       }
     },
     [
-      appendErrors,
       beginOperation,
       finishOperation,
       isOperationCurrent,
+      reportErrors,
       strings.busy,
     ],
   );
@@ -282,12 +285,12 @@ export function usePetImport(options: UsePetImportOptions = {}) {
         return { previews: nextPreviews, selectedPreviewIds: nextSelectedIds };
       });
 
-      appendErrors([
+      reportErrors([
         ...batch.errors,
         ...(batch.skipped > 0 ? [strings.skippedPackages(batch.skipped)] : []),
       ]);
     },
-    [appendErrors, isOperationCurrent, setPreviewStateSafely, strings],
+    [isOperationCurrent, reportErrors, setPreviewStateSafely, strings],
   );
 
   const previewCodex = useCallback(async () => {
@@ -306,7 +309,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
       }
       if (result.errorMessage || !result.batch) {
         const message = result.errorMessage ?? strings.previewCodexFailed;
-        appendErrors([message]);
+        reportErrors([message]);
         return message;
       }
 
@@ -314,10 +317,10 @@ export function usePetImport(options: UsePetImportOptions = {}) {
       return null;
     });
   }, [
-    appendErrors,
     applyBatch,
     ensureSession,
     isOperationCurrent,
+    reportErrors,
     runOperation,
     strings.previewCodexFailed,
   ]);
@@ -343,7 +346,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
       } catch (error) {
         const message = `${strings.dialogOpenFailed} ${toMessage(error)}`;
         if (isOperationCurrent(operation)) {
-          appendErrors([message]);
+          reportErrors([message]);
         }
         return message;
       }
@@ -369,7 +372,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
       }
       if (result.errorMessage || !result.batch) {
         const message = result.errorMessage ?? strings.previewFoldersFailed;
-        appendErrors([message]);
+        reportErrors([message]);
         return message;
       }
 
@@ -377,10 +380,10 @@ export function usePetImport(options: UsePetImportOptions = {}) {
       return null;
     });
   }, [
-    appendErrors,
     applyBatch,
     ensureSession,
     isOperationCurrent,
+    reportErrors,
     runOperation,
     strings.chooseFoldersTitle,
     strings.dialogOpenFailed,
@@ -404,7 +407,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
         }
         if (result.errorMessage || !result.result) {
           const message = result.errorMessage ?? strings.importFailed;
-          appendErrors([message]);
+          reportErrors([message]);
           return message;
         }
 
@@ -427,7 +430,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
             selectedPreviewIds: nextSelectedIds,
           };
         });
-        appendErrors(
+        reportErrors(
           result.result.failed.map(
             (failure) => `${failure.previewId}: ${failure.errorMessage}`,
           ),
@@ -445,8 +448,8 @@ export function usePetImport(options: UsePetImportOptions = {}) {
       });
     },
     [
-      appendErrors,
       isOperationCurrent,
+      reportErrors,
       runOperation,
       setPreviewStateSafely,
       strings.importFailed,
@@ -508,10 +511,6 @@ export function usePetImport(options: UsePetImportOptions = {}) {
     });
   }, [setPreviewStateSafely]);
 
-  const clearError = useCallback(() => {
-    setErrors([]);
-  }, []);
-
   const closeSession = useCallback(async (): Promise<boolean> => {
     if (commitOperationIdsRef.current.size > 0) {
       return false;
@@ -531,7 +530,6 @@ export function usePetImport(options: UsePetImportOptions = {}) {
       previews: [],
       selectedPreviewIds: new Set(),
     }));
-    setErrors([]);
 
     if (activeSession) {
       await discardSessionBestEffort(activeSession);
@@ -549,9 +547,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
 
   return useMemo(
     () => ({
-      clearError,
       closeSession,
-      errors,
       importAll,
       importSelected,
       isCommitting,
@@ -567,9 +563,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
       togglePreview,
     }),
     [
-      clearError,
       closeSession,
-      errors,
       importAll,
       importSelected,
       isCommitting,

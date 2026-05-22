@@ -126,7 +126,7 @@ test("select all checkbox toggles all previews", async ({ browser }) => {
   });
 });
 
-test("codex preview failure shows inline error and toast", async ({ browser }) => {
+test("codex preview failure shows toast without inline error", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
     commandErrors: {
       preview_codex_pet_imports: "Codex preview failed",
@@ -135,14 +135,32 @@ test("codex preview failure shows inline error and toast", async ({ browser }) =
   const page = await harness.openPage("settings");
 
   await page.getByRole("button", { name: "Import pets" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "From Codex" }).click();
+  const drawer = page.getByRole("dialog");
+  await drawer.getByRole("button", { name: "From Codex" }).click();
 
-  const inlineErrors = page.getByRole("alert");
-  await expect(inlineErrors).toContainText(
-    "Codex preview failed",
-  );
+  await expect(drawer.getByRole("alert")).toHaveCount(0);
   await expect(page.locator("[data-sonner-toast]")).toContainText(
     "Codex preview failed",
+  );
+});
+
+test("import failure shows toast without inline error", async ({ browser }) => {
+  const harness = await createAppHarness(browser, {
+    commandErrors: {
+      commit_pet_import_previews: "Import commit failed",
+    },
+    importPreviews: [previewFox],
+  });
+  const page = await harness.openPage("settings");
+
+  await page.getByRole("button", { name: "Import pets" }).click();
+  const drawer = page.getByRole("dialog");
+  await drawer.getByRole("button", { name: "From Codex" }).click();
+  await drawer.getByRole("button", { name: "Import selected" }).click();
+
+  await expect(drawer.getByRole("alert")).toHaveCount(0);
+  await expect(page.locator("[data-sonner-toast]")).toContainText(
+    "Import commit failed",
   );
 });
 

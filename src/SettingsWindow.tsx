@@ -1,7 +1,7 @@
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Info, PawPrint, Plug, Settings2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { toast } from "sonner";
 
@@ -54,9 +54,14 @@ export function SettingsWindow() {
   const { codexPets, busyId: petBusyId } = useCodexPets();
   const isSelecting = useIsSelecting();
   const petVisible = usePetVisible();
+  const reportedLoadErrorRef = useRef<string | null>(null);
 
   const reportErr = (errorMessage: string | null) => {
     if (errorMessage) toast.error(errorMessage);
+  };
+  const reportLoadError = (errorMessage: string) => {
+    reportedLoadErrorRef.current = errorMessage;
+    toast.error(errorMessage, { id: "settings-load-error" });
   };
 
   const selectPet = async (pet: PetSummary) => {
@@ -134,16 +139,36 @@ export function SettingsWindow() {
     [appState?.locale],
   );
 
+  useEffect(() => {
+    if (loadState.status !== "error") {
+      reportedLoadErrorRef.current = null;
+      return;
+    }
+    if (
+      loadState.error &&
+      reportedLoadErrorRef.current !== loadState.error
+    ) {
+      reportLoadError(loadState.error);
+    }
+  }, [loadState.error, loadState.status]);
+
+  const retryLoad = async () => {
+    const result = await commands.reloadAppStore();
+    if (result.errorMessage) {
+      reportLoadError(result.errorMessage);
+    }
+  };
+
   if (loadState.status === "loading") {
     return <LoadingView />;
   }
 
   if (loadState.status === "error") {
     return (
-      <ErrorView
-        message={loadState.error ?? "Unknown error"}
-        onRetry={() => void commands.reloadAppStore()}
-      />
+      <>
+        <ErrorView onRetry={() => void retryLoad()} />
+        <Toaster />
+      </>
     );
   }
 

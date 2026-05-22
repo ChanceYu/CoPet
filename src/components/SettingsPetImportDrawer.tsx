@@ -30,6 +30,7 @@ export function SettingsPetImportDrawer({
   const titleId = useId();
   const descriptionId = useId();
   const petImport = usePetImport({
+    onError: (message) => toast.error(message),
     strings: {
       chooseFoldersTitle: t("chooseFolders"),
       skippedPackages: (count) =>
@@ -59,10 +60,7 @@ export function SettingsPetImportDrawer({
   const runImportAction = async (
     action: () => Promise<{ errorMessage: string | null }>,
   ) => {
-    const result = await action();
-    if (result.errorMessage) {
-      toast.error(result.errorMessage);
-    }
+    await action();
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -170,14 +168,6 @@ export function SettingsPetImportDrawer({
               </Button>
             </div>
           </div>
-        ) : null}
-
-        {petImport.errors.length > 0 ? (
-          <ul className="pet-import-errors" role="alert">
-            {petImport.errors.map((error, index) => (
-              <li key={`${error}-${index}`}>{error}</li>
-            ))}
-          </ul>
         ) : null}
 
         <div

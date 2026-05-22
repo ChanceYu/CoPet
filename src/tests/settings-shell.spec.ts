@@ -91,6 +91,25 @@ test("Reset position failure shows error toast and re-enables button", async ({
   await expect(button).toBeEnabled();
 });
 
+test("load failure shows error toast without rendering error details", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser, {
+    commandErrors: {
+      get_app_state: "settings bootstrap failed",
+    },
+  });
+  const page = await harness.openPage("settings");
+
+  await expect(page.locator("[data-sonner-toast]")).toContainText(
+    "settings bootstrap failed",
+  );
+  await expect(page.locator("main")).not.toContainText(
+    "settings bootstrap failed",
+  );
+  await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
+});
+
 test("ArrowDown moves selection through nav items", async ({ browser }) => {
   const harness = await createAppHarness(browser);
   const page = await harness.openPage("settings");
