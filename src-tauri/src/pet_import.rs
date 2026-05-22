@@ -1,6 +1,8 @@
 use crate::{
+    app_state::AppState,
     config_store::{
-        copy_pet_package_for_import, read_pet_package_for_import, ConfigStore, StoreError,
+        copy_pet_package_for_import, read_pet_package_for_import, safe_pet_storage_id, ConfigStore,
+        StoreError,
     },
     pet_package::{user_pet_id, PetNamespace, PetPackage, PetSummary},
 };
@@ -42,6 +44,21 @@ pub struct PetImportPreviewBatch {
     pub previews: Vec<PetImportPreview>,
     pub skipped: usize,
     pub errors: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PetImportFailure {
+    pub preview_id: String,
+    pub error_message: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PetImportCommitResult {
+    pub imported: Vec<PetSummary>,
+    pub failed: Vec<PetImportFailure>,
+    pub state: AppState,
 }
 
 pub fn create_import_session(store: &ConfigStore) -> Result<PetImportSession, StoreError> {
@@ -97,13 +114,13 @@ pub fn preview_folder_imports(
                         skipped += 1;
                         continue;
                     };
-                    if !safe_storage_id(&package.manifest.id) {
+                    if !safe_pet_storage_id(&package.manifest.id) {
                         skipped += 1;
                         continue;
                     }
 
                     let Some(storage_id) =
-                        source_dir_label(&source_dir).filter(|label| safe_storage_id(label))
+                        source_dir_label(&source_dir).filter(|label| safe_pet_storage_id(label))
                     else {
                         skipped += 1;
                         continue;
@@ -203,6 +220,83 @@ pub fn discard_import_session(store: &ConfigStore, session_id: &str) -> Result<(
     let dir = existing_session_dir(store, session_id)?;
     fs::remove_dir_all(dir)?;
     Ok(())
+}
+
+pub fn commit_import_previews(
+    store: &ConfigStore,
+    session_id: &str,
+    preview_ids: &[String],
+) -> Result<PetImportCommitResult, StoreError> {
+    store.ensure_ready()?;
+    let target_session_dir = existing_session_dir(store, session_id)?;
+
+    let mut imported = Vec::new();
+    let mut failed = Vec::new();
+
+    for preview_id in preview_ids {
+        if !safe_pet_storage_id(preview_id) {
+            failed.push(PetImportFailure {
+                preview_id: preview_id.clone(),
+                error_message: "preview id is invalid".to_string(),
+            });
+            continue;
+        }
+
+        let preview_dir = target_session_dir.join(preview_id);
+        let Some(package) = read_pet_package_for_import(&preview_dir) else {
+            failed.push(PetImportFailure {
+                preview_id: preview_id.clone(),
+                error_message: "preview package is no longer available".to_string(),
+            });
+            continue;
+        };
+        if !safe_pet_storage_id(&package.manifest.id) {
+            failed.push(PetImportFailure {
+                preview_id: preview_id.clone(),
+                error_message: "preview package has an invalid pet id".to_string(),
+            });
+            continue;
+        }
+
+        let storage_id = match store.next_available_user_pet_storage_id(&package.manifest.id) {
+            Ok(storage_id) => storage_id,
+            Err(error) => {
+                failed.push(PetImportFailure {
+                    preview_id: preview_id.clone(),
+                    error_message: error.to_string(),
+                });
+                continue;
+            }
+        };
+        let target_dir = store.pets_dir().join(&storage_id);
+        if let Err(error) = copy_pet_package_for_import(&preview_dir, &target_dir, &package) {
+            failed.push(PetImportFailure {
+                preview_id: preview_id.clone(),
+                error_message: error.to_string(),
+            });
+            continue;
+        }
+
+        fs::remove_dir_all(&preview_dir)?;
+        let sprite_path = package
+            .sprite_path
+            .file_name()
+            .map(|name| target_dir.join(name))
+            .unwrap_or_else(|| package.sprite_path.clone());
+        imported.push(
+            PetPackage {
+                sprite_path,
+                ..package
+            }
+            .summary(PetNamespace::User, &storage_id),
+        );
+    }
+
+    Ok(PetImportCommitResult {
+        imported,
+        failed,
+        state: store.app_state()?,
+    })
 }
 
 fn build_preview(
@@ -473,7 +567,7 @@ fn normalize_zip_preview_root(raw_dir: &Path) -> PathBuf {
     let Some(package) = read_pet_package_for_import(raw_dir) else {
         return raw_dir.to_path_buf();
     };
-    if !safe_storage_id(&package.manifest.id) {
+    if !safe_pet_storage_id(&package.manifest.id) {
         return raw_dir.to_path_buf();
     }
 
@@ -500,15 +594,6 @@ fn is_pet_package_candidate_dir(dir: &Path) -> bool {
 
 fn source_dir_label(dir: &Path) -> Option<&str> {
     dir.file_name().and_then(|name| name.to_str())
-}
-
-fn safe_storage_id(value: &str) -> bool {
-    !value.is_empty()
-        && value != "."
-        && value != ".."
-        && value
-            .chars()
-            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '.'))
 }
 
 fn safe_session_id(value: &str) -> bool {

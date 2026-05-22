@@ -1,8 +1,8 @@
 use copet_lib::{
     config_store::ConfigStore,
     pet_import::{
-        create_import_session, preview_codex_imports, preview_folder_imports, preview_zip_imports,
-        ZIP_PREVIEW_MAX_FILE_BYTES,
+        commit_import_previews, create_import_session, preview_codex_imports,
+        preview_folder_imports, preview_zip_imports, ZIP_PREVIEW_MAX_FILE_BYTES,
     },
 };
 use std::{
@@ -480,4 +480,164 @@ fn preview_folder_imports_collects_staging_errors_and_continues() {
         .join("working-stage")
         .join("pet.json")
         .exists());
+}
+
+#[test]
+fn commit_import_previews_imports_only_selected_previews() {
+    let temp = tempfile::tempdir().unwrap();
+    let store = make_store(&temp);
+    let selected_parent = temp.path().join("pet-packages");
+    create_pet_package(&selected_parent, "alpha", "alpha", "Alpha");
+    create_pet_package(&selected_parent, "beta", "beta", "Beta");
+
+    let session = create_import_session(&store).unwrap();
+    let batch = preview_folder_imports(&store, &session.session_id, &[selected_parent]).unwrap();
+    let alpha_preview_id = batch
+        .previews
+        .iter()
+        .find(|preview| preview.summary.id == "user:alpha")
+        .unwrap()
+        .preview_id
+        .clone();
+
+    let result = commit_import_previews(&store, &session.session_id, &[alpha_preview_id]).unwrap();
+
+    assert_eq!(result.imported.len(), 1);
+    assert_eq!(result.imported[0].id, "user:alpha");
+    assert!(result.failed.is_empty());
+    assert!(store.root().join("pets/alpha/pet.json").exists());
+    assert!(!store.root().join("pets/beta/pet.json").exists());
+}
+
+#[test]
+fn commit_import_previews_allows_system_id_collision() {
+    let temp = tempfile::tempdir().unwrap();
+    let store = make_store(&temp);
+    let source_dir = temp.path().join("copet");
+    create_pet_package(temp.path(), "copet", "copet", "Local CoPet");
+
+    let session = create_import_session(&store).unwrap();
+    let batch = preview_folder_imports(&store, &session.session_id, &[source_dir]).unwrap();
+
+    let result = commit_import_previews(
+        &store,
+        &session.session_id,
+        &[batch.previews[0].preview_id.clone()],
+    )
+    .unwrap();
+
+    assert_eq!(result.imported.len(), 1);
+    assert!(result.state.pets.iter().any(|pet| pet.id == "system:copet"));
+    assert!(result.state.pets.iter().any(|pet| pet.id == "user:copet"));
+    assert!(store.root().join("pets/copet/pet.json").exists());
+}
+
+#[test]
+fn commit_import_previews_suffixes_user_id_collisions_without_rewriting_manifest() {
+    let temp = tempfile::tempdir().unwrap();
+    let store = make_store(&temp);
+    create_pet_package(
+        &store.root().join("pets"),
+        "local-fox",
+        "local-fox",
+        "Local Fox",
+    );
+    let source_dir = temp.path().join("local-fox");
+    create_pet_package(temp.path(), "local-fox", "local-fox", "New Local Fox");
+
+    let session = create_import_session(&store).unwrap();
+    let batch = preview_folder_imports(&store, &session.session_id, &[source_dir]).unwrap();
+
+    let result = commit_import_previews(
+        &store,
+        &session.session_id,
+        &[batch.previews[0].preview_id.clone()],
+    )
+    .unwrap();
+
+    assert_eq!(result.imported.len(), 1);
+    assert_eq!(result.imported[0].id, "user:local-fox-2");
+    assert!(result
+        .state
+        .pets
+        .iter()
+        .any(|pet| pet.id == "user:local-fox"));
+    assert!(result
+        .state
+        .pets
+        .iter()
+        .any(|pet| pet.id == "user:local-fox-2"));
+    let raw_manifest = fs::read_to_string(store.root().join("pets/local-fox-2/pet.json")).unwrap();
+    assert!(raw_manifest.contains(r#""id": "local-fox""#));
+    assert!(!raw_manifest.contains("user:"));
+}
+
+#[test]
+fn commit_import_previews_rejects_malformed_or_unknown_session_without_installing() {
+    let temp = tempfile::tempdir().unwrap();
+    let store = make_store(&temp);
+
+    assert!(commit_import_previews(&store, "../bad-session", &["alpha".to_string()]).is_err());
+    assert!(commit_import_previews(&store, "session-unknown", &["alpha".to_string()]).is_err());
+    assert!(!store.root().join("pets/alpha").exists());
+    assert!(!store.import_previews_dir().join("bad-session").exists());
+    assert!(!store.import_previews_dir().join("session-unknown").exists());
+}
+
+#[test]
+fn commit_import_previews_reports_missing_selected_preview_and_continues() {
+    let temp = tempfile::tempdir().unwrap();
+    let store = make_store(&temp);
+    let source_dir = temp.path().join("alpha");
+    create_pet_package(temp.path(), "alpha", "alpha", "Alpha");
+
+    let session = create_import_session(&store).unwrap();
+    let batch = preview_folder_imports(&store, &session.session_id, &[source_dir]).unwrap();
+
+    let result = commit_import_previews(
+        &store,
+        &session.session_id,
+        &["missing".to_string(), batch.previews[0].preview_id.clone()],
+    )
+    .unwrap();
+
+    assert_eq!(result.imported.len(), 1);
+    assert_eq!(result.imported[0].id, "user:alpha");
+    assert_eq!(result.failed.len(), 1);
+    assert_eq!(result.failed[0].preview_id, "missing");
+    assert!(result.failed[0]
+        .error_message
+        .contains("preview package is no longer available"));
+    assert!(store.root().join("pets/alpha/pet.json").exists());
+}
+
+#[test]
+fn commit_import_previews_suffixes_duplicate_manifest_ids_in_one_request() {
+    let temp = tempfile::tempdir().unwrap();
+    let store = make_store(&temp);
+    let selected_parent = temp.path().join("pet-packages");
+    create_pet_package(&selected_parent, "first-fox", "shared-fox", "First Fox");
+    create_pet_package(&selected_parent, "second-fox", "shared-fox", "Second Fox");
+
+    let session = create_import_session(&store).unwrap();
+    let batch = preview_folder_imports(&store, &session.session_id, &[selected_parent]).unwrap();
+    let preview_ids = batch
+        .previews
+        .iter()
+        .map(|preview| preview.preview_id.clone())
+        .collect::<Vec<_>>();
+
+    let result = commit_import_previews(&store, &session.session_id, &preview_ids).unwrap();
+
+    assert_eq!(
+        result
+            .imported
+            .iter()
+            .map(|summary| summary.id.as_str())
+            .collect::<Vec<_>>(),
+        vec!["user:shared-fox", "user:shared-fox-2"]
+    );
+    assert!(result.failed.is_empty());
+    assert!(store.root().join("pets/shared-fox/pet.json").exists());
+    assert!(store.root().join("pets/shared-fox-2/pet.json").exists());
 }

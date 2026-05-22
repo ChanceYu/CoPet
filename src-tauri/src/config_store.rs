@@ -316,10 +316,18 @@ impl ConfigStore {
                 skipped += 1;
                 continue;
             };
+            if !safe_pet_storage_id(storage_id) {
+                skipped += 1;
+                continue;
+            }
             let Some(package) = read_pet_package(&source_dir) else {
                 skipped += 1;
                 continue;
             };
+            if !safe_pet_storage_id(&package.manifest.id) {
+                skipped += 1;
+                continue;
+            }
             copy_pet_package(&source_dir, &self.pets_dir().join(storage_id), &package)?;
             imported += 1;
         }
@@ -342,6 +350,11 @@ impl ConfigStore {
         if manifest.id.trim().is_empty() {
             return Err(StoreError::InvalidPetPackage(
                 "pet id cannot be empty".to_string(),
+            ));
+        }
+        if !safe_pet_storage_id(&manifest.id) {
+            return Err(StoreError::InvalidPetPackage(
+                "pet id must be a safe storage id".to_string(),
             ));
         }
         if sprite_bytes.is_empty() {
@@ -390,6 +403,11 @@ impl ConfigStore {
         if package.manifest.id.trim().is_empty() {
             return Err(StoreError::InvalidPetPackage(
                 "pet id cannot be empty".to_string(),
+            ));
+        }
+        if !safe_pet_storage_id(&package.manifest.id) {
+            return Err(StoreError::InvalidPetPackage(
+                "pet id must be a safe storage id".to_string(),
             ));
         }
         if fs::metadata(&package.sprite_path)?.len() == 0 {
@@ -513,6 +531,28 @@ impl ConfigStore {
     pub fn pets_dir(&self) -> PathBuf {
         self.root.join("pets")
     }
+
+    pub fn next_available_user_pet_storage_id(&self, base_id: &str) -> Result<String, StoreError> {
+        if !safe_pet_storage_id(base_id) {
+            return Err(StoreError::InvalidPetPackage(
+                "pet id must be a safe storage id".to_string(),
+            ));
+        }
+
+        let pets_dir = self.pets_dir();
+        if !pets_dir.join(base_id).exists() {
+            return Ok(base_id.to_string());
+        }
+
+        for suffix in 2.. {
+            let candidate = format!("{base_id}-{suffix}");
+            if !pets_dir.join(&candidate).exists() {
+                return Ok(candidate);
+            }
+        }
+
+        unreachable!("exhausted numeric pet storage id suffixes")
+    }
 }
 
 impl StoreError {
@@ -608,6 +648,15 @@ fn resolve_current_pet_id(current_pet_id: &str, pets: &[PetSummary]) -> Option<S
 
     let user_id = user_pet_id(current_pet_id);
     pets.iter().any(|pet| pet.id == user_id).then_some(user_id)
+}
+
+pub(crate) fn safe_pet_storage_id(raw: &str) -> bool {
+    !raw.is_empty()
+        && raw != "."
+        && raw != ".."
+        && raw
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '.'))
 }
 
 fn copy_pet_package(
