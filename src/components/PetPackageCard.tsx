@@ -59,43 +59,45 @@ export function PetPackageCard({
       data-mode={mode}
       data-pet-id={pet.id}
     >
-      <div className="pet-card-top-actions">
-        {active ? (
-          <span
-            className="pet-card-pill pet-card-status pet-card-current-status"
-            title={strings.currentPet}
-          >
-            <Check aria-hidden="true" />
-          </span>
-        ) : null}
-        {onRemove ? (
-          <button
-            className="pet-card-pill pet-card-action"
-            disabled={busy}
-            onClick={(event) => {
-              stopActionClick(event);
-              onRemove(pet);
-            }}
-            title={strings.remove}
-            type="button"
-          >
-            <Trash2 aria-hidden="true" />
-          </button>
-        ) : null}
+      <div className="pet-card-top-row">
+        <span className="pet-card-preview-identity">
+          {mode === "preview" ? (
+            <Checkbox
+              aria-label={previewSelectLabel}
+              checked={checked}
+              className="pet-card-checkbox"
+              disabled={busy}
+              onClick={(event) => event.stopPropagation()}
+              onCheckedChange={() => onToggleChecked?.(pet)}
+            />
+          ) : null}
+          <span className="pet-card-id">{pet.slug}</span>
+        </span>
+        <div className="pet-card-top-actions">
+          {active ? (
+            <span
+              className="pet-card-pill pet-card-status pet-card-current-status"
+              title={strings.currentPet}
+            >
+              <Check aria-hidden="true" />
+            </span>
+          ) : null}
+          {onRemove ? (
+            <button
+              className="pet-card-pill pet-card-action"
+              disabled={busy}
+              onClick={(event) => {
+                stopActionClick(event);
+                onRemove(pet);
+              }}
+              title={strings.remove}
+              type="button"
+            >
+              <Trash2 aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
       </div>
-      <span className="pet-card-preview-identity">
-        {mode === "preview" ? (
-          <Checkbox
-            aria-label={previewSelectLabel}
-            checked={checked}
-            className="pet-card-checkbox"
-            disabled={busy}
-            onClick={(event) => event.stopPropagation()}
-            onCheckedChange={() => onToggleChecked?.(pet)}
-          />
-        ) : null}
-        <span className="pet-card-id">{pet.slug}</span>
-      </span>
       <button
         aria-label={pet.displayName}
         aria-pressed={mode === "preview" ? checked : undefined}

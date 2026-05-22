@@ -2006,27 +2006,31 @@ select {
   opacity: 0.72;
 }
 
-.pet-card-top-actions {
+.pet-card-top-row {
   position: absolute;
   top: 6px;
   right: 6px;
+  left: 8px;
   z-index: 2;
   display: flex;
-  max-width: calc(100% - 56px);
   align-items: center;
-  justify-content: flex-end;
   gap: 5px;
 }
 
 .pet-card-preview-identity {
-  position: absolute;
-  top: 7px;
-  left: 8px;
-  z-index: 2;
-  display: grid;
-  justify-items: start;
-  gap: 4px;
-  max-width: calc(100% - 48px);
+  display: inline-flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 5px;
+}
+
+.pet-card-top-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
 }
 
 .pet-card-preview-identity .pet-card-checkbox.ui-checkbox {
@@ -2124,7 +2128,9 @@ select {
 
 .pet-card-id {
   display: inline-block;
+  min-width: 0;
   max-width: 100%;
+  flex: 0 1 auto;
   overflow: hidden;
   padding: 2px 6px;
   border: 1px solid hsl(var(--border) / 0.86);
