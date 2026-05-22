@@ -57,8 +57,16 @@ test("codex import previews pets selected by default", async ({ browser }) => {
 
   await expect(page.getByRole("button", { name: "Local Fox" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Local Panda" })).toBeVisible();
-  await expect(page.getByRole("checkbox", { name: "Select preview pet Local Fox" })).toBeChecked();
-  await expect(page.getByRole("checkbox", { name: "Select preview pet Local Panda" })).toBeChecked();
+  const foxCheckbox = page.getByRole("checkbox", {
+    name: "Select preview pet Local Fox",
+  });
+  const pandaCheckbox = page.getByRole("checkbox", {
+    name: "Select preview pet Local Panda",
+  });
+  await expect(foxCheckbox).toBeChecked();
+  await expect(foxCheckbox).toHaveAttribute("aria-checked", "true");
+  await expect(pandaCheckbox).toBeChecked();
+  await expect(pandaCheckbox).toHaveAttribute("aria-checked", "true");
   expect(harness.calls).toContainEqual({
     command: "create_pet_import_session",
     args: {},
@@ -98,7 +106,7 @@ test("preview rows can be unselected removed and imported", async ({ browser }) 
   await page.getByRole("button", { name: "Import pets" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "From Codex" }).click();
 
-  await page.getByRole("checkbox", { name: "Select preview pet Local Panda" }).uncheck();
+  await page.getByRole("checkbox", { name: "Select preview pet Local Panda" }).click();
   await page.getByRole("button", { name: "Import selected" }).click();
 
   expect(harness.calls).toContainEqual({
@@ -155,7 +163,7 @@ test("duplicate preview summary ids render and act independently", async ({ brow
 
   await expect(firstCard).toHaveCount(0);
   await expect(secondCard).toHaveCount(1);
-  await secondCard.getByRole("checkbox", { name: "Select preview pet Shared Fox" }).uncheck();
+  await secondCard.getByRole("checkbox", { name: "Select preview pet Shared Fox" }).click();
   await drawer.getByRole("button", { name: "Select all" }).click();
   await drawer.getByRole("button", { name: "Import selected" }).click();
 

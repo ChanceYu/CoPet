@@ -106,11 +106,13 @@ export function SettingsPetImportDrawer({
           {t("importPetsHint")}
         </DrawerDescription>
       </DrawerHeader>
-      <DrawerBody style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <DrawerBody className="pet-import-drawer-body">
         <div className="pet-import-actions">
           <Button
+            className="pet-toolbar-button"
             disabled={petImport.isBusy}
             onClick={() => void runImportAction(petImport.previewCodex)}
+            size="sm"
             type="button"
             variant="outline"
           >
@@ -119,8 +121,10 @@ export function SettingsPetImportDrawer({
           </Button>
           <Button
             aria-expanded={showLocalChoices}
+            className="pet-toolbar-button"
             disabled={petImport.isBusy}
             onClick={() => setShowLocalChoices((current) => !current)}
+            size="sm"
             type="button"
             variant="outline"
           >
@@ -132,8 +136,10 @@ export function SettingsPetImportDrawer({
         {showLocalChoices ? (
           <div className="pet-import-local-actions">
             <Button
+              className="pet-toolbar-button"
               disabled={petImport.isBusy}
               onClick={() => void runImportAction(petImport.previewFolders)}
+              size="sm"
               type="button"
               variant="outline"
             >
@@ -141,8 +147,10 @@ export function SettingsPetImportDrawer({
               {t("chooseFolders")}
             </Button>
             <Button
+              className="pet-toolbar-button"
               disabled={petImport.isBusy}
               onClick={() => void runImportAction(petImport.previewZips)}
+              size="sm"
               type="button"
               variant="outline"
             >
@@ -156,6 +164,7 @@ export function SettingsPetImportDrawer({
           <div className="pet-import-toolbar">
             <div className="pet-import-toolbar-main">
               <Button
+                className="pet-toolbar-button"
                 disabled={petImport.isBusy}
                 onClick={petImport.selectAll}
                 size="sm"
@@ -173,14 +182,17 @@ export function SettingsPetImportDrawer({
             </div>
             <div className="pet-import-toolbar-actions">
               <Button
+                className="pet-toolbar-button"
                 disabled={petImport.isBusy || petImport.selectedCount === 0}
                 onClick={() => void runImportAction(petImport.importSelected)}
                 size="sm"
                 type="button"
+                variant="outline"
               >
                 {t("importSelected")}
               </Button>
               <Button
+                className="pet-toolbar-button"
                 disabled={petImport.isBusy || !hasPreviews}
                 onClick={() => void runImportAction(petImport.importAll)}
                 size="sm"

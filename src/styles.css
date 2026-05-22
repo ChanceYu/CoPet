@@ -885,6 +885,10 @@ select {
   justify-items: end;
 }
 
+.ui-drawer-root[data-state="closed"] {
+  pointer-events: none;
+}
+
 .ui-drawer-overlay {
   position: absolute;
   inset: 0;
@@ -892,6 +896,11 @@ select {
   border: 0;
   background: hsl(226 54% 12% / 0.22);
   cursor: pointer;
+  animation: ui-drawer-overlay-in 180ms ease-out both;
+}
+
+.ui-drawer-overlay[data-state="closed"] {
+  animation: ui-drawer-overlay-out 140ms ease-in both;
 }
 
 .ui-drawer-content {
@@ -912,6 +921,66 @@ select {
   box-shadow:
     0 24px 54px hsl(226 54% 12% / 0.2),
     inset 0 1px 0 hsl(0 0% 100% / 0.75);
+  will-change: transform;
+  animation: ui-drawer-slide-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.ui-drawer-content[data-state="closed"] {
+  animation: ui-drawer-slide-out 140ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@keyframes ui-drawer-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ui-drawer-overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes ui-drawer-slide-in {
+  from {
+    transform: translateX(calc(100% + 16px));
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes ui-drawer-slide-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(100% + 16px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-drawer-overlay,
+  .ui-drawer-overlay[data-state="closed"],
+  .ui-drawer-content,
+  .ui-drawer-content[data-state="closed"] {
+    animation: none;
+  }
+
+  .ui-drawer-overlay[data-state="closed"] {
+    opacity: 0;
+  }
+
+  .ui-drawer-content,
+  .ui-drawer-content[data-state="closed"] {
+    transform: none;
+  }
 }
 
 .ui-drawer-close.ui-button {
@@ -997,16 +1066,61 @@ select {
 }
 
 .ui-checkbox {
-  width: 15px;
-  height: 15px;
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid hsl(213 96% 81% / 0.82);
+  border-radius: 4px;
+  color: hsl(var(--primary-foreground));
+  background: hsl(var(--card) / 0.9);
+  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.75) inset;
   margin: 0;
-  accent-color: hsl(var(--primary));
   cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    opacity 120ms ease;
+}
+
+.ui-checkbox:hover {
+  border-color: hsl(var(--primary) / 0.58);
+  background: hsl(189 93% 96% / 0.9);
+}
+
+.ui-checkbox:focus-visible {
+  outline: 2px solid hsl(var(--ring) / 0.48);
+  outline-offset: 2px;
+}
+
+.ui-checkbox[data-state="checked"] {
+  border-color: hsl(var(--primary) / 0.92);
+  background: hsl(var(--primary));
+  box-shadow:
+    0 8px 16px hsl(var(--primary) / 0.16),
+    0 1px 0 hsl(0 0% 100% / 0.35) inset;
 }
 
 .ui-checkbox:disabled {
   cursor: wait;
   opacity: 0.6;
+}
+
+.ui-checkbox-indicator {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+}
+
+.ui-checkbox-indicator svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 3;
 }
 
 .ui-select {
@@ -1667,18 +1781,35 @@ select {
 }
 
 .pet-import-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+.pet-import-drawer-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pet-import-actions .ui-button,
+.pet-import-local-actions .ui-button,
+.pet-import-toolbar .ui-button {
+  min-width: 0;
+  width: 100%;
+  white-space: nowrap;
 }
 
 .pet-import-local-actions {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  padding: 10px;
+  padding: 8px;
   border: 1px solid hsl(var(--border) / 0.72);
   border-radius: var(--radius);
-  background: hsl(var(--card) / 0.66);
+  background:
+    linear-gradient(180deg, hsl(var(--card) / 0.78), hsl(var(--card) / 0.58));
+  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.62) inset;
 }
 
 .pet-import-toolbar {
@@ -1686,6 +1817,12 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, hsl(var(--card) / 0.78), hsl(var(--card) / 0.55));
+  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.6) inset;
 }
 
 .pet-import-toolbar-main,
@@ -1705,6 +1842,10 @@ select {
   justify-content: flex-end;
 }
 
+.pet-import-toolbar .ui-button {
+  width: auto;
+}
+
 .pet-import-errors {
   display: grid;
   gap: 6px;
@@ -1718,12 +1859,11 @@ select {
   line-height: 1.35;
 }
 
-.pet-card-checkbox {
+.pet-card-checkbox.ui-checkbox {
   flex: 0 0 auto;
   width: 16px;
   height: 16px;
-  margin: 0;
-  accent-color: hsl(var(--primary));
+  box-shadow: 0 8px 18px hsl(226 54% 12% / 0.1);
 }
 
 .pet-list-region {

@@ -1,6 +1,6 @@
 import type { HTMLAttributes, KeyboardEvent, ReactNode } from "react";
 import { X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { cn } from "../../lib/utils";
 import { Button } from "./button";
@@ -27,6 +27,31 @@ export function Drawer({
 }: DrawerProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const [isMounted, setIsMounted] = useState(open);
+
+  useEffect(() => {
+    if (open) {
+      setIsMounted(true);
+      return;
+    }
+
+    if (!isMounted) {
+      return;
+    }
+
+    const prefersReducedMotion = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (prefersReducedMotion) {
+      setIsMounted(false);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setIsMounted(false);
+    }, drawerAnimationMs);
+    return () => window.clearTimeout(timeoutId);
+  }, [isMounted, open]);
 
   useEffect(() => {
     if (!open) {
@@ -49,7 +74,7 @@ export function Drawer({
     };
   }, [open]);
 
-  if (!open) {
+  if (!isMounted) {
     return null;
   }
 
@@ -95,10 +120,11 @@ export function Drawer({
   };
 
   return (
-    <div className="ui-drawer-root">
+    <div className="ui-drawer-root" data-state={open ? "open" : "closed"}>
       <div
         aria-hidden="true"
         className="ui-drawer-overlay"
+        data-state={open ? "open" : "closed"}
         onClick={() => {
           if (!closeDisabled) {
             onOpenChange(false);
@@ -109,6 +135,7 @@ export function Drawer({
       <div
         aria-modal="true"
         className={cn("ui-drawer-content", className)}
+        data-state={open ? "open" : "closed"}
         onKeyDown={handleKeyDown}
         ref={contentRef}
         role="dialog"
@@ -131,6 +158,8 @@ export function Drawer({
     </div>
   );
 }
+
+const drawerAnimationMs = 180;
 
 export function DrawerHeader({
   className,

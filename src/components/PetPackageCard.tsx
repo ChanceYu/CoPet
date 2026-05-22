@@ -3,6 +3,7 @@ import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 
 import type { PetSummary } from "../lib/appTypes";
 import { PetSprite } from "./PetSprite";
+import { Checkbox } from "./ui/checkbox";
 
 export type PetPackageCardProps = {
   active?: boolean;
@@ -55,14 +56,13 @@ export function PetPackageCard({
     <article className="pet-card" data-active={active} data-pet-id={pet.id}>
       <div className="pet-card-top-actions">
         {mode === "preview" ? (
-          <input
+          <Checkbox
             aria-label={previewSelectLabel}
             checked={checked}
             className="pet-card-checkbox"
             disabled={busy}
-            onChange={() => onToggleChecked?.(pet)}
             onClick={(event) => event.stopPropagation()}
-            type="checkbox"
+            onCheckedChange={() => onToggleChecked?.(pet)}
           />
         ) : null}
         {active ? (
