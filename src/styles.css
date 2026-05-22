@@ -1726,10 +1726,6 @@ select {
   accent-color: hsl(var(--primary));
 }
 
-.hidden-file-input {
-  display: none;
-}
-
 .pet-list-region {
   position: relative;
   flex: 1;

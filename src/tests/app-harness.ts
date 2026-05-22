@@ -507,60 +507,11 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
           await emitAppState();
           return state;
         }
-        if (command === "install_codex_pet") {
-          const pet = codexPets.find((item) => item.id === args.petId);
-          if (pet && !state.pets.some((item) => item.id === pet.id)) {
-            state = { ...state, pets: [...state.pets, pet], currentPetId: pet.id };
-          } else if (pet) {
-            state = { ...state, currentPetId: pet.id };
-          }
-          await emitAppState();
-          return state;
-        }
         if (command === "remove_pet") {
           state = {
             ...state,
             currentPetId: state.currentPetId === args.petId ? copet.id : state.currentPetId,
             pets: state.pets.filter((pet) => pet.id !== args.petId),
-          };
-          await emitAppState();
-          return state;
-        }
-        if (command === "import_pet_files") {
-          const manifest = JSON.parse(args.manifestJson as string) as Partial<PetSummary>;
-          const pet = {
-            id: manifest.id ?? "local-pet",
-            slug: manifest.slug ?? manifest.id ?? "local-pet",
-            displayName: manifest.displayName ?? "Local Pet",
-            description: manifest.description ?? "",
-            frameWidth: manifest.frameWidth ?? 192,
-            frameHeight: manifest.frameHeight ?? 208,
-            gridColumns: manifest.gridColumns ?? 8,
-            gridRows: manifest.gridRows ?? 9,
-            builtIn: false,
-            spritePath: `/imported/${manifest.id}/${args.spriteFileName as string}`,
-          };
-          state = {
-            ...state,
-            currentPetId: pet.id,
-            pets: [...state.pets.filter((item) => item.id !== pet.id), pet],
-          };
-          await emitAppState();
-          return state;
-        }
-        if (command === "import_pet_folder") {
-          const pet = {
-            ...goku,
-            id: "dialog-pet",
-            slug: "dialog-pet",
-            displayName: "Dialog Pet",
-            builtIn: false,
-            spritePath: `${args.folderPath as string}/spritesheet.webp`,
-          };
-          state = {
-            ...state,
-            currentPetId: pet.id,
-            pets: [...state.pets.filter((item) => item.id !== pet.id), pet],
           };
           await emitAppState();
           return state;

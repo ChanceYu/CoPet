@@ -196,56 +196,6 @@ async function refreshPetListsInternal(): Promise<CommandResult> {
 
 export const refreshPetLists = refreshPetListsInternal;
 
-export async function installCodexPet(pet: PetSummary): Promise<CommandResult> {
-  appStore.patch({ petBusyId: pet.id });
-  try {
-    await invoke<AppState>("install_codex_pet", { petId: pet.id });
-    return await refreshPetListsInternal();
-  } catch (error) {
-    return { errorMessage: toMessage(error) };
-  } finally {
-    appStore.patch({ petBusyId: null });
-  }
-}
-
-export async function importLocalPet(
-  manifestJson: string,
-  spriteFile: File,
-): Promise<CommandResult & { state: AppState | null }> {
-  appStore.patch({ petBusyId: "local-import" });
-  try {
-    const spriteBytes = Array.from(
-      new Uint8Array(await spriteFile.arrayBuffer()),
-    );
-    const next = await invoke<AppState>("import_pet_files", {
-      manifestJson,
-      spriteFileName: spriteFile.name,
-      spriteBytes,
-    });
-    await refreshPetListsInternal();
-    return { errorMessage: null, state: next };
-  } catch (error) {
-    return { errorMessage: toMessage(error), state: null };
-  } finally {
-    appStore.patch({ petBusyId: null });
-  }
-}
-
-export async function importLocalPetFolder(
-  folderPath: string,
-): Promise<CommandResult & { state: AppState | null }> {
-  appStore.patch({ petBusyId: "local-import" });
-  try {
-    const next = await invoke<AppState>("import_pet_folder", { folderPath });
-    await refreshPetListsInternal();
-    return { errorMessage: null, state: next };
-  } catch (error) {
-    return { errorMessage: toMessage(error), state: null };
-  } finally {
-    appStore.patch({ petBusyId: null });
-  }
-}
-
 export async function createPetImportSession(): Promise<
   CommandResult & { session: PetImportSession | null }
 > {
