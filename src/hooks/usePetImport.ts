@@ -32,6 +32,11 @@ type PetImportOperation = {
   id: number;
 };
 
+type PetImportSessionPromise = {
+  generation: number;
+  promise: Promise<PetImportSessionResult>;
+};
+
 export type PetImportStrings = {
   busy: string;
   chooseFoldersTitle: string;
@@ -93,7 +98,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
   const [errors, setErrors] = useState<string[]>([]);
   const [isBusy, setIsBusy] = useState(false);
   const sessionRef = useRef<PetImportSession | null>(null);
-  const sessionPromiseRef = useRef<Promise<PetImportSessionResult> | null>(null);
+  const sessionPromiseRef = useRef<PetImportSessionPromise | null>(null);
   const previewStateRef = useRef<PreviewState>({
     previews: [],
     selectedPreviewIds: new Set(),
@@ -177,13 +182,21 @@ export function usePetImport(options: UsePetImportOptions = {}) {
         return sessionRef.current;
       }
 
-      if (!sessionPromiseRef.current) {
-        sessionPromiseRef.current = createPetImportSession().finally(() => {
-          sessionPromiseRef.current = null;
+      if (sessionPromiseRef.current?.generation !== operation.generation) {
+        const sessionPromiseEntry: PetImportSessionPromise = {
+          generation: operation.generation,
+          promise: createPetImportSession(),
+        };
+        sessionPromiseEntry.promise.finally(() => {
+          if (sessionPromiseRef.current === sessionPromiseEntry) {
+            sessionPromiseRef.current = null;
+          }
         });
+        sessionPromiseRef.current = sessionPromiseEntry;
       }
 
-      const result = await sessionPromiseRef.current;
+      const sessionPromiseEntry = sessionPromiseRef.current;
+      const result = await sessionPromiseEntry.promise;
       if (!isOperationCurrent(operation)) {
         if (result.session) {
           await discardSessionBestEffort(result.session);
@@ -541,6 +554,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
 
     const activeSession = sessionRef.current;
     const pendingSession = sessionPromiseRef.current;
+    sessionPromiseRef.current = null;
     setSessionState(null);
     setPreviewStateSafely(() => ({
       previews: [],
@@ -553,7 +567,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
     }
 
     if (pendingSession) {
-      const result = await pendingSession;
+      const result = await pendingSession.promise;
       if (result.session) {
         await discardSessionBestEffort(result.session);
       }

@@ -20,7 +20,7 @@ export function Drawer({
   onOpenChange,
   onKeyDown,
   open,
-  overlayLabel = "Close drawer",
+  overlayLabel: _overlayLabel = "Close drawer",
   ...props
 }: DrawerProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -92,10 +92,9 @@ export function Drawer({
   return (
     <div className="ui-drawer-root">
       <div
-        aria-label={overlayLabel}
+        aria-hidden="true"
         className="ui-drawer-overlay"
         onClick={() => onOpenChange(false)}
-        role="button"
         tabIndex={-1}
       />
       <div
