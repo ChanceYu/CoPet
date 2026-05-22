@@ -459,6 +459,7 @@ fn canonical_event_kind(kind: &str) -> Option<&'static str> {
 
 fn agent_display_name(agent: &str) -> &str {
     match agent {
+        "antigravity" => "Antigravity",
         "codex" => "Codex",
         "claude-code" => "Claude Code",
         "gemini" => "Gemini",
@@ -473,6 +474,7 @@ fn format_agent_message(event: &RuntimeEvent) -> Option<String> {
         "permission.waiting" | "session.waiting" => Some("Waiting for you...".to_string()),
         "session.stop" | "session.end" => Some("Done.".to_string()),
         "session.error" => Some("Error.".to_string()),
+        "tool.after" if event.tool.is_none() && event.tool_input.is_none() => None,
         "tool.before" | "tool.after" => {
             let tool_name = event.tool.as_deref().unwrap_or("tool");
             Some(format_tool_message(
@@ -521,12 +523,12 @@ fn format_tool_message(
         }
         "bash" => {
             if let Some(command) = string_field(tool_input, "command") {
-                let head = command.split_whitespace().next().unwrap_or(command);
-                let head = clip(head, 24);
+                let command = compact_whitespace(command);
+                let command = clip(&command, 56);
                 return if past {
-                    format!("Ran {head}")
+                    format!("Ran {command}")
                 } else {
-                    format!("Running {head}")
+                    format!("Running {command}")
                 };
             }
             if past {
@@ -557,6 +559,13 @@ fn format_tool_message(
                     format!("Listed {pattern}")
                 } else {
                     format!("Listing {pattern}")
+                };
+            }
+            if let Some(name) = path_subject(tool_input) {
+                return if past {
+                    format!("Listed {name}")
+                } else {
+                    format!("Listing {name}")
                 };
             }
             if past {
@@ -609,14 +618,15 @@ fn format_tool_message(
 
 fn canonical_tool_kind(tool_name: &str) -> &'static str {
     match tool_name.to_ascii_lowercase().as_str() {
-        "read" => "read",
-        "edit" | "multiedit" => "edit",
-        "write" => "write",
-        "bash" | "shell" => "bash",
-        "grep" => "grep",
-        "glob" => "glob",
-        "webfetch" | "websearch" => "webfetch",
-        "task" | "agent" => "task",
+        "read" | "view_file" => "read",
+        "edit" | "multiedit" | "replace_file_content" | "multi_replace_file_content" => "edit",
+        "write" | "write_to_file" => "write",
+        "bash" | "shell" | "run_command" => "bash",
+        "grep" | "grep_search" => "grep",
+        "glob" | "list_dir" | "find_by_name" => "glob",
+        "webfetch" | "websearch" | "search_web" | "read_url_content" => "webfetch",
+        "task" | "agent" | "invoke_subagent" | "define_subagent" | "manage_subagents"
+        | "send_message" => "task",
         _ => "unknown",
     }
 }
@@ -630,6 +640,10 @@ fn path_subject(tool_input: Option<&serde_json::Value>) -> Option<String> {
 
 fn string_field<'a>(value: Option<&'a serde_json::Value>, key: &str) -> Option<&'a str> {
     value?.get(key)?.as_str()
+}
+
+fn compact_whitespace(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 fn basename(path: &str) -> String {

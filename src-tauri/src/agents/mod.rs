@@ -505,23 +505,29 @@ fn helper_script() -> &'static str {
 agent="${1:-unknown}"
 kind="${2:-unknown}"
 input="$(cat)"
+compact_input="$(printf '%s' "$input" | tr '\n\r' '  ')"
 json_escape() {
   printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
 json_string_field() {
   key="$1"
-  printf '%s' "$input" | sed -n 's/.*"'"$key"'"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1
+  printf '%s' "$compact_input" | sed -n 's/.*"'"$key"'"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1
 }
-tool="$(printf '%s' "$input" | sed -n 's/.*"tool_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+tool="$(json_string_field tool_name)"
 if [ -z "$tool" ]; then
-  tool="$(printf '%s' "$input" | sed -n 's/.*"tool"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+  tool="$(json_string_field tool)"
+fi
+if [ -z "$tool" ]; then
+  tool="$(printf '%s' "$compact_input" | sed -n 's/.*"toolCall"[[:space:]]*:[[:space:]]*{[[:space:]]*"name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
 fi
 tool_input=""
-for key in file_path filePath path command pattern url description subject; do
-  value="$(json_string_field "$key")"
+for field in file_path:file_path filePath:filePath path:path command:command pattern:pattern url:url description:description subject:subject AbsolutePath:filePath TargetFile:filePath DirectoryPath:path SearchDirectory:path CommandLine:command Query:pattern Pattern:pattern Url:url Description:description Prompt:subject Input:subject Message:subject; do
+  source_key="${field%%:*}"
+  output_key="${field#*:}"
+  value="$(json_string_field "$source_key")"
   if [ -n "$value" ]; then
     escaped_value="$(json_escape "$value")"
-    tool_input=",\"toolInput\":{\"$key\":\"$escaped_value\"}"
+    tool_input=",\"toolInput\":{\"$output_key\":\"$escaped_value\"}"
     break
   fi
 done

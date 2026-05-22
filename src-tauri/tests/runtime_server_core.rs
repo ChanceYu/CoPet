@@ -115,8 +115,56 @@ fn runtime_core_tracks_latest_message_per_agent() {
     assert_eq!(codex.text, "Reading App.tsx");
     assert_eq!(codex.updated_at_ms, 100);
     assert_eq!(claude.display_name, "Claude Code");
-    assert_eq!(claude.text, "Running pnpm");
+    assert_eq!(claude.text, "Running pnpm test:frontend");
     assert_eq!(claude.updated_at_ms, 200);
+}
+
+#[test]
+fn runtime_core_keeps_antigravity_tool_detail_when_post_tool_lacks_payload() {
+    let mut core = RuntimeCore::new("secret".to_string());
+
+    core.handle_event(
+        Some("Bearer secret"),
+        RuntimeEvent {
+            agent: "antigravity".to_string(),
+            kind: "tool.before".to_string(),
+            tool: Some("run_command".to_string()),
+            tool_input: Some(json!({
+                "command": "pnpm test:frontend src/tests/settings-workflows.spec.ts"
+            })),
+            session_id: None,
+            timestamp: None,
+        },
+        100,
+    )
+    .unwrap();
+    core.handle_event(
+        Some("Bearer secret"),
+        RuntimeEvent {
+            agent: "antigravity".to_string(),
+            kind: "tool.after".to_string(),
+            tool: None,
+            tool_input: None,
+            session_id: None,
+            timestamp: None,
+        },
+        200,
+    )
+    .unwrap();
+
+    let status = core.status();
+    let message = status
+        .messages
+        .iter()
+        .find(|message| message.agent == "antigravity")
+        .unwrap();
+
+    assert_eq!(message.display_name, "Antigravity");
+    assert_eq!(
+        message.text,
+        "Running pnpm test:frontend src/tests/settings-workflows.spec.ts"
+    );
+    assert_eq!(message.updated_at_ms, 100);
 }
 
 #[test]
@@ -194,7 +242,7 @@ fn runtime_core_normalizes_agent_aliases_and_raw_cli_event_kinds_for_messages() 
         .unwrap();
 
     assert_eq!(claude.display_name, "Claude Code");
-    assert_eq!(claude.text, "Running pnpm");
+    assert_eq!(claude.text, "Running pnpm build");
     assert_eq!(opencode.display_name, "OpenCode");
     assert_eq!(opencode.text, "Reading App.tsx");
     assert_eq!(gemini.display_name, "Gemini");
