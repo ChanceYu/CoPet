@@ -119,9 +119,7 @@ test("agent integrations render Antigravity as the third adapter", async ({
   const page = await harness.openPage("settings");
   await page.getByRole("tab", { name: "Agents" }).click();
 
-  const names = await page.locator(".adapter-card-name").allTextContents();
-
-  expect(names).toEqual([
+  await expect(page.locator(".adapter-card-name")).toHaveText([
     "Claude Code",
     "Codex",
     "Antigravity",
@@ -147,14 +145,21 @@ test("antigravity integration switch installs and uninstalls the adapter", async
   await antigravitySwitch.click();
   await expect(antigravitySwitch).toHaveAttribute("aria-checked", "false");
 
-  expect(harness.calls).toContainEqual({
-    command: "install_agent_adapter",
-    args: { adapterId: "antigravity" },
-  });
-  expect(harness.calls).toContainEqual({
-    command: "uninstall_agent_adapter",
-    args: { adapterId: "antigravity" },
-  });
+  const adapterCalls = harness.calls.filter(
+    (call) =>
+      call.command === "install_agent_adapter" ||
+      call.command === "uninstall_agent_adapter",
+  );
+  expect(adapterCalls).toEqual([
+    {
+      command: "install_agent_adapter",
+      args: { adapterId: "antigravity" },
+    },
+    {
+      command: "uninstall_agent_adapter",
+      args: { adapterId: "antigravity" },
+    },
+  ]);
 });
 
 test("settings page uses Chinese copy from app locale", async ({ browser }) => {
