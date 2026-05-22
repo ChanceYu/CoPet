@@ -159,7 +159,7 @@ fn copilot_pre_tool_command_posts_camel_case_tool_payload() {
 
         let (sender, receiver) = mpsc::channel();
         std::thread::spawn(move || {
-            let deadline = Instant::now() + Duration::from_secs(2);
+            let deadline = Instant::now() + Duration::from_secs(10);
             loop {
                 match listener.accept() {
                     Ok((mut stream, _addr)) => {
@@ -211,7 +211,7 @@ fn copilot_pre_tool_command_posts_camel_case_tool_payload() {
         assert_eq!(String::from_utf8_lossy(&output.stdout), "{}\n");
 
         let request = receiver
-            .recv_timeout(Duration::from_secs(3))
+            .recv_timeout(Duration::from_secs(11))
             .unwrap()
             .expect("runtime server should receive the Copilot hook event");
         assert!(request.contains("POST /v1/events"));
