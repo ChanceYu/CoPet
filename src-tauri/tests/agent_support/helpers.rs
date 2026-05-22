@@ -17,7 +17,7 @@ pub fn manager_with_fake_agents(
     manager_with_fake_agent_names(
         root,
         home,
-        &["claude", "codex", "antigravity", "gemini", "opencode"],
+        &["claude", "codex", "agy", "gemini", "opencode"],
     )
 }
 

@@ -138,7 +138,7 @@ fn auto_install_detected_agents_installs_only_available_cli_adapters() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path().join(".copet");
     let home = temp.path().join("home");
-    let manager = manager_with_fake_agent_names(&root, &home, &["codex", "antigravity", "gemini"]);
+    let manager = manager_with_fake_agent_names(&root, &home, &["codex", "agy", "gemini"]);
 
     let summary = manager.auto_install_detected_agents();
 
@@ -192,7 +192,7 @@ fn auto_install_detected_agents_continues_after_adapter_failure() {
     let claude_settings = home.join(".claude/settings.json");
     fs::create_dir_all(claude_settings.parent().unwrap()).unwrap();
     fs::write(&claude_settings, "{not valid json").unwrap();
-    let manager = manager_with_fake_agent_names(&root, &home, &["claude", "codex", "antigravity"]);
+    let manager = manager_with_fake_agent_names(&root, &home, &["claude", "codex", "agy"]);
 
     let summary = manager.auto_install_detected_agents();
 

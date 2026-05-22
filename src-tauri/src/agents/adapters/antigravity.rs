@@ -82,7 +82,7 @@ impl CliAdapter for AntigravityAdapter {
     }
 
     fn executable_names(&self) -> &'static [&'static str] {
-        &["antigravity"]
+        &["agy"]
     }
 }
 
