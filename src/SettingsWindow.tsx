@@ -100,10 +100,6 @@ export function SettingsWindow() {
       | "repair_agent_adapter"
       | "uninstall_agent_adapter",
   ) => commands.runAdapterAction(adapter, action);
-  const importLocalPet = (manifestJson: string, spriteFile: File) =>
-    commands.importLocalPet(manifestJson, spriteFile);
-  const importLocalPetFolder = (folderPath: string) =>
-    commands.importLocalPetFolder(folderPath);
   const refreshPetLists = async () => {
     const r = await commands.refreshPetLists();
     reportErr(r.errorMessage);
@@ -219,8 +215,6 @@ export function SettingsWindow() {
           {activeSection === "pets" && (
             <SettingsPetsSection
               currentPetId={currentPetId}
-              importLocalPet={importLocalPet}
-              importLocalPetFolder={importLocalPetFolder}
               installedPets={installedPets}
               isSelecting={isSelecting}
               petBusyId={petBusyId}

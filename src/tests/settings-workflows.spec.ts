@@ -1,7 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 
 import {
   codexAdapter,
@@ -94,9 +91,9 @@ test("settings page uses Chinese copy from app locale", async ({ browser }) => {
 
   const page = await harness.openPage("settings");
 
-  await expect(page.getByRole("heading", { name: "宠物" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "宠物", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "刷新列表" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "导入文件夹" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "导入宠物" })).toBeVisible();
 
   await page.getByRole("tab", { name: "通用" }).click();
   await expect(page.getByRole("slider", { name: "尺寸" })).toBeVisible();
@@ -121,7 +118,7 @@ test("settings page uses English copy from app locale", async ({ browser }) => {
   await expect(page.getByText("Rejected")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Pets" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Refresh list" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Import folder" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Import pets" })).toBeVisible();
 
   await page.getByRole("tab", { name: "General" }).click();
   await expect(page.getByRole("slider", { name: "Size" })).toBeVisible();
@@ -346,58 +343,21 @@ test("pet window size setting uses a slider and updates the pet window", async (
   await expect(sizeSlider).toHaveValue("90");
 });
 
-test("importing a local pet folder calls the import command", async ({
-  browser,
-}) => {
-  const harness = await createAppHarness(browser);
-  const page = await harness.openPage("settings");
-  const petDir = await mkdtemp(join(tmpdir(), "copet-local-pet-"));
-  const manifest = JSON.stringify({
-    id: "local-fox",
-    slug: "local-fox",
-    displayName: "Local Fox",
-    description: "Imported from a local folder.",
-    frameWidth: 192,
-    frameHeight: 208,
-    gridColumns: 8,
-    gridRows: 9,
-  });
-  await writeFile(join(petDir, "pet.json"), manifest);
-  await writeFile(join(petDir, "spritesheet.webp"), "sprite");
-  const localFolderInput = page.locator('input[type="file"]');
-
-  await expect(localFolderInput).toHaveAttribute("directory", "");
-  await expect(localFolderInput).toHaveAttribute("webkitdirectory", "");
-  await localFolderInput.setInputFiles(petDir);
-
-  await expect(page.getByRole("button", { name: /local fox/i })).toBeVisible();
-  expect(harness.calls).toContainEqual(
-    expect.objectContaining({
-      command: "import_pet_files",
-      args: expect.objectContaining({
-        manifestJson: manifest,
-        spriteFileName: "spritesheet.webp",
-      }),
-    }),
-  );
-});
-
-test("import local button opens a native directory dialog", async ({ browser }) => {
+test("import pets drawer opens a native directory preview dialog", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
-    dialogOpenPath: "/tmp/dialog-pet",
+    dialogOpenPaths: [["/tmp/dialog-pet"]],
   });
   const page = await harness.openPage("settings");
-  await page.evaluate(() => {
-    window.__copetScrolledPetIds = [];
-    Element.prototype.scrollIntoView = function () {
-      const petId = (this as HTMLElement).dataset.petId;
-      if (petId) {
-        window.__copetScrolledPetIds.push(petId);
-      }
-    };
-  });
 
-  await page.getByRole("button", { name: "Import folder" }).click();
+  await page.getByRole("button", { name: "Import pets" }).click();
+  const drawer = page.getByRole("dialog", { name: "Import pets" });
+  await drawer.getByRole("button", { name: "From folders" }).click();
+  await drawer.getByRole("button", { name: "Choose folders" }).click();
+  await expect
+    .poll(() =>
+      harness.calls.some((call) => call.command === "preview_pet_import_folders"),
+    )
+    .toBe(true);
 
   expect(harness.calls).toContainEqual({
     command: "plugin:dialog|open",
@@ -405,15 +365,14 @@ test("import local button opens a native directory dialog", async ({ browser }) 
       options: expect.objectContaining({
         canCreateDirectories: false,
         directory: true,
-        multiple: false,
-        title: "Import folder",
+        multiple: true,
+        title: "Choose folders",
       }),
     },
   });
-  await expect(page.getByRole("button", { name: /dialog pet/i })).toBeVisible();
   expect(harness.calls).toContainEqual({
-    command: "import_pet_folder",
-    args: { folderPath: "/tmp/dialog-pet" },
+    command: "preview_pet_import_folders",
+    args: { sessionId: "session-1", folderPaths: ["/tmp/dialog-pet"] },
   });
 });
 
@@ -434,23 +393,6 @@ test("settings tip box presents custom pet guidance without an import button", a
   await expect(
     page.getByRole("button", { name: "Import package" }),
   ).toHaveCount(0);
-});
-
-test("invalid local pet folder shows a toast and skips import", async ({ browser }) => {
-  const harness = await createAppHarness(browser);
-  const page = await harness.openPage("settings");
-  const petDir = await mkdtemp(join(tmpdir(), "copet-invalid-pet-"));
-  await writeFile(join(petDir, "pet.json"), "{}");
-
-  await page.locator('input[type="file"]').setInputFiles(petDir);
-
-  await expect(page.getByText(
-    "The folder must contain pet.json and either spritesheet.webp or spritesheet.png.",
-  )).toBeVisible();
-  await expect(
-    page.locator('[data-sonner-toaster][data-x-position="center"][data-y-position="top"]'),
-  ).toBeAttached();
-  expect(harness.calls.some((call) => call.command === "import_pet_files")).toBe(false);
 });
 
 test("pet interactions settings sub-section renders all controls", async ({ browser }) => {
@@ -545,37 +487,4 @@ test("pet sounds switch calls set_pet_interactions", async ({ browser }) => {
       },
     },
   ]);
-});
-
-test("importing a local pet folder accepts png spritesheet fallback", async ({
-  browser,
-}) => {
-  const harness = await createAppHarness(browser);
-  const page = await harness.openPage("settings");
-  const petDir = await mkdtemp(join(tmpdir(), "copet-local-png-pet-"));
-  const manifest = JSON.stringify({
-    id: "local-png-fox",
-    slug: "local-png-fox",
-    displayName: "Local Png Fox",
-    description: "Imported from a local folder with png fallback.",
-    frameWidth: 192,
-    frameHeight: 208,
-    gridColumns: 8,
-    gridRows: 9,
-  });
-  await writeFile(join(petDir, "pet.json"), manifest);
-  await writeFile(join(petDir, "spritesheet.png"), "sprite");
-
-  await page.locator('input[type="file"]').setInputFiles(petDir);
-
-  await expect(page.getByRole("button", { name: /local png fox/i })).toBeVisible();
-  expect(harness.calls).toContainEqual(
-    expect.objectContaining({
-      command: "import_pet_files",
-      args: expect.objectContaining({
-        manifestJson: manifest,
-        spriteFileName: "spritesheet.png",
-      }),
-    }),
-  );
 });

@@ -1719,10 +1719,7 @@ select {
 }
 
 .pet-card-checkbox {
-  position: absolute;
-  top: 9px;
-  left: 9px;
-  z-index: 3;
+  flex: 0 0 auto;
   width: 16px;
   height: 16px;
   margin: 0;

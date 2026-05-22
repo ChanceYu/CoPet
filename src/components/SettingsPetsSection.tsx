@@ -1,31 +1,19 @@
-import { open } from "@tauri-apps/plugin-dialog";
 import { Import, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { ChangeEvent } from "react";
-import { toast } from "sonner";
 
-import type { AppState, PetSummary } from "../lib/appTypes";
+import type { PetSummary } from "../lib/appTypes";
 import {
   refreshListMinimumLoadingMs,
   wait,
 } from "../lib/petWindowUi";
 import { PetPackageGrid } from "./PetPackageGrid";
+import { SettingsPetImportDrawer } from "./SettingsPetImportDrawer";
 import { Button } from "./ui/button";
 
 import type { Translator } from "../lib/settingsTypes";
 
-type LocalImportResult = {
-  errorMessage: string | null;
-  state: AppState | null;
-};
-
 interface SettingsPetsSectionProps {
   currentPetId: string;
-  importLocalPet: (
-    manifestJson: string,
-    spriteFile: File,
-  ) => Promise<LocalImportResult>;
-  importLocalPetFolder: (path: string) => Promise<LocalImportResult>;
   installedPets: PetSummary[];
   isSelecting: boolean;
   petBusyId: string | null;
@@ -37,8 +25,6 @@ interface SettingsPetsSectionProps {
 
 export function SettingsPetsSection({
   currentPetId,
-  importLocalPet,
-  importLocalPetFolder,
   installedPets,
   isSelecting,
   petBusyId,
@@ -48,6 +34,7 @@ export function SettingsPetsSection({
   t,
 }: SettingsPetsSectionProps) {
   const [refreshing, setRefreshing] = useState(false);
+  const [importDrawerOpen, setImportDrawerOpen] = useState(false);
   const [pendingScrollPetId, setPendingScrollPetId] = useState<string | null>(
     null,
   );
@@ -76,66 +63,6 @@ export function SettingsPetsSection({
     }
   };
 
-  const handleLocalFolderFiles = async (
-    event: ChangeEvent<HTMLInputElement>,
-  ) => {
-    const files = Array.from(event.currentTarget.files ?? []);
-    event.currentTarget.value = "";
-    const manifestFile = files.find((file) => file.name === "pet.json");
-    const spriteFile = files.find(
-      (file) =>
-        file.name === "spritesheet.webp" ||
-        file.name === "spritesheet.png",
-    );
-
-    if (!manifestFile || !spriteFile) {
-      toast.error(t("invalidLocalPetFolder"));
-      return;
-    }
-
-    const manifestJson = await manifestFile.text();
-    const result = await importLocalPet(manifestJson, spriteFile);
-    if (result.errorMessage) {
-      toast.error(result.errorMessage);
-      return;
-    }
-
-    const nextCurrentPetId = result.state?.currentPetId;
-    if (nextCurrentPetId) {
-      setPendingScrollPetId(nextCurrentPetId);
-    }
-  };
-
-  const handleImportLocalFolder = async () => {
-    const selectedPath = await open({
-      canCreateDirectories: false,
-      directory: true,
-      multiple: false,
-      title: t("importLocalFolder"),
-    });
-
-    if (typeof selectedPath !== "string") {
-      return;
-    }
-
-    const result = await importLocalPetFolder(selectedPath);
-    if (result.errorMessage) {
-      // Rust backend returns a hardcoded English message for the missing-
-      // manifest/sprite case; translate it here so non-English locales see
-      // the localized copy.
-      const message = /folder must contain pet\.json/i.test(result.errorMessage)
-        ? t("invalidLocalPetFolder")
-        : result.errorMessage;
-      toast.error(message);
-      return;
-    }
-
-    const nextCurrentPetId = result.state?.currentPetId;
-    if (nextCurrentPetId) {
-      setPendingScrollPetId(nextCurrentPetId);
-    }
-  };
-
   return (
     <div className="settings-pets">
       <h2 id="settings-section-panel-heading">{t("pets")}</h2>
@@ -160,23 +87,16 @@ export function SettingsPetsSection({
         </Button>
         <Button
           className="pet-toolbar-button"
-          disabled={petBusyId === "local-import"}
-          onClick={() => void handleImportLocalFolder()}
+          disabled={petBusyId === "import-preview" || petBusyId === "import-commit"}
+          onClick={() => setImportDrawerOpen(true)}
           size="sm"
           type="button"
           variant="outline"
         >
           <Import aria-hidden="true" />
-          {t("importLocalFolder")}
+          {t("importPets")}
         </Button>
       </div>
-
-      <input
-        {...({ directory: "", webkitdirectory: "" } as Record<string, string>)}
-        className="hidden-file-input"
-        onChange={(event) => void handleLocalFolderFiles(event)}
-        type="file"
-      />
 
       <PetPackageGrid
         currentPetId={currentPetId}
@@ -200,6 +120,11 @@ export function SettingsPetsSection({
             void selectPet(target);
           },
         })}
+      />
+      <SettingsPetImportDrawer
+        onOpenChange={setImportDrawerOpen}
+        open={importDrawerOpen}
+        t={t}
       />
     </div>
   );
