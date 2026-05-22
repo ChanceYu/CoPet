@@ -182,6 +182,15 @@ export const codexAdapter: AdapterSummary = {
   message: "Configuration path not created yet",
 };
 
+export const antigravityAdapter: AdapterSummary = {
+  id: "antigravity",
+  displayName: "Antigravity",
+  configPath: "/home/.gemini/config/hooks.json",
+  installed: false,
+  healthy: false,
+  message: "Configuration path not created yet",
+};
+
 export async function createAppHarness(browser: Browser, options: HarnessOptions = {}) {
   const context = await browser.newContext();
   const pages: Page[] = [];
