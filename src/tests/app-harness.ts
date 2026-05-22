@@ -312,8 +312,7 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
         }
         if (
           command === "preview_codex_pet_imports" ||
-          command === "preview_pet_import_folders" ||
-          command === "preview_pet_import_zips"
+          command === "preview_pet_import_folders"
         ) {
           return { previews: importPreviews, skipped: 0, errors: [] };
         }

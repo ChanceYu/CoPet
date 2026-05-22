@@ -8,7 +8,6 @@ import {
   getDownloadsDir,
   previewCodexPetImports,
   previewPetImportFolders,
-  previewPetImportZips,
 } from "../lib/appCommands";
 import type {
   PetImportPreview,
@@ -17,7 +16,6 @@ import type {
 } from "../lib/appTypes";
 
 const CHOOSE_FOLDERS_TITLE = "Choose folders";
-const CHOOSE_ZIP_TITLE = "Choose zip";
 const SKIPPED_INVALID_PACKAGES = "Skipped invalid packages";
 
 type PetImportActionResult = { errorMessage: string | null };
@@ -45,15 +43,12 @@ type PetImportSessionPromise = {
 export type PetImportStrings = {
   busy: string;
   chooseFoldersTitle: string;
-  chooseZipTitle: string;
   createSessionFailed: string;
   dialogOpenFailed: string;
   importFailed: string;
   previewCodexFailed: string;
   previewFoldersFailed: string;
-  previewZipsFailed: string;
   skippedPackages: (count: number) => string;
-  zipFilterName: string;
 };
 
 export type UsePetImportOptions = {
@@ -63,15 +58,12 @@ export type UsePetImportOptions = {
 const defaultStrings: PetImportStrings = {
   busy: "Import is already in progress.",
   chooseFoldersTitle: CHOOSE_FOLDERS_TITLE,
-  chooseZipTitle: CHOOSE_ZIP_TITLE,
   createSessionFailed: "Could not create import session.",
   dialogOpenFailed: "Could not open the file picker.",
   importFailed: "Could not import pets.",
   previewCodexFailed: "Could not preview Codex pets.",
   previewFoldersFailed: "Could not preview folders.",
-  previewZipsFailed: "Could not preview zip files.",
   skippedPackages: (count) => `${SKIPPED_INVALID_PACKAGES}: ${count}`,
-  zipFilterName: "Zip archives",
 };
 
 function normalizeDialogPaths(value: string | string[] | null): string[] {
@@ -395,73 +387,6 @@ export function usePetImport(options: UsePetImportOptions = {}) {
     strings.previewFoldersFailed,
   ]);
 
-  const previewZips = useCallback(async () => {
-    return runOperation(async (operation) => {
-      let selectedPaths: string[];
-      try {
-        const defaultPath = await getDownloadsDir();
-        if (!isOperationCurrent(operation)) {
-          return;
-        }
-
-        selectedPaths = normalizeDialogPaths(
-          await open({
-            canCreateDirectories: false,
-            defaultPath: defaultPath ?? undefined,
-            directory: false,
-            filters: [{ extensions: ["zip"], name: strings.zipFilterName }],
-            multiple: true,
-            title: strings.chooseZipTitle,
-          }),
-        );
-      } catch (error) {
-        const message = `${strings.dialogOpenFailed} ${toMessage(error)}`;
-        if (isOperationCurrent(operation)) {
-          appendErrors([message]);
-        }
-        return message;
-      }
-
-      if (selectedPaths.length === 0 || !isOperationCurrent(operation)) {
-        return null;
-      }
-
-      const sessionResult = await ensureSession(operation);
-      if (sessionResult.errorMessage) {
-        return sessionResult.errorMessage;
-      }
-      if (!sessionResult.session || !isOperationCurrent(operation)) {
-        return null;
-      }
-
-      const result = await previewPetImportZips(
-        sessionResult.session.sessionId,
-        selectedPaths,
-      );
-      if (!isOperationCurrent(operation)) {
-        return null;
-      }
-      if (result.errorMessage || !result.batch) {
-        const message = result.errorMessage ?? strings.previewZipsFailed;
-        appendErrors([message]);
-        return message;
-      }
-
-      applyBatch(operation, result.batch);
-      return null;
-    });
-  }, [
-    appendErrors,
-    applyBatch,
-    ensureSession,
-    isOperationCurrent,
-    runOperation,
-    strings.chooseZipTitle,
-    strings.dialogOpenFailed,
-    strings.previewZipsFailed,
-    strings.zipFilterName,
-  ]);
-
   const commitPreviews = useCallback(
     async (previewIds: string[]) => {
       return runOperation(async (operation) => {
@@ -628,7 +553,6 @@ export function usePetImport(options: UsePetImportOptions = {}) {
       isBusy,
       previewCodex,
       previewFolders,
-      previewZips,
       previews,
       removePreview,
       selectAll,
@@ -647,7 +571,6 @@ export function usePetImport(options: UsePetImportOptions = {}) {
       isBusy,
       previewCodex,
       previewFolders,
-      previewZips,
       previews,
       removePreview,
       selectAll,

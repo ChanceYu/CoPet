@@ -495,21 +495,6 @@ fn preview_pet_import_folders(
 }
 
 #[tauri::command]
-fn preview_pet_import_zips(
-    session_id: String,
-    zip_paths: Vec<String>,
-) -> Result<PetImportPreviewBatch, String> {
-    let paths = zip_paths.into_iter().map(PathBuf::from).collect::<Vec<_>>();
-    ConfigStore::from_home()
-        .and_then(|store| {
-            let locale = store.effective_locale()?;
-            pet_import::preview_zip_imports(&store, &session_id, &paths)
-                .map(|batch| pet_import::localize_preview_batch_partial_errors(batch, locale))
-        })
-        .map_err(localize_store_error)
-}
-
-#[tauri::command]
 fn commit_pet_import_previews(
     app: tauri::AppHandle,
     session_id: String,
@@ -987,7 +972,6 @@ pub fn run() {
             pet_import_commands::create_pet_import_session,
             preview_codex_pet_imports,
             preview_pet_import_folders,
-            preview_pet_import_zips,
             commit_pet_import_previews,
             discard_pet_import_previews,
             get_downloads_dir,

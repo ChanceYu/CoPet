@@ -210,8 +210,7 @@ export async function createPetImportSession(): Promise<
 async function previewPetImports(
   command:
     | "preview_codex_pet_imports"
-    | "preview_pet_import_folders"
-    | "preview_pet_import_zips",
+    | "preview_pet_import_folders",
   args: Record<string, unknown>,
 ): Promise<CommandResult & { batch: PetImportPreviewBatch | null }> {
   appStore.patch({ petBusyId: "import-preview" });
@@ -239,13 +238,6 @@ export async function previewPetImportFolders(
     sessionId,
     folderPaths,
   });
-}
-
-export async function previewPetImportZips(
-  sessionId: string,
-  zipPaths: string[],
-): Promise<CommandResult & { batch: PetImportPreviewBatch | null }> {
-  return previewPetImports("preview_pet_import_zips", { sessionId, zipPaths });
 }
 
 export async function commitPetImportPreviews(

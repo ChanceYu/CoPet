@@ -1,4 +1,4 @@
-import { FolderOpen, PackageOpen, Upload } from "lucide-react";
+import { FolderOpen, PackageOpen } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -32,10 +32,8 @@ export function SettingsPetImportDrawer({
   const petImport = usePetImport({
     strings: {
       chooseFoldersTitle: t("chooseFolders"),
-      chooseZipTitle: t("chooseZip"),
       skippedPackages: (count) =>
         t("petImportSkipped").replace("{count}", String(count)),
-      zipFilterName: t("chooseZip"),
     },
   });
 
@@ -145,17 +143,6 @@ export function SettingsPetImportDrawer({
             >
               <FolderOpen aria-hidden="true" />
               {t("chooseFolders")}
-            </Button>
-            <Button
-              className="pet-toolbar-button"
-              disabled={petImport.isBusy}
-              onClick={() => void runImportAction(petImport.previewZips)}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Upload aria-hidden="true" />
-              {t("chooseZip")}
             </Button>
           </div>
         ) : null}

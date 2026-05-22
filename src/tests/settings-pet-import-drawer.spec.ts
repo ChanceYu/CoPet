@@ -279,9 +279,9 @@ test("closing the drawer discards the preview session", async ({ browser }) => {
   });
 });
 
-test("local source choice triggers folder and zip dialogs", async ({ browser }) => {
+test("local source choice only triggers the folder dialog", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
-    dialogOpenPaths: [["/pets/folder-one", "/pets/folder-two"], ["/pets/zip-one.zip"]],
+    dialogOpenPaths: [["/pets/folder-one", "/pets/folder-two"]],
     importPreviews: [previewFox],
   });
   const page = await harness.openPage("settings");
@@ -290,16 +290,10 @@ test("local source choice triggers folder and zip dialogs", async ({ browser }) 
   const drawer = page.getByRole("dialog");
   await drawer.getByRole("button", { name: "From folders" }).click();
   await drawer.getByRole("button", { name: "Choose folders" }).click();
+  await expect(drawer.getByRole("button", { name: "Choose zip" })).toHaveCount(0);
   await expect
     .poll(() =>
       harness.calls.some((call) => call.command === "preview_pet_import_folders"),
-    )
-    .toBe(true);
-  await expect(drawer.getByRole("button", { name: "Choose zip" })).toBeEnabled();
-  await drawer.getByRole("button", { name: "Choose zip" }).click();
-  await expect
-    .poll(() =>
-      harness.calls.some((call) => call.command === "preview_pet_import_zips"),
     )
     .toBe(true);
 
@@ -310,11 +304,5 @@ test("local source choice triggers folder and zip dialogs", async ({ browser }) 
       folderPaths: ["/pets/folder-one", "/pets/folder-two"],
     },
   });
-  expect(harness.calls).toContainEqual({
-    command: "preview_pet_import_zips",
-    args: {
-      sessionId: "session-1",
-      zipPaths: ["/pets/zip-one.zip"],
-    },
-  });
+  expect(harness.calls.some((call) => call.command === "preview_pet_import_zips")).toBe(false);
 });

@@ -86,7 +86,7 @@ test("app harness commit import preserves selected pet and reports missing previ
       {
         previewId: "preview-goku",
         summary: goku,
-        sourceLabel: "goku.zip",
+        sourceLabel: "goku",
         intendedPetId: goku.id,
         selectedByDefault: true,
       },
