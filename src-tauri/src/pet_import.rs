@@ -7,10 +7,11 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeSet,
-    fs,
+    fs, io,
     path::{Path, PathBuf},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
+use zip::ZipArchive;
 
 const STALE_SESSION_AGE: Duration = Duration::from_secs(24 * 60 * 60);
 
@@ -140,6 +141,61 @@ pub fn preview_folder_imports(
     })
 }
 
+pub fn preview_zip_imports(
+    store: &ConfigStore,
+    session_id: &str,
+    zip_paths: &[PathBuf],
+) -> Result<PetImportPreviewBatch, StoreError> {
+    store.ensure_ready()?;
+    let target_session_dir = existing_session_dir(store, session_id)?;
+
+    let mut previews = Vec::new();
+    let mut skipped = 0;
+    let mut errors = Vec::new();
+
+    for zip_path in zip_paths {
+        let scratch_dir = match unique_scratch_dir(&target_session_dir, zip_path) {
+            Ok(dir) => dir,
+            Err(error) => {
+                errors.push(format!("could not stage {}: {error}", zip_path.display()));
+                continue;
+            }
+        };
+        match extract_zip_for_preview(zip_path, &scratch_dir) {
+            Ok(preview_root) => {
+                match preview_folder_imports(store, session_id, &[preview_root]) {
+                    Ok(mut batch) => {
+                        previews.append(&mut batch.previews);
+                        skipped += batch.skipped;
+                        errors.append(&mut batch.errors);
+                    }
+                    Err(error) => {
+                        errors.push(format!("could not preview {}: {error}", zip_path.display()))
+                    }
+                }
+                let _ = fs::remove_dir_all(&scratch_dir);
+            }
+            Err(message) => {
+                errors.push(message);
+                let _ = fs::remove_dir_all(&scratch_dir);
+            }
+        }
+    }
+
+    previews.sort_by(|left, right| {
+        left.summary
+            .display_name
+            .cmp(&right.summary.display_name)
+            .then_with(|| left.summary.id.cmp(&right.summary.id))
+    });
+
+    Ok(PetImportPreviewBatch {
+        previews,
+        skipped,
+        errors,
+    })
+}
+
 pub fn discard_import_session(store: &ConfigStore, session_id: &str) -> Result<(), StoreError> {
     let dir = existing_session_dir(store, session_id)?;
     fs::remove_dir_all(dir)?;
@@ -236,6 +292,89 @@ fn folder_candidates(folder: &Path) -> Result<Vec<PathBuf>, String> {
     }
     candidates.sort();
     Ok(candidates)
+}
+
+fn unique_scratch_dir(session_dir: &Path, zip_path: &Path) -> Result<PathBuf, StoreError> {
+    let stem = zip_path
+        .file_stem()
+        .and_then(|name| name.to_str())
+        .map(sanitize_preview_segment)
+        .unwrap_or_else(|| "archive".to_string());
+    let base = format!(".zip-{stem}");
+
+    for suffix in 1.. {
+        let candidate = if suffix == 1 {
+            session_dir.join(&base)
+        } else {
+            session_dir.join(format!("{base}-{suffix}"))
+        };
+        match fs::create_dir(&candidate) {
+            Ok(()) => return Ok(candidate),
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(error.into()),
+        }
+    }
+    unreachable!()
+}
+
+fn extract_zip_for_preview(zip_path: &Path, scratch_dir: &Path) -> Result<PathBuf, String> {
+    let file = fs::File::open(zip_path)
+        .map_err(|error| format!("could not open {}: {error}", zip_path.display()))?;
+    let mut archive = ZipArchive::new(file)
+        .map_err(|error| format!("could not read {}: {error}", zip_path.display()))?;
+    let raw_dir = scratch_dir.join("contents");
+    fs::create_dir(&raw_dir)
+        .map_err(|error| format!("could not stage {}: {error}", zip_path.display()))?;
+
+    for index in 0..archive.len() {
+        let mut file = archive
+            .by_index(index)
+            .map_err(|error| format!("could not read {}: {error}", zip_path.display()))?;
+        let Some(enclosed_name) = file.enclosed_name() else {
+            return Err(format!(
+                "unsafe zip path in {}: {}",
+                zip_path.display(),
+                file.name()
+            ));
+        };
+        let target_path = raw_dir.join(enclosed_name);
+
+        if file.is_dir() {
+            fs::create_dir_all(&target_path)
+                .map_err(|error| format!("could not stage {}: {error}", zip_path.display()))?;
+            continue;
+        }
+
+        if let Some(parent) = target_path.parent() {
+            fs::create_dir_all(parent)
+                .map_err(|error| format!("could not stage {}: {error}", zip_path.display()))?;
+        }
+        let mut target_file = fs::File::create(&target_path)
+            .map_err(|error| format!("could not stage {}: {error}", zip_path.display()))?;
+        io::copy(&mut file, &mut target_file)
+            .map_err(|error| format!("could not stage {}: {error}", zip_path.display()))?;
+    }
+
+    Ok(normalize_zip_preview_root(&raw_dir))
+}
+
+fn normalize_zip_preview_root(raw_dir: &Path) -> PathBuf {
+    let Some(package) = read_pet_package_for_import(raw_dir) else {
+        return raw_dir.to_path_buf();
+    };
+    if !safe_storage_id(&package.manifest.id) {
+        return raw_dir.to_path_buf();
+    }
+
+    let normalized_dir = raw_dir
+        .parent()
+        .map(|parent| parent.join(&package.manifest.id))
+        .unwrap_or_else(|| raw_dir.to_path_buf());
+    if fs::rename(raw_dir, &normalized_dir).is_ok() {
+        normalized_dir
+    } else {
+        raw_dir.to_path_buf()
+    }
 }
 
 fn is_pet_package_dir(dir: &Path) -> bool {

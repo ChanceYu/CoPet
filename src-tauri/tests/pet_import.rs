@@ -1,9 +1,12 @@
 use copet_lib::{
     config_store::ConfigStore,
-    pet_import::{create_import_session, preview_codex_imports, preview_folder_imports},
+    pet_import::{
+        create_import_session, preview_codex_imports, preview_folder_imports, preview_zip_imports,
+    },
 };
 use std::{
     fs,
+    io::Write,
     path::{Path, PathBuf},
 };
 
@@ -37,6 +40,33 @@ fn create_pet_package(root: &Path, storage_id: &str, manifest_id: &str, display_
     fs::write(package_dir.join("spritesheet.png"), b"sprite").unwrap();
 }
 
+fn manifest_bytes(id: &str, name: &str) -> Vec<u8> {
+    format!(
+        r#"{{
+  "id": "{id}",
+  "slug": "{id}",
+  "displayName": "{name}",
+  "description": "A test pet.",
+  "frameWidth": 160,
+  "frameHeight": 64,
+  "gridColumns": 8,
+  "gridRows": 9
+}}"#
+    )
+    .into_bytes()
+}
+
+fn write_zip(path: &Path, entries: &[(&str, &[u8])]) {
+    let file = fs::File::create(path).unwrap();
+    let mut zip = zip::ZipWriter::new(file);
+    let options = zip::write::SimpleFileOptions::default();
+    for (name, contents) in entries {
+        zip.start_file(name, options).unwrap();
+        zip.write_all(contents).unwrap();
+    }
+    zip.finish().unwrap();
+}
+
 #[test]
 fn preview_codex_imports_stages_valid_packages_without_installing() {
     let temp = tempfile::tempdir().unwrap();
@@ -58,6 +88,88 @@ fn preview_codex_imports_stages_valid_packages_without_installing() {
     assert!(preview.summary.sprite_path.contains("import-previews"));
     assert!(preview.selected_by_default);
     assert!(!store.root().join("pets/space-cat").exists());
+}
+
+#[test]
+fn preview_zip_imports_accepts_root_package() {
+    let temp = tempfile::tempdir().unwrap();
+    let store = make_store(&temp);
+    let zip_path = temp.path().join("root-pet.zip");
+    write_zip(
+        &zip_path,
+        &[
+            ("pet.json", &manifest_bytes("root-pet", "Root Pet")),
+            ("spritesheet.png", b"sprite"),
+        ],
+    );
+
+    let session = create_import_session(&store).unwrap();
+    let batch = preview_zip_imports(&store, &session.session_id, &[zip_path]).unwrap();
+
+    assert_eq!(batch.previews.len(), 1);
+    assert_eq!(batch.skipped, 0);
+    assert!(batch.errors.is_empty());
+    let preview = &batch.previews[0];
+    assert_eq!(preview.summary.id, "user:root-pet");
+    assert!(preview.summary.sprite_path.contains("import-previews"));
+    assert!(!store.root().join("pets/root-pet").exists());
+}
+
+#[test]
+fn preview_zip_imports_accepts_multiple_child_packages() {
+    let temp = tempfile::tempdir().unwrap();
+    let store = make_store(&temp);
+    let zip_path = temp.path().join("pets.zip");
+    write_zip(
+        &zip_path,
+        &[
+            ("alpha/pet.json", &manifest_bytes("alpha", "Alpha")),
+            ("alpha/spritesheet.png", b"alpha"),
+            ("beta/pet.json", &manifest_bytes("beta", "Beta")),
+            ("beta/spritesheet.webp", b"beta"),
+        ],
+    );
+
+    let session = create_import_session(&store).unwrap();
+    let batch = preview_zip_imports(&store, &session.session_id, &[zip_path]).unwrap();
+
+    assert_eq!(batch.skipped, 0);
+    assert!(batch.errors.is_empty());
+    assert_eq!(
+        batch
+            .previews
+            .iter()
+            .map(|preview| preview.summary.id.as_str())
+            .collect::<Vec<_>>(),
+        vec!["user:alpha", "user:beta"]
+    );
+    assert!(!store.root().join("pets/alpha").exists());
+    assert!(!store.root().join("pets/beta").exists());
+}
+
+#[test]
+fn preview_zip_imports_rejects_path_traversal() {
+    let temp = tempfile::tempdir().unwrap();
+    let store = make_store(&temp);
+    let zip_path = temp.path().join("unsafe.zip");
+    write_zip(
+        &zip_path,
+        &[
+            ("pet.json", &manifest_bytes("root-pet", "Root Pet")),
+            ("spritesheet.png", b"sprite"),
+            ("../escape.txt", b"escape"),
+        ],
+    );
+
+    let session = create_import_session(&store).unwrap();
+    let batch = preview_zip_imports(&store, &session.session_id, &[zip_path]).unwrap();
+
+    assert!(batch.previews.is_empty());
+    assert!(!temp.path().join("escape.txt").exists());
+    assert!(batch
+        .errors
+        .iter()
+        .any(|error| error.contains("unsafe zip path")));
 }
 
 #[test]
