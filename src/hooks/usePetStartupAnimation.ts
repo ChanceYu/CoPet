@@ -33,6 +33,10 @@ type StartupIdentity = {
   selectedSoundPackId: string | null;
 };
 
+function prefersReducedMotion(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 export function usePetStartupAnimation({
   selectedPetId,
   selectedSoundPackId,
@@ -100,6 +104,10 @@ export function usePetStartupAnimation({
       return;
     }
     if (!selectedPetId || localCompleteRef.current) {
+      return;
+    }
+    if (prefersReducedMotion()) {
+      complete();
       return;
     }
     if (getPetStartupAnimationRunState() === "complete") {

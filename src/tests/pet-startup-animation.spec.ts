@@ -449,3 +449,26 @@ test("changing sound pack during startup stops the startup override", async ({
   );
   await expect.poll(() => harness.playedSoundUrls(page)).toEqual([]);
 });
+
+test("reduced motion skips startup animation and shows messages immediately", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser, {
+    reducedMotion: "reduce",
+    runtimeStatus: runtimeWithMessage(),
+    state: {
+      currentPetId: copet.id,
+      pets: [copet],
+      onboardingComplete: false,
+      agentMessageDisplay: "all",
+    },
+  });
+  const page = await harness.openPage("pet");
+
+  await expect(page.getByTestId("pet-agent-message")).toHaveText("Reading App.tsx");
+  await expect(page.locator(".pet-sprite")).toHaveAttribute(
+    "data-pet-state",
+    "running",
+  );
+  expect(harness.invocations("run_pet_startup_window_animation")).toHaveLength(0);
+});

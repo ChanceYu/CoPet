@@ -107,6 +107,7 @@ export type AppHarnessOptions = {
   monitorFromPointReturnsNull?: boolean;
   nativePetContextMenuError?: string;
   petVisible?: boolean;
+  reducedMotion?: "reduce" | "no-preference";
   runtimeStatus?: RuntimeStatus;
   scaleFactor?: number;
   state?: AppState;
@@ -259,7 +260,9 @@ export const copilotAdapter: AdapterSummary = {
 };
 
 export async function createAppHarness(browser: Browser, options: AppHarnessOptions = {}) {
-  const context = await browser.newContext();
+  const context = await browser.newContext(
+    options.reducedMotion ? { reducedMotion: options.reducedMotion } : undefined,
+  );
   const pages: Page[] = [];
   const calls: CommandCall[] = [];
   let importSessionCounter = 0;
