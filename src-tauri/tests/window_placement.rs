@@ -26,6 +26,53 @@ mod subject {
     }
 
     #[test]
+    fn calculates_startup_positions_from_offscreen_right_to_default_target() {
+        let (start, target) = pet_startup_window_positions(
+            PhysicalPosition { x: 100, y: 50 },
+            PhysicalSize {
+                width: 1920,
+                height: 1080,
+            },
+            PhysicalSize {
+                width: 420,
+                height: 520,
+            },
+            24,
+        );
+
+        assert_eq!(start, PhysicalPosition { x: 2020, y: 586 });
+        assert_eq!(target, PhysicalPosition { x: 1576, y: 586 });
+    }
+
+    #[test]
+    fn startup_target_stays_clamped_on_small_monitor() {
+        let (start, target) = pet_startup_window_positions(
+            PhysicalPosition { x: -100, y: 20 },
+            PhysicalSize {
+                width: 300,
+                height: 200,
+            },
+            PhysicalSize {
+                width: 420,
+                height: 520,
+            },
+            24,
+        );
+
+        assert_eq!(start, PhysicalPosition { x: 200, y: 20 });
+        assert_eq!(target, PhysicalPosition { x: -100, y: 20 });
+    }
+
+    #[test]
+    fn startup_interpolation_reaches_exact_target() {
+        let start = PhysicalPosition { x: 2020, y: 586 };
+        let target = PhysicalPosition { x: 1576, y: 586 };
+
+        assert_eq!(interpolate_position(start, target, 0.0), start);
+        assert_eq!(interpolate_position(start, target, 1.0), target);
+    }
+
+    #[test]
     fn does_not_place_window_above_monitor_origin_when_window_is_large() {
         let position = bottom_right_position(
             PhysicalPosition { x: -100, y: 20 },

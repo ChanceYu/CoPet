@@ -441,6 +441,39 @@ fn center_anchored_position(
     }
 }
 
+#[allow(dead_code)]
+fn pet_startup_window_positions(
+    monitor_position: PhysicalPosition<i32>,
+    monitor_size: PhysicalSize<u32>,
+    window_size: PhysicalSize<u32>,
+    margin: i32,
+) -> (PhysicalPosition<i32>, PhysicalPosition<i32>) {
+    let target = bottom_right_position(monitor_position, monitor_size, window_size, margin);
+    let start = PhysicalPosition {
+        x: monitor_position.x + monitor_size.width as i32,
+        y: target.y,
+    };
+    (start, target)
+}
+
+#[allow(dead_code)]
+fn interpolate_i32(start: i32, end: i32, progress: f64) -> i32 {
+    let progress = progress.clamp(0.0, 1.0);
+    (start as f64 + (end as f64 - start as f64) * progress).round() as i32
+}
+
+#[allow(dead_code)]
+fn interpolate_position(
+    start: PhysicalPosition<i32>,
+    target: PhysicalPosition<i32>,
+    progress: f64,
+) -> PhysicalPosition<i32> {
+    PhysicalPosition {
+        x: interpolate_i32(start.x, target.x, progress),
+        y: interpolate_i32(start.y, target.y, progress),
+    }
+}
+
 fn pet_window_logical_dimensions(size: PetWindowSize) -> (f64, f64) {
     let progress = f64::from(normalize_pet_window_size(size) - MIN_PET_WINDOW_SIZE)
         / f64::from(MAX_PET_WINDOW_SIZE - MIN_PET_WINDOW_SIZE);
