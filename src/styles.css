@@ -1775,6 +1775,11 @@ select {
   left: auto;
 }
 
+.sound-pack-select .ui-select-listbox {
+  right: 0;
+  left: auto;
+}
+
 .ui-toggle-group {
   display: inline-flex;
   flex: 0 0 auto;
