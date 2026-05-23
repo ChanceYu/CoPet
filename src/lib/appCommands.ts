@@ -300,12 +300,14 @@ export async function resetPetWindowPosition(): Promise<CommandResult> {
 
 export async function runPetStartupWindowAnimation(
   durationMs: number,
-): Promise<CommandResult> {
+): Promise<CommandResult & { completed: boolean }> {
   try {
-    await invoke("run_pet_startup_window_animation", { durationMs });
-    return { errorMessage: null };
+    const completed = await invoke<boolean>("run_pet_startup_window_animation", {
+      durationMs,
+    });
+    return { completed, errorMessage: null };
   } catch (error) {
-    return { errorMessage: toMessage(error) };
+    return { completed: false, errorMessage: toMessage(error) };
   }
 }
 

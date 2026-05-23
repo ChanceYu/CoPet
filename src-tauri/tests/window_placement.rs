@@ -395,8 +395,8 @@ mod subject {
             "startup animation command must inspect visibility before applying z-order"
         );
         assert!(
-            body.contains("return Ok(())"),
-            "startup animation command must no-op when the pet is hidden"
+            body.contains("return Ok(false)"),
+            "startup animation command must no-op and report hidden startup as not visibly completed"
         );
     }
 
@@ -409,7 +409,7 @@ mod subject {
         let mut positions = Vec::new();
         let mut keep_on_top_count = 0;
 
-        animate_pet_window_positions_while_visible(
+        let completed = animate_pet_window_positions_while_visible(
             start,
             target,
             32,
@@ -434,6 +434,10 @@ mod subject {
         )
         .expect("animation helper should stop cleanly after hide");
 
+        assert!(
+            !completed,
+            "hidden mid-animation pet should report that startup did not visibly complete"
+        );
         assert_eq!(positions.first(), Some(&start));
         assert_eq!(
             positions.last(),

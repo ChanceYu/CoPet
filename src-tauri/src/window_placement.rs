@@ -110,9 +110,9 @@ fn place_window_startup_offscreen_right(window: &WebviewWindow) -> tauri::Result
 pub fn animate_pet_window_from_offscreen_right(
     window: &WebviewWindow,
     duration_ms: u64,
-) -> tauri::Result<()> {
+) -> tauri::Result<bool> {
     let Some(monitor) = window.current_monitor()? else {
-        return Ok(());
+        return Ok(true);
     };
     let window_size = window.outer_size()?;
     let margin = (BOTTOM_RIGHT_MARGIN_LOGICAL_PX * monitor.scale_factor()).round() as i32;
@@ -537,7 +537,7 @@ fn animate_pet_window_positions_while_visible<IsVisible, SetPosition, KeepOnTop,
     mut keep_on_top: KeepOnTop,
     mut sleep: Sleep,
     mut elapsed_ms: ElapsedMs,
-) -> tauri::Result<()>
+) -> tauri::Result<bool>
 where
     IsVisible: FnMut() -> tauri::Result<bool>,
     SetPosition: FnMut(PhysicalPosition<i32>) -> tauri::Result<()>,
@@ -548,22 +548,23 @@ where
     set_position(start)?;
     if !is_visible()? {
         set_position(target)?;
-        return Ok(());
+        return Ok(false);
     }
     keep_on_top()?;
 
     if duration_ms == 0 {
         set_position(target)?;
-        if is_visible()? {
+        let completed = is_visible()?;
+        if completed {
             keep_on_top()?;
         }
-        return Ok(());
+        return Ok(completed);
     }
 
     loop {
         if !is_visible()? {
             set_position(target)?;
-            return Ok(());
+            return Ok(false);
         }
 
         let elapsed_ms = elapsed_ms();
@@ -577,10 +578,11 @@ where
     }
 
     set_position(target)?;
-    if is_visible()? {
+    let completed = is_visible()?;
+    if completed {
         keep_on_top()?;
     }
-    Ok(())
+    Ok(completed)
 }
 
 fn pet_window_logical_dimensions(size: PetWindowSize) -> (f64, f64) {

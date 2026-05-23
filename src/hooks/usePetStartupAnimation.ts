@@ -6,6 +6,7 @@ import {
   beginPetStartupAnimationArrival,
   completePetStartupAnimationRun,
   getPetStartupAnimationRunState,
+  hasPetStartupAnimationEnterCompletedVisibly,
   hasPetStartupAnimationEnterResolved,
   petStartupAnimationConfig,
   petStartupAnimationArrivalRemainingMs,
@@ -160,11 +161,16 @@ export function usePetStartupAnimation({
       if (result.errorMessage) {
         throw new Error(result.errorMessage);
       }
+      return result.completed;
     };
 
     void startPetStartupAnimationRun(runWindowAnimation)
       .then(() => {
         if (cancelled || localCompleteRef.current) {
+          return;
+        }
+        if (!hasPetStartupAnimationEnterCompletedVisibly()) {
+          complete();
           return;
         }
 

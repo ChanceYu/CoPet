@@ -30,6 +30,7 @@ export const petStartupArrivingView: ComposedView = {
 let runState: PetStartupAnimationRunState = "pending";
 let runPromise: Promise<void> | null = null;
 let enterResolved = false;
+let enterCompletedVisibly = false;
 let arrivalStartedAtMs: number | null = null;
 
 export function getPetStartupAnimationRunState(): PetStartupAnimationRunState {
@@ -40,11 +41,16 @@ export function completePetStartupAnimationRun(): void {
   runState = "complete";
   runPromise = null;
   enterResolved = false;
+  enterCompletedVisibly = false;
   arrivalStartedAtMs = null;
 }
 
 export function hasPetStartupAnimationEnterResolved(): boolean {
   return enterResolved;
+}
+
+export function hasPetStartupAnimationEnterCompletedVisibly(): boolean {
+  return enterCompletedVisibly;
 }
 
 export function beginPetStartupAnimationArrival(nowMs = Date.now()): boolean {
@@ -70,7 +76,7 @@ export function petStartupAnimationArrivalRemainingMs(
 }
 
 export function startPetStartupAnimationRun(
-  run: () => Promise<void>,
+  run: () => Promise<boolean>,
 ): Promise<void> {
   if (runState === "complete") {
     return Promise.resolve();
@@ -79,9 +85,11 @@ export function startPetStartupAnimationRun(
   if (!runPromise) {
     runState = "running";
     enterResolved = false;
+    enterCompletedVisibly = false;
     arrivalStartedAtMs = null;
-    runPromise = run().then(() => {
+    runPromise = run().then((completedVisibly) => {
       enterResolved = true;
+      enterCompletedVisibly = completedVisibly;
     });
   }
 

@@ -224,8 +224,8 @@ test("startup stays in arrival for hooks mounted after enter resolves", async ({
       invoke: async (command, args = {}) => {
         testWindow.__strictStartupCommandCalls.push({ command, args });
         if (command === "run_pet_startup_window_animation") {
-          return new Promise((resolve) => {
-            resolveStartupCommand = resolve;
+          return new Promise<boolean>((resolve) => {
+            resolveStartupCommand = () => resolve(true);
           });
         }
         return null;
@@ -413,6 +413,37 @@ test("startup command failure restores normal messages and Agent state", async (
     "data-emotion",
     "",
   );
+});
+
+test("hidden pet during startup skips arrival sound", async ({ browser }) => {
+  const harness = await createAppHarness(browser, {
+    reducedMotion: "no-preference",
+    commandResults: {
+      run_pet_startup_window_animation: false,
+    },
+    runtimeStatus: runtimeWithMessage(),
+    state: {
+      currentPetId: copet.id,
+      pets: [copet],
+      onboardingComplete: false,
+    },
+  });
+  const page = await harness.openPage("pet");
+
+  await expect
+    .poll(() => harness.invocations("run_pet_startup_window_animation"))
+    .toEqual([
+      {
+        command: "run_pet_startup_window_animation",
+        args: { durationMs: petStartupAnimationConfig.enterDurationMs },
+      },
+    ]);
+  await expect(page.getByTestId("pet-agent-message")).toHaveText("Reading App.tsx");
+  await expect(page.locator(".pet-sprite")).toHaveAttribute(
+    "data-pet-state",
+    "running",
+  );
+  await expect.poll(() => harness.playedSoundUrls(page)).toEqual([]);
 });
 
 test("changing pet during startup stops the startup override", async ({ browser }) => {
