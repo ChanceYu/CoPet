@@ -210,8 +210,8 @@ test("settings page uses Chinese copy from app locale", async ({ browser }) => {
   const page = await harness.openPage("settings");
 
   await expect(page.getByRole("heading", { name: "宠物", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "刷新列表" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "导入宠物" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "刷新" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "导入" })).toBeVisible();
 
   await page.getByRole("tab", { name: "通用" }).click();
   await expect(page.getByRole("slider", { name: "尺寸" })).toBeVisible();
@@ -235,8 +235,8 @@ test("settings page uses English copy from app locale", async ({ browser }) => {
   await expect(page.getByText("Accepted")).toHaveCount(0);
   await expect(page.getByText("Rejected")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Pets" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Refresh list" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Import pets" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Import" })).toBeVisible();
 
   await page.getByRole("tab", { name: "General" }).click();
   await expect(page.getByRole("slider", { name: "Size" })).toBeVisible();
@@ -345,7 +345,7 @@ test("refresh list reloads settings data", async ({ browser }) => {
 
   const page = await harness.openPage("settings");
   const initialLoads = harness.calls.filter((call) => call.command === "get_app_state").length;
-  const refreshButton = page.getByRole("button", { name: "Refresh list" });
+  const refreshButton = page.getByRole("button", { name: "Refresh" });
   const refreshIcon = refreshButton.locator("svg");
 
   await expect(refreshButton).toHaveAttribute("aria-busy", "false");
@@ -467,9 +467,9 @@ test("import pets drawer opens a native directory preview dialog", async ({ brow
   });
   const page = await harness.openPage("settings");
 
-  await page.getByRole("button", { name: "Import pets" }).click();
+  await page.getByRole("button", { name: "Import" }).click();
   const drawer = page.getByRole("dialog", { name: "Import pets" });
-  await drawer.getByRole("button", { name: "From folders" }).click();
+  await drawer.getByRole("button", { name: "Folders" }).click();
   await expect(drawer.getByRole("button", { name: "Choose folders" })).toHaveCount(0);
   await expect
     .poll(() =>

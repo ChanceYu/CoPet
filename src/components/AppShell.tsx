@@ -9,9 +9,11 @@ export function LoadingView() {
 }
 
 export function ErrorView({
+  retryLabel = "Retry",
   message,
   onRetry,
 }: {
+  retryLabel?: string;
   message?: string;
   onRetry: () => void;
 }) {
@@ -19,7 +21,12 @@ export function ErrorView({
     <main className="app-shell error-shell">
       <AlertCircle aria-hidden="true" />
       {message ? <p>{message}</p> : null}
-      <button className="icon-button" type="button" onClick={onRetry} aria-label="Refresh">
+      <button
+        aria-label={retryLabel}
+        className="icon-button"
+        onClick={onRetry}
+        type="button"
+      >
         <RefreshCw aria-hidden="true" />
       </button>
     </main>

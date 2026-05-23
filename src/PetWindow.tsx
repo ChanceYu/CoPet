@@ -306,6 +306,7 @@ export function PetWindow() {
       <ErrorView
         message={loadState.error ?? "Unknown error"}
         onRetry={() => void reloadAppStore()}
+        retryLabel={t("retry")}
       />
     );
   }
@@ -335,7 +336,11 @@ export function PetWindow() {
           }
         >
           {agentMessages.length > 0 ? (
-            <AgentMessages messages={agentMessages} onDismiss={dismissAgentMessage} />
+            <AgentMessages
+              dismissLabel={t("dismiss")}
+              messages={agentMessages}
+              onDismiss={dismissAgentMessage}
+            />
           ) : null}
           {selectedPet ? (
             <PetSprite
@@ -353,9 +358,11 @@ export function PetWindow() {
 }
 
 function AgentMessages({
+  dismissLabel,
   messages,
   onDismiss,
 }: {
+  dismissLabel: string;
   messages: AgentMessage[];
   onDismiss: (agentId: string) => void;
 }) {
@@ -378,7 +385,7 @@ function AgentMessages({
           ) : null}
           <span className="pet-agent-text">{message.text}</span>
           <button
-            aria-label="Dismiss"
+            aria-label={dismissLabel}
             className="pet-agent-message-dismiss"
             onClick={(event) => {
               event.stopPropagation();

@@ -16,7 +16,7 @@ test("default section is Pets on first open", async ({ browser }) => {
     "aria-selected",
     "true",
   );
-  await expect(page.getByRole("button", { name: "Refresh list" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
   await expect(page.getByRole("switch", { name: "Codex" })).toHaveCount(0);
 });
 
@@ -34,7 +34,7 @@ test("clicking Agents shows agent switches and hides pet list", async ({
     "aria-selected",
     "true",
   );
-  await expect(page.getByRole("button", { name: "Refresh list" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Refresh" })).toHaveCount(0);
   await expect(page.getByRole("switch", { name: "Codex" })).toBeVisible();
 });
 
@@ -107,7 +107,7 @@ test("load failure shows error toast without rendering error details", async ({
   await expect(page.locator("main")).not.toContainText(
     "settings bootstrap failed",
   );
-  await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
 });
 
 test("ArrowDown moves selection through nav items", async ({ browser }) => {

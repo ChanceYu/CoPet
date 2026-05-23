@@ -66,7 +66,7 @@ test("pet window load failure renders error details without toast", async ({
 
   await expect(page.locator("main")).toContainText("pet bootstrap failed");
   await expect(page.locator("[data-sonner-toast]")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
 });
 
 test("settings header is a draggable window region", async ({ browser }) => {

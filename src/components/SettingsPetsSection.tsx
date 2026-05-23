@@ -84,7 +84,7 @@ export function SettingsPetsSection({
               className={refreshing ? "spin" : undefined}
               data-loading={String(refreshing)}
             />
-            {t("refreshList")}
+            {t("refresh")}
           </Button>
           <Button
             className="pet-list-toolbar-button"
@@ -95,7 +95,7 @@ export function SettingsPetsSection({
             variant="ghost"
           >
             <Import aria-hidden="true" />
-            {t("importPets")}
+            {t("import")}
           </Button>
         </div>
       </div>

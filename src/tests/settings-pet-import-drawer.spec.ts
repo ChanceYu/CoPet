@@ -37,12 +37,12 @@ test("import pets opens a simple drawer", async ({ browser }) => {
   const harness = await createAppHarness(browser);
   const page = await harness.openPage("settings");
 
-  await page.getByRole("button", { name: "Import pets" }).click();
+  await page.getByRole("button", { name: "Import" }).click();
 
   const drawer = page.getByRole("dialog", { name: "Import pets" });
   await expect(drawer).toBeVisible();
-  await expect(drawer.getByRole("button", { name: "From Codex" })).toBeVisible();
-  await expect(drawer.getByRole("button", { name: "From folders" })).toBeVisible();
+  await expect(drawer.getByRole("button", { name: "Codex" })).toBeVisible();
+  await expect(drawer.getByRole("button", { name: "Folders" })).toBeVisible();
   await expect(drawer.getByText("No preview pets yet.")).toBeVisible();
   await expect(drawer.getByRole("button", { name: "Choose folders" })).toHaveCount(0);
   await expect(drawer.getByRole("button", { name: "Choose zip" })).toHaveCount(0);
@@ -54,8 +54,8 @@ test("codex import previews pets selected by default", async ({ browser }) => {
   });
   const page = await harness.openPage("settings");
 
-  await page.getByRole("button", { name: "Import pets" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "From Codex" }).click();
+  await page.getByRole("button", { name: "Import" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Codex" }).click();
 
   await expect(page.getByRole("button", { name: "Local Fox" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Local Panda" })).toBeVisible();
@@ -69,10 +69,10 @@ test("codex import previews pets selected by default", async ({ browser }) => {
     ),
   ).toHaveCount(1);
   const foxCheckbox = page.getByRole("checkbox", {
-    name: "Select preview pet Local Fox",
+    name: "Select Local Fox",
   });
   const pandaCheckbox = page.getByRole("checkbox", {
-    name: "Select preview pet Local Panda",
+    name: "Select Local Panda",
   });
   await expect(foxCheckbox).toBeChecked();
   await expect(foxCheckbox).toHaveAttribute("aria-checked", "true");
@@ -94,9 +94,9 @@ test("select all checkbox toggles all previews", async ({ browser }) => {
   });
   const page = await harness.openPage("settings");
 
-  await page.getByRole("button", { name: "Import pets" }).click();
+  await page.getByRole("button", { name: "Import" }).click();
   const drawer = page.getByRole("dialog", { name: "Import pets" });
-  await drawer.getByRole("button", { name: "From Codex" }).click();
+  await drawer.getByRole("button", { name: "Codex" }).click();
 
   const selectAll = drawer.getByRole("checkbox", { name: "Select all" });
   await expect(selectAll).toBeChecked();
@@ -106,10 +106,10 @@ test("select all checkbox toggles all previews", async ({ browser }) => {
 
   await expect(selectAll).not.toBeChecked();
   await expect(
-    drawer.getByRole("checkbox", { name: "Select preview pet Local Fox" }),
+    drawer.getByRole("checkbox", { name: "Select Local Fox" }),
   ).not.toBeChecked();
   await expect(
-    drawer.getByRole("checkbox", { name: "Select preview pet Local Panda" }),
+    drawer.getByRole("checkbox", { name: "Select Local Panda" }),
   ).not.toBeChecked();
   await expect(drawer.getByText("0 selected")).toBeVisible();
   await expect(drawer.getByRole("button", { name: "Import selected" })).toBeDisabled();
@@ -134,9 +134,9 @@ test("codex preview failure shows toast without inline error", async ({ browser 
   });
   const page = await harness.openPage("settings");
 
-  await page.getByRole("button", { name: "Import pets" }).click();
+  await page.getByRole("button", { name: "Import" }).click();
   const drawer = page.getByRole("dialog");
-  await drawer.getByRole("button", { name: "From Codex" }).click();
+  await drawer.getByRole("button", { name: "Codex" }).click();
 
   await expect(drawer.getByRole("alert")).toHaveCount(0);
   await expect(page.locator("[data-sonner-toast]")).toContainText(
@@ -153,9 +153,9 @@ test("import failure shows toast without inline error", async ({ browser }) => {
   });
   const page = await harness.openPage("settings");
 
-  await page.getByRole("button", { name: "Import pets" }).click();
+  await page.getByRole("button", { name: "Import" }).click();
   const drawer = page.getByRole("dialog");
-  await drawer.getByRole("button", { name: "From Codex" }).click();
+  await drawer.getByRole("button", { name: "Codex" }).click();
   await drawer.getByRole("button", { name: "Import selected" }).click();
 
   await expect(drawer.getByRole("alert")).toHaveCount(0);
@@ -170,10 +170,10 @@ test("preview rows can be unselected removed and imported", async ({ browser }) 
   });
   const page = await harness.openPage("settings");
 
-  await page.getByRole("button", { name: "Import pets" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "From Codex" }).click();
+  await page.getByRole("button", { name: "Import" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Codex" }).click();
 
-  await page.getByRole("checkbox", { name: "Select preview pet Local Panda" }).click();
+  await page.getByRole("checkbox", { name: "Select Local Panda" }).click();
   await page.getByRole("button", { name: "Import selected" }).click();
 
   expect(harness.calls).toContainEqual({
@@ -214,9 +214,9 @@ test("duplicate preview summary ids render and act independently", async ({ brow
   });
   const page = await harness.openPage("settings");
 
-  await page.getByRole("button", { name: "Import pets" }).click();
+  await page.getByRole("button", { name: "Import" }).click();
   const drawer = page.getByRole("dialog", { name: "Import pets" });
-  await drawer.getByRole("button", { name: "From Codex" }).click();
+  await drawer.getByRole("button", { name: "Codex" }).click();
 
   const firstCard = drawer.locator('[data-pet-id="shared-preview-first"]');
   const secondCard = drawer.locator('[data-pet-id="shared-preview-second"]');
@@ -232,7 +232,7 @@ test("duplicate preview summary ids render and act independently", async ({ brow
 
   await expect(firstCard).toHaveCount(0);
   await expect(secondCard).toHaveCount(1);
-  await secondCard.getByRole("checkbox", { name: "Select preview pet Shared Fox" }).click();
+  await secondCard.getByRole("checkbox", { name: "Select Shared Fox" }).click();
   await drawer.getByRole("checkbox", { name: "Select all" }).click();
   await drawer.getByRole("button", { name: "Import selected" }).click();
 
@@ -248,8 +248,8 @@ test("all previews can be imported together", async ({ browser }) => {
   });
   const page = await harness.openPage("settings");
 
-  await page.getByRole("button", { name: "Import pets" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "From Codex" }).click();
+  await page.getByRole("button", { name: "Import" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Codex" }).click();
   await page.getByRole("button", { name: "Import all" }).click();
 
   expect(harness.calls).toContainEqual({
@@ -270,9 +270,9 @@ test("closing the drawer is ignored while preview commit is active", async ({ br
   });
   const page = await harness.openPage("settings");
 
-  await page.getByRole("button", { name: "Import pets" }).click();
+  await page.getByRole("button", { name: "Import" }).click();
   const drawer = page.getByRole("dialog", { name: "Import pets" });
-  await drawer.getByRole("button", { name: "From Codex" }).click();
+  await drawer.getByRole("button", { name: "Codex" }).click();
   await drawer.getByRole("button", { name: "Import selected" }).click();
   await expect
     .poll(
@@ -316,8 +316,8 @@ test("remove preview only deletes the drawer row", async ({ browser }) => {
   });
   const page = await harness.openPage("settings");
 
-  await page.getByRole("button", { name: "Import pets" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "From Codex" }).click();
+  await page.getByRole("button", { name: "Import" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Codex" }).click();
   const foxCard = page.locator(".pet-card").filter({ hasText: "Local Fox" });
 
   await expect(foxCard).toBeVisible();
@@ -334,9 +334,9 @@ test("closing the drawer discards the preview session", async ({ browser }) => {
   });
   const page = await harness.openPage("settings");
 
-  await page.getByRole("button", { name: "Import pets" }).click();
+  await page.getByRole("button", { name: "Import" }).click();
   const drawer = page.getByRole("dialog", { name: "Import pets" });
-  await drawer.getByRole("button", { name: "From Codex" }).click();
+  await drawer.getByRole("button", { name: "Codex" }).click();
   await expect(page.getByRole("button", { name: "Local Fox" })).toBeVisible();
 
   await drawer.getByRole("button", { name: "Close" }).click();
@@ -355,9 +355,9 @@ test("folder source button directly triggers the folder dialog", async ({ browse
   });
   const page = await harness.openPage("settings");
 
-  await page.getByRole("button", { name: "Import pets" }).click();
+  await page.getByRole("button", { name: "Import" }).click();
   const drawer = page.getByRole("dialog");
-  await drawer.getByRole("button", { name: "From folders" }).click();
+  await drawer.getByRole("button", { name: "Folders" }).click();
   await expect(drawer.getByRole("button", { name: "Choose folders" })).toHaveCount(0);
   await expect(drawer.getByRole("button", { name: "Choose zip" })).toHaveCount(0);
   await expect

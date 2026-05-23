@@ -166,7 +166,7 @@ export function SettingsWindow() {
   if (loadState.status === "error") {
     return (
       <>
-        <ErrorView onRetry={() => void retryLoad()} />
+        <ErrorView onRetry={() => void retryLoad()} retryLabel={t("retry")} />
         <Toaster />
       </>
     );
