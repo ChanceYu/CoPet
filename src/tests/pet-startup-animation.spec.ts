@@ -30,6 +30,7 @@ test("startup animation hides messages while running-left from off-screen", asyn
   browser,
 }) => {
   const harness = await createAppHarness(browser, {
+    reducedMotion: "no-preference",
     commandDelayMs: {
       run_pet_startup_window_animation: petStartupAnimationConfig.enterDurationMs,
     },
@@ -61,6 +62,7 @@ test("arrival shows heart, plays pettedSlow, then restores messages and Agent st
   browser,
 }) => {
   const harness = await createAppHarness(browser, {
+    reducedMotion: "no-preference",
     commandDelayMs: {
       run_pet_startup_window_animation: petStartupAnimationConfig.enterDurationMs,
     },
@@ -98,6 +100,7 @@ test("messages received during startup render after startup completes", async ({
   browser,
 }) => {
   const harness = await createAppHarness(browser, {
+    reducedMotion: "no-preference",
     commandDelayMs: {
       run_pet_startup_window_animation: petStartupAnimationConfig.enterDurationMs,
     },
@@ -315,6 +318,7 @@ test("startup stays in arrival for hooks mounted after enter resolves", async ({
 
 test("tray show does not replay startup animation", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
+    reducedMotion: "no-preference",
     commandDelayMs: {
       run_pet_startup_window_animation: petStartupAnimationConfig.enterDurationMs,
     },
@@ -353,6 +357,7 @@ test("startup command failure restores normal messages and Agent state", async (
   browser,
 }) => {
   const harness = await createAppHarness(browser, {
+    reducedMotion: "no-preference",
     commandErrors: {
       run_pet_startup_window_animation: "startup window animation failed",
     },
@@ -386,6 +391,7 @@ test("startup command failure restores normal messages and Agent state", async (
 
 test("changing pet during startup stops the startup override", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
+    reducedMotion: "no-preference",
     commandDelayMs: {
       run_pet_startup_window_animation: petStartupAnimationConfig.enterDurationMs,
     },
@@ -419,6 +425,7 @@ test("changing sound pack during startup stops the startup override", async ({
   browser,
 }) => {
   const harness = await createAppHarness(browser, {
+    reducedMotion: "no-preference",
     commandDelayMs: {
       run_pet_startup_window_animation: petStartupAnimationConfig.enterDurationMs,
     },

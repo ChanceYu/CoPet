@@ -260,9 +260,9 @@ export const copilotAdapter: AdapterSummary = {
 };
 
 export async function createAppHarness(browser: Browser, options: AppHarnessOptions = {}) {
-  const context = await browser.newContext(
-    options.reducedMotion ? { reducedMotion: options.reducedMotion } : undefined,
-  );
+  const context = await browser.newContext({
+    reducedMotion: options.reducedMotion ?? "reduce",
+  });
   const pages: Page[] = [];
   const calls: CommandCall[] = [];
   let importSessionCounter = 0;
