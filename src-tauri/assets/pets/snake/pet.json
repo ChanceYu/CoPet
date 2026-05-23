@@ -1,0 +1,11 @@
+{
+  "id": "snake",
+  "slug": "snake",
+  "displayName": "Jade Snake",
+  "description": "A glossy green jade snake with gold head markings, huge dark eyes, cream belly, and a tiny red tongue.",
+  "frameWidth": 192,
+  "frameHeight": 208,
+  "gridColumns": 8,
+  "gridRows": 9,
+  "builtIn": false
+}

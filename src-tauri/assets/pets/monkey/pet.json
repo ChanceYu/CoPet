@@ -1,0 +1,11 @@
+{
+  "id": "monkey",
+  "slug": "monkey",
+  "displayName": "Clever Monkey",
+  "description": "A brown monkey with round ears, curled tail, red forehead mark, and tiny clasped hands.",
+  "frameWidth": 192,
+  "frameHeight": 208,
+  "gridColumns": 8,
+  "gridRows": 9,
+  "builtIn": false
+}

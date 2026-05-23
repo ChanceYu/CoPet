@@ -1,7 +1,7 @@
 use copet_lib::config_store::ConfigStore;
 use std::path::PathBuf;
 
-const NON_DEFAULT_BUILTIN_RUNTIME_PET_ID: &str = "system:zodiac-dragon";
+const NON_DEFAULT_BUILTIN_RUNTIME_PET_ID: &str = "system:dragon";
 
 fn builtin_pets_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/pets")

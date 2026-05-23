@@ -263,6 +263,17 @@ mod subject {
     }
 
     #[test]
+    fn settings_window_default_width_is_740() {
+        let config = include_str!("../tauri.conf.json");
+        let settings_window_config = config
+            .split("\"label\": \"settings\"")
+            .nth(1)
+            .expect("settings window config should be present");
+
+        assert!(settings_window_config.contains("\"width\": 740"));
+    }
+
+    #[test]
     fn settings_window_uses_app_title_for_system_window_label() {
         let config = include_str!("../tauri.conf.json");
         let settings_window_config = config

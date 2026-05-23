@@ -1,0 +1,7 @@
+{
+  "id": "horse",
+  "slug": "horse",
+  "displayName": "Chestnut Horse",
+  "description": "A chestnut horse with a dark flowing mane, bright harness, upright ears, and small polished hooves.",
+  "spritesheetPath": "spritesheet.webp"
+}

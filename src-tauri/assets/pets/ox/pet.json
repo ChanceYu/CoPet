@@ -1,0 +1,11 @@
+{
+  "id": "ox",
+  "slug": "ox",
+  "displayName": "Cream Ox",
+  "description": "A sturdy cream ox with pale horns, red forehead mark, tan patches, and decorated flanks.",
+  "frameWidth": 192,
+  "frameHeight": 208,
+  "gridColumns": 8,
+  "gridRows": 9,
+  "builtIn": false
+}

@@ -1,6 +1,7 @@
 {
-  "id": "3d-toy-panda",
-  "displayName": "3D Toy Panda",
+  "id": "panda",
+  "slug": "panda",
+  "displayName": "Panda",
   "description": "A rounded 3D toy panda pet with soft vinyl texture, black-and-white markings, tiny glossy eyes, and a gentle playful personality.",
   "spritesheetPath": "spritesheet.webp"
 }

@@ -1,0 +1,11 @@
+{
+  "id": "rabbit",
+  "slug": "rabbit",
+  "displayName": "White Rabbit",
+  "description": "A white rabbit with tall pink ears, a red neck bow, soft paws, and delicate red flourishes.",
+  "frameWidth": 192,
+  "frameHeight": 208,
+  "gridColumns": 8,
+  "gridRows": 9,
+  "builtIn": false
+}

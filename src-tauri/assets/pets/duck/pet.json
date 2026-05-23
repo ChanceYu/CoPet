@@ -1,5 +1,6 @@
 {
-  "id": "waddly-duck",
+  "id": "duck",
+  "slug": "duck",
   "displayName": "Waddly Duck",
   "description": "A cheerful little yellow duck with a bright beak and friendly waddle.",
   "spritesheetPath": "spritesheet.webp",

@@ -1,0 +1,11 @@
+{
+  "id": "dragon",
+  "slug": "dragon",
+  "displayName": "Azure Dragon",
+  "description": "A green azure dragon with golden antlers, leafy whiskers, red tassels, and ornate cloud curls.",
+  "frameWidth": 192,
+  "frameHeight": 208,
+  "gridColumns": 8,
+  "gridRows": 9,
+  "builtIn": false
+}

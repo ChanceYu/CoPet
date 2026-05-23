@@ -5,7 +5,7 @@ use copet_lib::{
 };
 use std::{fs, path::Path, path::PathBuf};
 
-const NON_DEFAULT_BUILTIN_PET_ID: &str = "zodiac-dragon";
+const NON_DEFAULT_BUILTIN_PET_ID: &str = "dragon";
 
 fn builtin_pets_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/pets")
@@ -48,7 +48,7 @@ fn list_pets_exposes_all_builtin_packages_from_resource_dir() {
         .iter()
         .map(|pet| pet.id.as_str())
         .collect::<Vec<_>>();
-    let zodiac_dragon = state
+    let dragon = state
         .pets
         .iter()
         .find(|pet| pet.id == format!("system:{NON_DEFAULT_BUILTIN_PET_ID}"))
@@ -56,7 +56,7 @@ fn list_pets_exposes_all_builtin_packages_from_resource_dir() {
 
     assert!(ids.contains(&"system:copet"));
     assert!(ids.contains(&format!("system:{NON_DEFAULT_BUILTIN_PET_ID}").as_str()));
-    assert!(zodiac_dragon.built_in);
+    assert!(dragon.built_in);
 }
 
 #[test]
@@ -187,8 +187,8 @@ fn import_pet_files_allows_user_pet_that_shadows_builtin_id() {
     let store = make_store(&temp);
     store.ensure_ready().unwrap();
     let manifest = r#"{
-  "id": "zodiac-dragon",
-  "slug": "zodiac-dragon",
+  "id": "dragon",
+  "slug": "dragon",
   "displayName": "Fake Builtin",
   "frameWidth": 160,
   "frameHeight": 64,
@@ -212,13 +212,10 @@ fn import_pet_files_allows_user_pet_that_shadows_builtin_id() {
     )
     .unwrap();
 
-    assert_eq!(state.current_pet_id, "user:zodiac-dragon");
-    assert!(state
-        .pets
-        .iter()
-        .any(|pet| pet.id == "system:zodiac-dragon"));
-    assert!(state.pets.iter().any(|pet| pet.id == "user:zodiac-dragon"));
-    assert_eq!(saved_manifest["id"], "zodiac-dragon");
+    assert_eq!(state.current_pet_id, "user:dragon");
+    assert!(state.pets.iter().any(|pet| pet.id == "system:dragon"));
+    assert!(state.pets.iter().any(|pet| pet.id == "user:dragon"));
+    assert_eq!(saved_manifest["id"], "dragon");
     assert_eq!(saved_manifest["builtIn"], true);
 }
 
@@ -292,13 +289,10 @@ fn import_pet_folder_allows_user_pet_that_shadows_builtin_id() {
     )
     .unwrap();
 
-    assert_eq!(state.current_pet_id, "user:zodiac-dragon");
-    assert!(state
-        .pets
-        .iter()
-        .any(|pet| pet.id == "system:zodiac-dragon"));
-    assert!(state.pets.iter().any(|pet| pet.id == "user:zodiac-dragon"));
-    assert_eq!(saved_manifest["id"], "zodiac-dragon");
+    assert_eq!(state.current_pet_id, "user:dragon");
+    assert!(state.pets.iter().any(|pet| pet.id == "system:dragon"));
+    assert!(state.pets.iter().any(|pet| pet.id == "user:dragon"));
+    assert_eq!(saved_manifest["id"], "dragon");
     assert_eq!(saved_manifest["builtIn"], true);
 }
 
@@ -500,8 +494,8 @@ fn import_codex_pets_imports_packages_that_shadow_builtin_ids() {
         .join("pets")
         .join(NON_DEFAULT_BUILTIN_PET_ID)
         .exists());
-    assert!(ids.contains(&"system:zodiac-dragon"));
-    assert!(ids.contains(&"user:zodiac-dragon"));
+    assert!(ids.contains(&"system:dragon"));
+    assert!(ids.contains(&"user:dragon"));
 }
 
 #[test]
@@ -560,17 +554,14 @@ fn install_codex_pet_allows_user_pet_that_shadows_builtin_id() {
         .install_codex_pet(&codex_pets, &format!("user:{NON_DEFAULT_BUILTIN_PET_ID}"))
         .unwrap();
 
-    assert_eq!(state.current_pet_id, "user:zodiac-dragon");
+    assert_eq!(state.current_pet_id, "user:dragon");
     assert!(store
         .root()
         .join("pets")
         .join(NON_DEFAULT_BUILTIN_PET_ID)
         .exists());
-    assert!(state
-        .pets
-        .iter()
-        .any(|pet| pet.id == "system:zodiac-dragon"));
-    assert!(state.pets.iter().any(|pet| pet.id == "user:zodiac-dragon"));
+    assert!(state.pets.iter().any(|pet| pet.id == "system:dragon"));
+    assert!(state.pets.iter().any(|pet| pet.id == "user:dragon"));
 }
 
 #[test]
@@ -715,8 +706,8 @@ fn legacy_raw_builtin_current_pet_id_migrates_to_system_runtime_id() {
     let config: serde_json::Value =
         serde_json::from_slice(&fs::read(root.join("config.json")).unwrap()).unwrap();
 
-    assert_eq!(state.current_pet_id, "system:zodiac-dragon");
-    assert_eq!(config["currentPetId"], "system:zodiac-dragon");
+    assert_eq!(state.current_pet_id, "system:dragon");
+    assert_eq!(config["currentPetId"], "system:dragon");
 }
 
 #[test]
@@ -735,13 +726,10 @@ fn legacy_raw_builtin_id_prefers_system_when_user_shadow_exists() {
     let config: serde_json::Value =
         serde_json::from_slice(&fs::read(root.join("config.json")).unwrap()).unwrap();
 
-    assert_eq!(state.current_pet_id, "system:zodiac-dragon");
-    assert_eq!(config["currentPetId"], "system:zodiac-dragon");
-    assert!(state
-        .pets
-        .iter()
-        .any(|pet| pet.id == "system:zodiac-dragon"));
-    assert!(state.pets.iter().any(|pet| pet.id == "user:zodiac-dragon"));
+    assert_eq!(state.current_pet_id, "system:dragon");
+    assert_eq!(config["currentPetId"], "system:dragon");
+    assert!(state.pets.iter().any(|pet| pet.id == "system:dragon"));
+    assert!(state.pets.iter().any(|pet| pet.id == "user:dragon"));
 }
 
 #[test]

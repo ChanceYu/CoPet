@@ -567,7 +567,7 @@ select {
 
 .settings-pets-description-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px 14px;
@@ -1742,6 +1742,7 @@ select {
   border-radius: 8px;
   background: hsl(var(--card) / 0.72);
   box-shadow: 0 1px 2px hsl(220 18% 18% / 0.04);
+  white-space: nowrap;
 }
 
 .pet-controls-toolbar {
