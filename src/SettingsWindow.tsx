@@ -94,6 +94,10 @@ export function SettingsWindow() {
     const r = await commands.setPetInteractions(prefs);
     reportErr(r.errorMessage);
   };
+  const selectAudioPack = async (audioPackId: string) => {
+    const r = await commands.selectAudioPack(audioPackId);
+    reportErr(r.errorMessage);
+  };
   const setPetVisible = async (visible: boolean) => {
     const r = await commands.setPetVisible(visible);
     reportErr(r.errorMessage);
@@ -260,6 +264,8 @@ export function SettingsWindow() {
           {activeSection === "preferences" && (
             <SettingsPreferencesSection
               agentMessageDisplay={appState.agentMessageDisplay}
+              audioPacks={appState.audioPacks ?? []}
+              currentAudioPackId={appState.currentAudioPackId ?? ""}
               locale={appState.localePreference === "zh-CN" ? "zh-CN" : "en-US"}
               agentMessageVisible={appState.agentMessageVisible}
               petInteractions={appState.petInteractions ?? defaultPetInteractionPrefs}
@@ -272,6 +278,7 @@ export function SettingsWindow() {
               setPetInteractions={setPetInteractions}
               setPetVisible={setPetVisible}
               setPetWindowSize={setPetWindowSize}
+              selectAudioPack={selectAudioPack}
               t={t}
             />
           )}
