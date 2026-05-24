@@ -3,7 +3,7 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { currentMonitor, monitorFromPoint } from "@tauri-apps/api/window";
 import type { PetWindowSize } from "./appTypes";
 
-export const defaultPetWindowSize = 30;
+export const defaultPetWindowSize = 40;
 export const minPetWindowSize = 1;
 export const maxPetWindowSize = 100;
 export const minPetScale = 0.25;

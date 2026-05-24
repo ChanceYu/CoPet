@@ -8,7 +8,7 @@ pub type PetWindowSize = u8;
 
 pub const MIN_PET_WINDOW_SIZE: PetWindowSize = 1;
 pub const MAX_PET_WINDOW_SIZE: PetWindowSize = 100;
-pub const DEFAULT_PET_WINDOW_SIZE: PetWindowSize = 30;
+pub const DEFAULT_PET_WINDOW_SIZE: PetWindowSize = 40;
 
 pub fn default_pet_window_size() -> PetWindowSize {
     DEFAULT_PET_WINDOW_SIZE

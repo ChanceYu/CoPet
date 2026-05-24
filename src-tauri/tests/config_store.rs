@@ -350,13 +350,13 @@ fn select_pet_persists_current_pet_in_config() {
 }
 
 #[test]
-fn app_state_defaults_pet_window_size_to_30() {
+fn app_state_defaults_pet_window_size_to_40() {
     let temp = tempfile::tempdir().unwrap();
     let store = make_store(&temp);
 
     let state = store.ensure_ready().unwrap();
 
-    assert_eq!(state.pet_window_size, 30);
+    assert_eq!(state.pet_window_size, 40);
 }
 
 #[test]

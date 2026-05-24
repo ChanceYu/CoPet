@@ -277,7 +277,7 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
     pets: [copet],
     soundPacks: [copetSoundPack],
     onboardingComplete: false,
-    petWindowSize: 30,
+    petWindowSize: 40,
     agentMessageDisplay: "all",
     agentMessageVisible: true,
   };
