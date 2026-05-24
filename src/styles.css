@@ -159,8 +159,9 @@ select {
 
 .pet-agent-text {
   min-width: 0;
-  overflow-wrap: anywhere;
   display: -webkit-box;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;

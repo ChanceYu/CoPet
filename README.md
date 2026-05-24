@@ -1,8 +1,13 @@
+<div align="center">
+  <img src="./public/pet.png" alt="CoPet logo" width="120" />
+  <h1>CoPet</h1>
+  <p><strong>A living desktop companion for every AI Agent CLI session.</strong></p>
+  <p>Driven by Codex pet packages, CoPet reacts in real time to Claude Code, Codex, Antigravity, OpenCode, Copilot CLI, and Gemini, turning prompts, tool use, waiting, and completions into lively desktop feedback.</p>
+</div>
+
 ![CoPet](./public/banner.png)
 
 [简体中文](./README.zh.md)
-
-A desktop companion driven by Codex pet packages that reacts in real time to your AI Agent CLI sessions — Claude Code, Codex, Antigravity, OpenCode, Copilot CLI, and Gemini.
 
 Built with Tauri, Rust, and React. Lightweight, local-first, no cloud.
 
@@ -16,6 +21,29 @@ Built with Tauri, Rust, and React. Lightweight, local-first, no cloud.
 - Settings and tray controls for pets, Agent hooks, sounds, language, visibility, and window position.
 - Local-first data model in `~/.copet`, with safe hook backups, atomic writes, and no telemetry.
 - Bilingual UI (English / 简体中文).
+
+## Customize your pet
+
+CoPet is not limited to built-in pets. The [CoPet Skill series](./skills/README.md) helps you turn a character idea, team mascot, or personal avatar into your own desktop companion:
+
+- [`copet-gen`](./skills/copet-gen/SKILL.md) generates and installs custom CoPet pet packages with `pet.json` and `spritesheet.webp`, so your own character can react to Agent activity.
+- [`copet-sound`](./skills/copet-sound/SKILL.md) creates matching 11-clip MP3 sound packs for clicks, gestures, waiting, success, and error states.
+
+Install CoPet Skills for Codex with either method.
+
+From a terminal:
+
+```bash
+npx skills add ChanceYu/CoPet --skill '*' -a codex -g -y
+```
+
+Inside Codex:
+
+```text
+$skill-installer install all CoPet skills from https://github.com/ChanceYu/CoPet/tree/main/skills
+```
+
+Restart Codex if the newly installed Skills do not appear.
 
 ## Supported agents
 

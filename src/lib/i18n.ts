@@ -58,6 +58,8 @@ const messages = {
     petImportSkipped: "Skipped invalid packages: {count}",
     enableClickSounds: "Pet sounds",
     enableStartupAnimation: "Startup animation",
+    enableStartupAnimationDescription:
+      "Play the pet animation when the app starts.",
     interactionCooldown: "Interaction cooldown",
     interactionCooldownShort: "Short",
     interactionCooldownNormal: "Normal",
@@ -145,6 +147,7 @@ const messages = {
     petImportSkipped: "已跳过无效宠物包：{count}",
     enableClickSounds: "宠物音效",
     enableStartupAnimation: "启动动画",
+    enableStartupAnimationDescription: "应用启动时播放宠物动画",
     interactionCooldown: "互动冷却",
     interactionCooldownShort: "短",
     interactionCooldownNormal: "标准",

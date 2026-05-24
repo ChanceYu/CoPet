@@ -1,6 +1,6 @@
 {
   "name": "copet",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,7 +12,7 @@
     "verify:hardening": "pnpm build && cargo test --manifest-path src-tauri/Cargo.toml && pnpm tauri build --bundles app",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
-    "tauri:build:app": "pnpm dotenv -e .env -- pnpm tauri build"
+    "tauri:build:app": "dotenv -e .env -- pnpm tauri build --target universal-apple-darwin --bundles dmg"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
-    "@tauri-apps/cli": "^2.0.0",
+    "@tauri-apps/cli": "^2.11.2",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",

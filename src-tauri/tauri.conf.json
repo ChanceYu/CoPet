@@ -58,7 +58,10 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": "dmg",
+    "macOS": {
+      "hardenedRuntime": true
+    },
     "resources": {
       "assets/pets": "assets/pets",
       "assets/sounds": "assets/sounds"

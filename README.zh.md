@@ -1,8 +1,13 @@
+<div align="center">
+  <img src="./public/pet.png" alt="CoPet logo" width="120" />
+  <h1>CoPet</h1>
+  <p><strong>由 Codex pet 包驱动的 AI Agent 桌面伙伴。</strong></p>
+  <p>实时响应 Claude Code、Codex、Antigravity、OpenCode、Copilot CLI、Gemini 会话，把提示、工具调用、等待和完成状态变成陪你写代码的灵动宠物反馈。</p>
+</div>
+
 ![CoPet](./public/banner.zh.png)
 
 [English](./README.md)
-
-由 Codex pet 包驱动的桌面伙伴，实时响应你的 AI Agent CLI 会话 —— Claude Code、Codex、Antigravity、OpenCode、Copilot CLI、Gemini。
 
 基于 Tauri、Rust、React 构建。轻量、本地优先、无云依赖。
 
@@ -16,6 +21,29 @@
 - 设置页与托盘覆盖宠物、Agent hooks、音效、语言、可见性和窗口位置。
 - 本地优先数据模型，数据位于 `~/.copet`，hook 写入有备份、原子写且无遥测。
 - 双语界面（English / 简体中文）。
+
+## 自定义你的宠物
+
+CoPet 不止内置宠物。[CoPet Skill 系列](./skills/README.md) 可以把角色设定、团队 mascot 或个人头像变成你自己的桌面伙伴：
+
+- [`copet-gen`](./skills/copet-gen/SKILL.md) 生成并安装自定义 CoPet 宠物包，包含 `pet.json` 与 `spritesheet.webp`，让你的角色响应 Agent 活动。
+- [`copet-sound`](./skills/copet-sound/SKILL.md) 生成配套 11 段 MP3 音效包，覆盖点击、互动、等待、成功和错误等状态。
+
+安装 CoPet Skills 到 Codex，可任选一种方式。
+
+在终端中运行：
+
+```bash
+npx skills add ChanceYu/CoPet --skill '*' -a codex -g -y
+```
+
+在 Codex 会话中输入：
+
+```text
+$skill-installer install all CoPet skills from https://github.com/ChanceYu/CoPet/tree/main/skills
+```
+
+如果新安装的 Skill 没有出现，请重启 Codex。
 
 ## 支持的 Agent
 

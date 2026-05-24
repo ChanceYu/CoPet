@@ -183,6 +183,9 @@ export function SettingsPreferencesSection({
               <span className="settings-preferences-row-title">
                 {t("enableStartupAnimation")}
               </span>
+              <p className="settings-preferences-row-description">
+                {t("enableStartupAnimationDescription")}
+              </p>
             </div>
             <div className="settings-preferences-row-control">
               <div
