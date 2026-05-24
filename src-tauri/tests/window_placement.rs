@@ -26,6 +26,58 @@ mod subject {
     }
 
     #[test]
+    fn calculates_startup_positions_from_screen_edge_to_default_target() {
+        let (start, target) = pet_startup_window_positions(
+            PhysicalPosition { x: 100, y: 50 },
+            PhysicalSize {
+                width: 1920,
+                height: 1080,
+            },
+            PhysicalSize {
+                width: 420,
+                height: 520,
+            },
+            24,
+        );
+
+        // start: horizontal center on the monitor's right edge (left half on
+        // screen, right half hangs off). target: default bottom-right with
+        // margin. Slide distance = window_width/2 + margin.
+        assert_eq!(start, PhysicalPosition { x: 1810, y: 586 });
+        assert_eq!(target, PhysicalPosition { x: 1576, y: 586 });
+    }
+
+    #[test]
+    fn startup_target_stays_clamped_on_small_monitor() {
+        let (start, target) = pet_startup_window_positions(
+            PhysicalPosition { x: -100, y: 20 },
+            PhysicalSize {
+                width: 300,
+                height: 200,
+            },
+            PhysicalSize {
+                width: 420,
+                height: 520,
+            },
+            24,
+        );
+
+        // start: -100 + 300 - 420/2 = -10. target clamps to monitor origin
+        // when the window is wider than the monitor.
+        assert_eq!(start, PhysicalPosition { x: -10, y: 20 });
+        assert_eq!(target, PhysicalPosition { x: -100, y: 20 });
+    }
+
+    #[test]
+    fn startup_interpolation_reaches_exact_target() {
+        let start = PhysicalPosition { x: 2020, y: 586 };
+        let target = PhysicalPosition { x: 1576, y: 586 };
+
+        assert_eq!(interpolate_position(start, target, 0.0), start);
+        assert_eq!(interpolate_position(start, target, 1.0), target);
+    }
+
+    #[test]
     fn does_not_place_window_above_monitor_origin_when_window_is_large() {
         let position = bottom_right_position(
             PhysicalPosition { x: -100, y: 20 },
@@ -312,6 +364,111 @@ mod subject {
             .expect("set_pet_window_size command should exist");
 
         assert!(!set_pet_window_size.contains("resize_pet_window_from_center"));
+    }
+
+    #[test]
+    fn app_setup_places_pet_window_at_startup_start() {
+        let source = include_str!("../src/lib.rs");
+        let setup_body = source
+            .split(".setup(|app|")
+            .nth(1)
+            .and_then(|rest| rest.split("install_pet_window_z_order_guard").next())
+            .expect("app setup body should configure the pet window before z-order guard");
+
+        assert!(setup_body.contains("apply_pet_window_size_for_startup"));
+        assert!(!setup_body.contains("apply_pet_window_size(&window"));
+    }
+
+    #[test]
+    fn startup_window_command_symbol_is_registered() {
+        let source = include_str!("../src/lib.rs");
+
+        assert!(source.contains("commands::run_pet_startup_window_animation"));
+    }
+
+    #[test]
+    fn startup_window_command_preserves_tray_hidden_pet() {
+        let source = include_str!("../src/commands.rs");
+        let body = source
+            .split("pub fn run_pet_startup_window_animation")
+            .nth(1)
+            .and_then(|rest| rest.split("#[tauri::command]").next())
+            .unwrap_or(source);
+
+        assert!(
+            body.contains("is_visible"),
+            "startup animation command must inspect visibility before applying z-order"
+        );
+        assert!(
+            body.contains("return Ok(false)"),
+            "startup animation command must no-op and report hidden startup as not visibly completed"
+        );
+    }
+
+    #[test]
+    fn startup_window_command_settles_position_on_animation_error() {
+        let source = include_str!("../src/commands.rs");
+        let body = source
+            .split("pub fn run_pet_startup_window_animation")
+            .nth(1)
+            .and_then(|rest| rest.split("#[tauri::command]").next())
+            .unwrap_or(source);
+
+        assert!(body.contains("animate_pet_window_from_offscreen_right"));
+        assert!(
+            body.contains("place_window_bottom_right"),
+            "startup animation command must settle the native window before reporting an animation error"
+        );
+    }
+
+    #[test]
+    fn startup_animation_settles_hidden_window_without_reasserting_after_mid_animation_hide() {
+        let start = PhysicalPosition { x: 200, y: 40 };
+        let target = PhysicalPosition { x: 100, y: 40 };
+        let mut visibility_checks = 0;
+        let mut elapsed_ms = 16;
+        let mut positions = Vec::new();
+        let mut keep_on_top_count = 0;
+
+        let completed = animate_pet_window_positions_while_visible(
+            start,
+            target,
+            32,
+            || {
+                visibility_checks += 1;
+                Ok(visibility_checks < 3)
+            },
+            |position| {
+                positions.push(position);
+                Ok(())
+            },
+            || {
+                keep_on_top_count += 1;
+                Ok(())
+            },
+            |_| {},
+            || {
+                let elapsed = elapsed_ms;
+                elapsed_ms += 16;
+                elapsed
+            },
+        )
+        .expect("animation helper should stop cleanly after hide");
+
+        assert!(
+            !completed,
+            "hidden mid-animation pet should report that startup did not visibly complete"
+        );
+        assert_eq!(positions.first(), Some(&start));
+        assert_eq!(
+            positions.last(),
+            Some(&target),
+            "hidden mid-animation pet should settle to the normal target for the next tray show"
+        );
+        assert_eq!(
+            keep_on_top_count, 1,
+            "only the initial visible reassertion should run before the hide"
+        );
     }
 
     #[test]

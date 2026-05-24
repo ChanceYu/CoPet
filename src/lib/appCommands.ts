@@ -298,6 +298,19 @@ export async function resetPetWindowPosition(): Promise<CommandResult> {
   }
 }
 
+export async function runPetStartupWindowAnimation(
+  durationMs: number,
+): Promise<CommandResult & { completed: boolean }> {
+  try {
+    const completed = await invoke<boolean>("run_pet_startup_window_animation", {
+      durationMs,
+    });
+    return { completed, errorMessage: null };
+  } catch (error) {
+    return { completed: false, errorMessage: toMessage(error) };
+  }
+}
+
 export async function removePet(pet: PetSummary): Promise<CommandResult> {
   appStore.patch({ petBusyId: pet.id });
   try {

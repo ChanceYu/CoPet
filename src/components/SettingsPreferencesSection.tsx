@@ -139,6 +139,9 @@ export function SettingsPreferencesSection({
   const setEnableClickSounds = (enableClickSounds: boolean) =>
     setPetInteractions({ ...petInteractions, enableClickSounds });
 
+  const setEnableStartupAnimation = (enableStartupAnimation: boolean) =>
+    setPetInteractions({ ...petInteractions, enableStartupAnimation });
+
   return (
     <div className="settings-preferences">
       <h2 id="settings-section-panel-heading">{t("preferencesTitle")}</h2>
@@ -170,6 +173,41 @@ export function SettingsPreferencesSection({
                   data-active={petVisible ? "true" : "false"}
                 >
                   {t(petVisible ? "switchStateOn" : "switchStateOff")}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="settings-preferences-row">
+            <div className="settings-preferences-row-text">
+              <span className="settings-preferences-row-title">
+                {t("enableStartupAnimation")}
+              </span>
+            </div>
+            <div className="settings-preferences-row-control">
+              <div
+                className="settings-switch-row"
+                onClick={() =>
+                  setEnableStartupAnimation(!petInteractions.enableStartupAnimation)
+                }
+              >
+                <Switch
+                  aria-label={t("enableStartupAnimation")}
+                  checked={petInteractions.enableStartupAnimation}
+                  onCheckedChange={setEnableStartupAnimation}
+                />
+                <span
+                  aria-hidden="true"
+                  className="settings-switch-state"
+                  data-active={
+                    petInteractions.enableStartupAnimation ? "true" : "false"
+                  }
+                >
+                  {t(
+                    petInteractions.enableStartupAnimation
+                      ? "switchStateOn"
+                      : "switchStateOff",
+                  )}
                 </span>
               </div>
             </div>

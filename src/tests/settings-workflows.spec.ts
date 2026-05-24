@@ -520,7 +520,7 @@ test("pet interactions settings sub-section renders all controls", async ({ brow
       pets: [copet],
       onboardingComplete: false,
       locale: "en-US",
-      petInteractions: { enableClickSounds: false, cooldownStyle: "normal" },
+      petInteractions: { enableClickSounds: false, cooldownStyle: "normal", enableStartupAnimation: true },
     },
   });
   const page = await harness.openPage("settings");
@@ -544,7 +544,7 @@ test("pet interactions cooldown radio calls set_pet_interactions", async ({ brow
       pets: [copet],
       onboardingComplete: false,
       locale: "en-US",
-      petInteractions: { enableClickSounds: false, cooldownStyle: "normal" },
+      petInteractions: { enableClickSounds: false, cooldownStyle: "normal", enableStartupAnimation: true },
     },
   });
   const page = await harness.openPage("settings");
@@ -556,7 +556,7 @@ test("pet interactions cooldown radio calls set_pet_interactions", async ({ brow
   expect(harness.calls).toContainEqual({
     command: "set_pet_interactions",
     args: {
-      prefs: { enableClickSounds: false, cooldownStyle: "lazy" },
+      prefs: { enableClickSounds: false, cooldownStyle: "lazy", enableStartupAnimation: true },
     },
   });
 });
@@ -568,7 +568,7 @@ test("pet sounds switch calls set_pet_interactions", async ({ browser }) => {
       pets: [copet],
       onboardingComplete: false,
       locale: "en-US",
-      petInteractions: { enableClickSounds: false, cooldownStyle: "lazy" },
+      petInteractions: { enableClickSounds: false, cooldownStyle: "lazy", enableStartupAnimation: true },
     },
   });
   const page = await harness.openPage("settings");
@@ -583,7 +583,7 @@ test("pet sounds switch calls set_pet_interactions", async ({ browser }) => {
     {
       command: "set_pet_interactions",
       args: {
-        prefs: { enableClickSounds: true, cooldownStyle: "lazy" },
+        prefs: { enableClickSounds: true, cooldownStyle: "lazy", enableStartupAnimation: true },
       },
     },
   ]);
@@ -595,13 +595,13 @@ test("pet sounds switch calls set_pet_interactions", async ({ browser }) => {
     {
       command: "set_pet_interactions",
       args: {
-        prefs: { enableClickSounds: true, cooldownStyle: "lazy" },
+        prefs: { enableClickSounds: true, cooldownStyle: "lazy", enableStartupAnimation: true },
       },
     },
     {
       command: "set_pet_interactions",
       args: {
-        prefs: { enableClickSounds: false, cooldownStyle: "lazy" },
+        prefs: { enableClickSounds: false, cooldownStyle: "lazy", enableStartupAnimation: true },
       },
     },
   ]);

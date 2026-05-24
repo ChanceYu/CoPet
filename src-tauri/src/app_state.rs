@@ -49,6 +49,10 @@ fn default_enable_click_sounds() -> bool {
     true
 }
 
+fn default_enable_startup_animation() -> bool {
+    true
+}
+
 fn default_agent_message_visible() -> bool {
     true
 }
@@ -62,6 +66,8 @@ pub struct PetInteractionPrefs {
     pub enable_click_sounds: bool,
     #[serde(default)]
     pub cooldown_style: CooldownStyle,
+    #[serde(default = "default_enable_startup_animation")]
+    pub enable_startup_animation: bool,
 }
 
 impl Default for PetInteractionPrefs {
@@ -69,6 +75,7 @@ impl Default for PetInteractionPrefs {
         Self {
             enable_click_sounds: true,
             cooldown_style: CooldownStyle::Normal,
+            enable_startup_animation: true,
         }
     }
 }

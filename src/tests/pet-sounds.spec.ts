@@ -19,7 +19,7 @@ function soundState({
     pets: [copetWithSounds],
     onboardingComplete: false,
     agentMessageVisible,
-    petInteractions: { enableClickSounds, cooldownStyle: "normal" as const },
+    petInteractions: { enableClickSounds, cooldownStyle: "normal" as const, enableStartupAnimation: true },
   };
 }
 
@@ -45,7 +45,7 @@ test("interaction sound plays from selected sound pack instead of selected pet",
       currentSoundPackId: retroSoundPack.id,
       soundPacks: [copetSoundPack, retroSoundPack],
       pets: [copetWithSounds],
-      petInteractions: { enableClickSounds: true, cooldownStyle: "normal" },
+      petInteractions: { enableClickSounds: true, cooldownStyle: "normal", enableStartupAnimation: true },
     },
   });
   const page = await harness.openPage("pet");
@@ -79,7 +79,7 @@ test("disabled pet sounds suppress interaction playback", async ({ browser }) =>
   const harness = await createAppHarness(browser, {
     state: {
       ...soundState(),
-      petInteractions: { enableClickSounds: false, cooldownStyle: "normal" },
+      petInteractions: { enableClickSounds: false, cooldownStyle: "normal", enableStartupAnimation: true },
     },
   });
   const page = await harness.openPage("pet");
@@ -191,7 +191,7 @@ test("enabling sounds while already non-silent waits for next state transition",
 
   await page.evaluate(() =>
     window.__copetInvoke("set_pet_interactions", {
-      prefs: { enableClickSounds: true, cooldownStyle: "normal" },
+      prefs: { enableClickSounds: true, cooldownStyle: "normal", enableStartupAnimation: true },
     }),
   );
   await page.waitForTimeout(100);

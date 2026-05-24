@@ -30,7 +30,7 @@ test("settings groups built-in and custom sound packs", async ({ browser }) => {
       pets: [copet],
       soundPacks: [copetSoundPack, customRetroSoundPack],
       onboardingComplete: false,
-      petInteractions: { enableClickSounds: false, cooldownStyle: "normal" },
+      petInteractions: { enableClickSounds: false, cooldownStyle: "normal", enableStartupAnimation: true },
     },
   });
 
@@ -56,7 +56,7 @@ test("sound pack dropdown is grouped before the pet sounds switch", async ({
       pets: [copet],
       soundPacks: [copetSoundPack, customRetroSoundPack],
       onboardingComplete: false,
-      petInteractions: { enableClickSounds: false, cooldownStyle: "normal" },
+      petInteractions: { enableClickSounds: false, cooldownStyle: "normal", enableStartupAnimation: true },
     },
   });
 

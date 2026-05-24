@@ -70,11 +70,13 @@ export type CooldownStyle = "short" | "normal" | "lazy";
 export type PetInteractionPrefs = {
   enableClickSounds: boolean;
   cooldownStyle: CooldownStyle;
+  enableStartupAnimation: boolean;
 };
 
 export const defaultPetInteractionPrefs: PetInteractionPrefs = {
   enableClickSounds: true,
   cooldownStyle: "normal",
+  enableStartupAnimation: true,
 };
 
 export type AppState = {

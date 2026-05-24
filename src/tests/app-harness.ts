@@ -99,6 +99,7 @@ export type AppHarnessOptions = {
   codexPets?: PetSummary[];
   commandErrors?: Partial<Record<string, string>>;
   commandDelayMs?: Partial<Record<string, number>>;
+  commandResults?: Partial<Record<string, unknown>>;
   dialogOpenPaths?: Array<string | string[] | null>;
   dialogOpenPath?: string | null;
   downloadsDir?: string | null;
@@ -107,6 +108,7 @@ export type AppHarnessOptions = {
   monitorFromPointReturnsNull?: boolean;
   nativePetContextMenuError?: string;
   petVisible?: boolean;
+  reducedMotion?: "reduce" | "no-preference";
   runtimeStatus?: RuntimeStatus;
   scaleFactor?: number;
   state?: AppState;
@@ -259,7 +261,9 @@ export const copilotAdapter: AdapterSummary = {
 };
 
 export async function createAppHarness(browser: Browser, options: AppHarnessOptions = {}) {
-  const context = await browser.newContext();
+  const context = await browser.newContext({
+    reducedMotion: options.reducedMotion ?? "reduce",
+  });
   const pages: Page[] = [];
   const calls: CommandCall[] = [];
   let importSessionCounter = 0;
@@ -295,7 +299,11 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
   if (state.petInteractions === undefined) {
     state = {
       ...state,
-      petInteractions: { enableClickSounds: true, cooldownStyle: "normal" },
+      petInteractions: {
+        enableClickSounds: true,
+        cooldownStyle: "normal",
+        enableStartupAnimation: true,
+      },
     };
   }
   let adapters = options.adapters ?? [];
@@ -359,6 +367,12 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
         if (options.commandErrors?.[command]) {
           throw new Error(options.commandErrors[command]);
         }
+        if (
+          options.commandResults &&
+          Object.prototype.hasOwnProperty.call(options.commandResults, command)
+        ) {
+          return options.commandResults[command];
+        }
         if (command === "open_pet_context_menu") {
           if (options.nativePetContextMenuError) {
             throw new Error(options.nativePetContextMenuError);
@@ -383,6 +397,9 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
         }
         if (command === "get_pet_window_visible") {
           return petVisible;
+        }
+        if (command === "run_pet_startup_window_animation") {
+          return true;
         }
         if (command === "plugin:dialog|open") {
           if (dialogOpenPaths.length > 0) {

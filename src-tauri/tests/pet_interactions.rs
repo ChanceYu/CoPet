@@ -25,6 +25,7 @@ fn pet_interaction_prefs_round_trips_via_json() {
     let prefs = PetInteractionPrefs {
         enable_click_sounds: false,
         cooldown_style: CooldownStyle::Lazy,
+        enable_startup_animation: false,
     };
 
     let json = serde_json::to_string(&prefs).unwrap();
@@ -78,6 +79,7 @@ fn legacy_nested_pet_interactions_migrate_to_flat_keys_on_load() {
         PetInteractionPrefs {
             enable_click_sounds: true,
             cooldown_style: CooldownStyle::Lazy,
+            enable_startup_animation: true,
         }
     );
 
@@ -107,6 +109,7 @@ fn set_pet_interactions_writes_flat_keys() {
         .set_pet_interactions(PetInteractionPrefs {
             enable_click_sounds: true,
             cooldown_style: CooldownStyle::Short,
+            enable_startup_animation: true,
         })
         .unwrap();
 
@@ -133,6 +136,7 @@ fn set_pet_interactions_persists_and_round_trips() {
     let prefs = PetInteractionPrefs {
         enable_click_sounds: false,
         cooldown_style: CooldownStyle::Short,
+        enable_startup_animation: false,
     };
     let updated = store.set_pet_interactions(prefs.clone()).unwrap();
     assert_eq!(updated.pet_interactions, prefs);
