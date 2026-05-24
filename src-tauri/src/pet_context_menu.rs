@@ -90,7 +90,7 @@ pub fn open_pet_context_menu(
     )
     .map_err(|error| error.to_string())?;
 
-    let menu = Menu::with_items(&app, &[&messages, &open_settings, &separator, &hide_pet])
+    let menu = Menu::with_items(&app, &[&open_settings, &separator, &messages, &hide_pet])
         .map_err(|error| error.to_string())?;
 
     window
