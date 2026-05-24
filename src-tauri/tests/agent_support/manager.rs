@@ -261,6 +261,31 @@ fn run_agent_auto_install_once_sets_completion_marker_and_preserves_later_uninst
 }
 
 #[test]
+fn run_agent_auto_install_once_restores_helper_when_missing_after_completion() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join(".copet");
+    let home = temp.path().join("home");
+    let store = ConfigStore::new(&root);
+    store.ensure_ready().unwrap();
+    let manager = manager_with_fake_agent_names(&root, &home, &["codex"]);
+
+    run_agent_auto_install_once(&store, &manager).unwrap();
+    let helper = root.join("hooks/copet-hook.sh");
+    assert!(helper.exists());
+    assert!(store.agent_auto_install_complete().unwrap());
+
+    fs::remove_file(&helper).unwrap();
+    assert!(!helper.exists());
+
+    let summary = run_agent_auto_install_once(&store, &manager).unwrap();
+
+    assert!(helper.exists(), "helper script should be restored on launch");
+    assert!(summary.installed.is_empty());
+    assert!(summary.failed.is_empty());
+    assert!(store.agent_auto_install_complete().unwrap());
+}
+
+#[test]
 fn run_agent_auto_install_once_marks_complete_even_when_adapter_fails() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path().join(".copet");

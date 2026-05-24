@@ -286,7 +286,7 @@ impl AgentManager {
         Ok(())
     }
 
-    fn ensure_helper(&self) -> Result<(), AdapterError> {
+    pub(crate) fn ensure_helper(&self) -> Result<(), AdapterError> {
         let path = self.helper_path();
         ensure_parent(&path)?;
         write_atomic(&path, helper_script().as_bytes())?;

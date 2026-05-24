@@ -830,6 +830,19 @@ pub fn run_agent_auto_install_once(
     store: &ConfigStore,
     manager: &AgentManager,
 ) -> Result<agents::AutoInstallSummary, config_store::StoreError> {
+    // Agent configs from a previous run still reference the helper script's
+    // path; if ~/.copet/hooks/ was wiped, put the script back so existing
+    // hooks keep firing even when the auto-install gate is already closed.
+    if !manager.helper_path().exists() {
+        if let Err(_error) = manager.ensure_helper() {
+            #[cfg(debug_assertions)]
+            dev_log_app(
+                "agent.helper-restore",
+                serde_json::json!({ "error": _error.to_string() }),
+            );
+        }
+    }
+
     if store.agent_auto_install_complete()? {
         return Ok(agents::AutoInstallSummary::default());
     }
