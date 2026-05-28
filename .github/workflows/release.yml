@@ -23,13 +23,18 @@ concurrency:
 permissions:
   contents: write
 
+env:
+  # Force JavaScript actions to run on Node 24 ahead of the 2026-06-02 deprecation
+  # of Node 20. Lets us keep using pnpm/action-setup@v4 (no v5 release yet).
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.resolve.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -38,7 +43,7 @@ jobs:
         with:
           version: 9
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
 
@@ -112,7 +117,7 @@ jobs:
             asset: CoPet-windows-arm64.exe
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: v${{ needs.prepare.outputs.version }}
 
@@ -120,7 +125,7 @@ jobs:
         with:
           version: 9
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
 
@@ -128,11 +133,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.rust-targets }}
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri -> target
-          key: ${{ matrix.target }}
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
