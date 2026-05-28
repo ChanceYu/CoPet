@@ -58,13 +58,25 @@ Restart Codex if the newly installed Skills do not appear.
 
 ## Installation
 
+| Platform | Download |
+| --- | --- |
+| macOS (Universal) | [CoPet-macos-universal.dmg](https://github.com/ChanceYu/CoPet/releases/latest/download/CoPet-macos-universal.dmg) |
+| Windows x64 | [CoPet-windows-x64.exe](https://github.com/ChanceYu/CoPet/releases/latest/download/CoPet-windows-x64.exe) |
+| Windows arm64 | [CoPet-windows-arm64.exe](https://github.com/ChanceYu/CoPet/releases/latest/download/CoPet-windows-arm64.exe) |
+
+[All releases](https://github.com/ChanceYu/CoPet/releases)
+
 ### macOS
 
-Download the `.dmg` from [Releases](https://github.com/ChanceYu/CoPet/releases) and drag `CoPet.app` into `/Applications`. The build is not notarized, so run once to clear the quarantine flag:
+Drag `CoPet.app` into `/Applications`. The build is not notarized, so run once to clear the quarantine flag:
 
 ```bash
 sudo xattr -rd com.apple.quarantine /Applications/CoPet.app
 ```
+
+### Windows
+
+Windows builds are not code-signed. SmartScreen may warn on first launch — click *More info* → *Run anyway*.
 
 ## Getting started
 
