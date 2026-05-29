@@ -118,6 +118,14 @@ jobs:
         with:
           targets: ${{ matrix.rust-targets }}
 
+      - name: Install dependencies
+        # tauri-action does NOT run install itself — without this step the
+        # subsequent `pnpm tauri build` invocation fails with
+        # ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL because node_modules/.bin/tauri
+        # is missing. Install must run before the version bump so the
+        # lockfile and on-disk package.json match.
+        run: pnpm install --frozen-lockfile
+
       - name: Apply release version locally
         shell: bash
         run: |
