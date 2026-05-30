@@ -133,6 +133,18 @@ fn localize_adapter_error(error: AdapterError) -> String {
             } => {
                 format!("{display_name} 钩子暂不支持 {platform}")
             }
+            AdapterError::UnmanagedPiExtension(path) => {
+                format!(
+                    "Pi 扩展目录已存在且不是 CoPet 管理的目录：{}",
+                    path.to_string_lossy()
+                )
+            }
+            AdapterError::UnmanagedPiExtensionRemoval(path) => {
+                format!(
+                    "Pi 扩展目录不是 CoPet 管理的目录：{}",
+                    path.to_string_lossy()
+                )
+            }
         },
     }
 }

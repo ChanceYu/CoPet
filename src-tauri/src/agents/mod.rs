@@ -11,7 +11,7 @@ use std::{
 pub(crate) const COPET_MARKER: &str = "copet-managed-hook";
 pub(crate) const HELPER_NAME: &str = "copet-hook.sh";
 
-static ADAPTERS: [&dyn CliAdapter; 7] = [
+static ADAPTERS: [&dyn CliAdapter; 8] = [
     adapters::CLAUDE_CODE,
     adapters::CODEX,
     adapters::CURSOR,
@@ -19,6 +19,7 @@ static ADAPTERS: [&dyn CliAdapter; 7] = [
     adapters::OPENCODE,
     adapters::COPILOT,
     adapters::GEMINI,
+    adapters::PI,
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -68,6 +69,10 @@ pub enum AdapterError {
         display_name: String,
         platform: &'static str,
     },
+    #[error("Pi extension directory already exists and is not CoPet-managed: {0}")]
+    UnmanagedPiExtension(PathBuf),
+    #[error("Pi extension directory is not CoPet-managed: {0}")]
+    UnmanagedPiExtensionRemoval(PathBuf),
 }
 
 pub(crate) trait CliAdapter: Sync {
@@ -727,4 +732,8 @@ fn now_ms() -> u128 {
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_millis()
+}
+
+pub(crate) fn agents_now_ms_for_marker() -> u128 {
+    now_ms()
 }
