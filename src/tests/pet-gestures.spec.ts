@@ -401,9 +401,9 @@ test("right-click opens the native pet context menu command", async ({ browser }
   });
   const args = harness.invocations("open_pet_context_menu")[0].args;
   expect(args?.labels).toEqual({
-    messages: "Hide messages",
+    messages: "Hide Messages",
     openSettings: "Open Settings",
-    hidePet: "Hide pet",
+    hidePet: "Hide Pet",
   });
   expect(args?.position).toEqual({
     x: expect.any(Number),
@@ -416,9 +416,9 @@ test("right-click opens the native pet context menu command", async ({ browser }
   expect(position.y).toBeLessThanOrEqual(box.y + box.height + 5);
   expect(args).toMatchObject({
     labels: {
-      messages: "Hide messages",
+      messages: "Hide Messages",
       openSettings: "Open Settings",
-      hidePet: "Hide pet",
+      hidePet: "Hide Pet",
     },
   });
   await expect(page.getByTestId("pet-context-menu")).toHaveCount(0);

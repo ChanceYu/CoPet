@@ -27,7 +27,7 @@ use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu},
     path::BaseDirectory,
     tray::{TrayIcon, TrayIconBuilder},
-    AppHandle, Emitter, EventTarget, Manager, State, Wry,
+    AppHandle, Emitter, EventTarget, Manager, Wry,
 };
 #[cfg(target_os = "macos")]
 use tauri_nspanel::WebviewWindowExt;
@@ -581,8 +581,17 @@ fn remove_pet(app: tauri::AppHandle, pet_id: String) -> Result<AppState, String>
 }
 
 #[tauri::command]
-fn get_runtime_status(runtime: State<RuntimeManager>) -> RuntimeSnapshot {
-    runtime.snapshot()
+fn get_runtime_status(app: tauri::AppHandle) -> RuntimeSnapshot {
+    app.try_state::<RuntimeManager>()
+        .map(|runtime| runtime.snapshot())
+        .unwrap_or(RuntimeSnapshot {
+            port: 0,
+            endpoint: String::new(),
+            current_state: runtime_state::DerivedPetState::idle(),
+            messages: Vec::new(),
+            accepted_events: 0,
+            rejected_events: 0,
+        })
 }
 
 fn emit_app_state_changed(app: &tauri::AppHandle, state: &AppState) -> Result<(), String> {
@@ -940,6 +949,10 @@ pub fn run() {
                 #[cfg(target_os = "macos")]
                 {
                     let _panel = window.to_panel();
+                }
+                #[cfg(target_os = "windows")]
+                {
+                    let _ = window.set_shadow(false);
                 }
                 let state = store.app_state()?;
                 apply_pet_window_size_for_startup(&window, state.pet_window_size)?;

@@ -34,10 +34,10 @@ const messages = {
     importPetsHint:
       "Choose a source, review compatible pets, then import the ones you want.",
     importSelected: "Import selected",
-    contextMenuShowMessages: "Show messages",
-    contextMenuHideMessages: "Hide messages",
+    contextMenuShowMessages: "Show Messages",
+    contextMenuHideMessages: "Hide Messages",
     contextMenuOpenSettings: "Open Settings",
-    contextMenuHidePet: "Hide pet",
+    contextMenuHidePet: "Hide Pet",
     locateCurrent: "Find current pet",
     language: "Language",
     messageDisplay: "Display count",

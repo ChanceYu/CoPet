@@ -355,6 +355,8 @@ fn apply_native_pet_window_z_order_policy(
         SetWindowPos, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
     };
 
+    let hwnd = window.hwnd()?;
+
     if policy.windows_hwnd_topmost {
         let flags = if policy.windows_no_activate {
             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
@@ -362,7 +364,7 @@ fn apply_native_pet_window_z_order_policy(
             SWP_NOMOVE | SWP_NOSIZE
         };
         unsafe {
-            SetWindowPos(window.hwnd()?, Some(HWND_TOPMOST), 0, 0, 0, 0, flags).map_err(
+            SetWindowPos(hwnd, Some(HWND_TOPMOST), 0, 0, 0, 0, flags).map_err(
                 |error| std::io::Error::new(std::io::ErrorKind::Other, error.to_string()),
             )?;
         }

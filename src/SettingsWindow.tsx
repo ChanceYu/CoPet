@@ -38,6 +38,8 @@ import { defaultPetWindowSize } from "./lib/petWindowUi";
 
 const emptyPetSummaries: PetSummary[] = [];
 
+const isWindows = /windows/i.test(navigator.userAgent);
+
 const SETTINGS_PANEL_ID = "settings-section-panel";
 
 const NAV_ITEMS: SettingsNavItem[] = [
@@ -213,7 +215,12 @@ export function SettingsWindow() {
   return (
     <main className="settings-window">
       <div className="settings-shell">
-        <aside className="settings-sidebar">
+        <aside
+          className="settings-sidebar"
+          {...(isWindows
+            ? { "data-tauri-drag-region": true, onPointerDown: startSettingsDrag }
+            : {})}
+        >
           <div className="settings-sidebar-brand">
             <img
               alt=""
@@ -234,18 +241,20 @@ export function SettingsWindow() {
           <SettingsTipBox t={t} />
         </aside>
 
-        <header
-          aria-hidden="true"
-          className="settings-titlebar"
-          data-tauri-drag-region
-          onPointerDown={startSettingsDrag}
-        >
-          <span
+        {!isWindows && (
+          <header
             aria-hidden="true"
-            className="settings-titlebar-traffic-lights"
-            data-settings-no-drag
-          />
-        </header>
+            className="settings-titlebar"
+            data-tauri-drag-region
+            onPointerDown={startSettingsDrag}
+          >
+            <span
+              aria-hidden="true"
+              className="settings-titlebar-traffic-lights"
+              data-settings-no-drag
+            />
+          </header>
+        )}
 
         <SettingsSectionHost
           activeSection={activeSection}

@@ -50,6 +50,7 @@ body,
   width: 100%;
   height: 100%;
   margin: 0;
+  padding: 0;
   overflow: hidden;
   background: transparent;
 }
@@ -226,6 +227,10 @@ select {
   overflow: hidden;
 }
 
+[data-platform="win"] .settings-window {
+  border-radius: 0 0 var(--window-radius) var(--window-radius);
+}
+
 .settings-window::before {
   content: none;
 }
@@ -235,7 +240,7 @@ select {
   display: grid;
   width: 100%;
   height: 100%;
-  grid-template-rows: 36px 1fr;
+  grid-template-rows: 46px 1fr;
   grid-template-columns: 196px 1fr;
   min-height: 0;
   overflow: hidden;
@@ -251,22 +256,18 @@ select {
   backdrop-filter: none;
 }
 
-/* Unified left-column surface: a single tinted band that extends from the
-   window's top edge to the bottom, visually bridging the titlebar row and the
-   sidebar so there is no horizontal seam at their boundary. */
-.settings-shell::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 196px;
-  background:
-    linear-gradient(180deg, hsl(var(--card) / 0.85), hsl(var(--card) / 0.65));
-  backdrop-filter: blur(2px);
-  border-right: 1px solid hsl(var(--border) / 0.55);
-  pointer-events: none;
-  z-index: 0;
+/* Windows: no separate titlebar row, content extends to the top. */
+[data-platform="win"] .settings-shell {
+  grid-template-rows: 1fr;
+  border-radius: 0 0 var(--window-radius) var(--window-radius);
+}
+
+[data-platform="win"] .settings-sidebar {
+  grid-row: 1;
+}
+
+[data-platform="win"] .settings-section {
+  grid-row: 1;
 }
 
 .settings-titlebar {
@@ -293,6 +294,24 @@ select {
   height: 100%;
   -webkit-app-region: no-drag;
   cursor: default;
+}
+
+/* Unified left-column surface: a single tinted band that extends from the
+   window's top edge to the bottom, visually bridging the titlebar row and the
+   sidebar so there is no horizontal seam at their boundary. */
+.settings-shell::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 196px;
+  background:
+    linear-gradient(180deg, hsl(var(--card) / 0.85), hsl(var(--card) / 0.65));
+  backdrop-filter: blur(2px);
+  border-right: 1px solid hsl(var(--border) / 0.55);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .settings-sidebar {

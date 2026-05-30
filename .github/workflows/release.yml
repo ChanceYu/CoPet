@@ -112,6 +112,11 @@ jobs:
         with:
           targets: ${{ matrix.rust-targets }}
 
+      - name: Install cargo-edit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-edit
+
       - name: Install dependencies
         # tauri-action does NOT run install itself — without this step the
         # subsequent `pnpm tauri build` invocation fails with
@@ -124,14 +129,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Bump package.json too — vite.config.ts embeds `npm_package_version`
-          # into the frontend's `__APP_VERSION__` (rendered in the About panel),
-          # so the build must run with the resolved version already in place.
+          # Keep all three version sources in lockstep so the produced binaries
+          # match the tag `publish` will create:
+          #   - package.json     → vite.config.ts embeds `npm_package_version`
+          #                        into the frontend's `__APP_VERSION__` (About panel).
+          #   - tauri.conf.json  → the bundle/installer version.
+          #   - src-tauri/Cargo.toml → Rust reads it via `env!("CARGO_PKG_VERSION")`
+          #                        for the About panel and tray menu.
           # The edits live only in the runner workspace; the actual commit
           # happens later in `publish` after every build leg succeeds.
           node -e "const fs=require('fs');const p='package.json';const c=JSON.parse(fs.readFileSync(p,'utf8'));c.version=process.env.RESOLVED;fs.writeFileSync(p,JSON.stringify(c,null,2)+'\n');"
           node -e "const fs=require('fs');const p='src-tauri/tauri.conf.json';const c=JSON.parse(fs.readFileSync(p,'utf8'));c.version=process.env.RESOLVED;fs.writeFileSync(p,JSON.stringify(c,null,2)+'\n');"
+          cargo set-version "$RESOLVED" --manifest-path src-tauri/Cargo.toml
           grep '"version"' package.json src-tauri/tauri.conf.json
+          grep '^version' src-tauri/Cargo.toml
 
       - name: Build Tauri app
         id: tauri
@@ -184,6 +195,14 @@ jobs:
         with:
           node-version: 20
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-edit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-edit
+
       - name: Configure git identity
         run: |
           git config user.name "github-actions[bot]"
@@ -201,7 +220,9 @@ jobs:
           fi
           node -e "const fs=require('fs');const p='package.json';const c=JSON.parse(fs.readFileSync(p,'utf8'));c.version=process.env.RESOLVED;fs.writeFileSync(p,JSON.stringify(c,null,2)+'\n');"
           node -e "const fs=require('fs');const p='src-tauri/tauri.conf.json';const c=JSON.parse(fs.readFileSync(p,'utf8'));c.version=process.env.RESOLVED;fs.writeFileSync(p,JSON.stringify(c,null,2)+'\n');"
-          git add package.json src-tauri/tauri.conf.json
+          # set-version also rewrites Cargo.lock's package entry, so commit both.
+          cargo set-version "$RESOLVED" --manifest-path src-tauri/Cargo.toml
+          git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock
           git commit -m "chore(release): v$RESOLVED"
           git tag "v$RESOLVED"
           git push origin HEAD:main

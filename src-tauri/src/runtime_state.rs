@@ -40,6 +40,16 @@ pub struct DerivedPetState {
     pub idle_after_ms: Option<u64>,
 }
 
+impl DerivedPetState {
+    pub fn idle() -> Self {
+        Self {
+            state: PetStateId::Idle,
+            since_ms: 0,
+            idle_after_ms: None,
+        }
+    }
+}
+
 const MIN_DWELL_MS: u64 = 200;
 const TEMP_STATE_IDLE_AFTER_MS: u64 = 1_500;
 
