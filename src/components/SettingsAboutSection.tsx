@@ -1,4 +1,4 @@
-import copetLogoUrl from "../assets/logo-transparent.png";
+import copetLogoUrl from "../assets/logo.png";
 import { COPET_REPO_URL } from "../lib/appLinks";
 import { useOpenExternalUrl } from "../hooks/useOpenExternalUrl";
 

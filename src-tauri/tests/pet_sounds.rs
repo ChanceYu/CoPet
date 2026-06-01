@@ -15,84 +15,20 @@ fn make_store(temp: &tempfile::TempDir) -> ConfigStore {
 }
 
 #[test]
-fn builtin_copet_exposes_valid_interaction_and_agent_sounds() {
+fn removed_copet_pet_package_is_not_exposed_as_builtin_pet() {
     let temp = tempfile::tempdir().unwrap();
     let store = make_store(&temp);
 
     let state = store.ensure_ready().unwrap();
-    let pet = state
+    let pet_ids = state
         .pets
         .iter()
-        .find(|pet| pet.id == "system:copet")
-        .unwrap();
-    let sounds = pet.sounds.as_ref().unwrap();
+        .map(|pet| pet.id.as_str())
+        .collect::<Vec<_>>();
 
-    assert!(sounds
-        .interaction_sounds
-        .click
-        .as_ref()
-        .unwrap()
-        .ends_with("sounds/copet/click.mp3"));
-    assert!(sounds
-        .interaction_sounds
-        .double_click
-        .as_ref()
-        .unwrap()
-        .ends_with("sounds/copet/surprised.mp3"));
-    assert!(sounds
-        .interaction_sounds
-        .petted
-        .as_ref()
-        .unwrap()
-        .ends_with("sounds/copet/purr.mp3"));
-    assert!(sounds
-        .interaction_sounds
-        .petted_slow
-        .as_ref()
-        .unwrap()
-        .ends_with("sounds/copet/sigh.mp3"));
-    assert!(sounds
-        .interaction_sounds
-        .drag_land
-        .as_ref()
-        .unwrap()
-        .ends_with("sounds/copet/wheee.mp3"));
-    assert!(sounds
-        .agent_sounds
-        .thinking
-        .as_ref()
-        .unwrap()
-        .ends_with("sounds/copet/hmm.mp3"));
-    assert!(sounds
-        .agent_sounds
-        .editing
-        .as_ref()
-        .unwrap()
-        .ends_with("sounds/copet/tap.mp3"));
-    assert!(sounds
-        .agent_sounds
-        .inspecting
-        .as_ref()
-        .unwrap()
-        .ends_with("sounds/copet/peek.mp3"));
-    assert!(sounds
-        .agent_sounds
-        .awaiting_approval
-        .as_ref()
-        .unwrap()
-        .ends_with("sounds/copet/wait.mp3"));
-    assert!(sounds
-        .agent_sounds
-        .celebrating
-        .as_ref()
-        .unwrap()
-        .ends_with("sounds/copet/yay.mp3"));
-    assert!(sounds
-        .agent_sounds
-        .failed
-        .as_ref()
-        .unwrap()
-        .ends_with("sounds/copet/oof.mp3"));
+    assert!(pet_ids.contains(&"system:copet-neo"));
+    assert!(pet_ids.contains(&"system:copet-nia"));
+    assert!(!pet_ids.contains(&"system:copet"));
 }
 
 #[test]

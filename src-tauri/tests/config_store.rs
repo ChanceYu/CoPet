@@ -6,6 +6,8 @@ use copet_lib::{
 use std::{fs, path::Path, path::PathBuf};
 
 const NON_DEFAULT_BUILTIN_PET_ID: &str = "dragon";
+const PRIMARY_BUILTIN_PET_ID: &str = "copet-neo";
+const SECONDARY_BUILTIN_PET_ID: &str = "copet-nia";
 
 fn builtin_pets_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/pets")
@@ -16,20 +18,20 @@ fn make_store(temp: &tempfile::TempDir) -> ConfigStore {
 }
 
 #[test]
-fn ensure_ready_initializes_copet_tree_without_copying_builtins() {
+fn ensure_ready_initializes_default_pet_tree_without_copying_builtins() {
     let temp = tempfile::tempdir().unwrap();
     let store = make_store(&temp);
 
     let state = store.ensure_ready().unwrap();
 
-    assert_eq!(state.current_pet_id, "system:copet");
+    assert_eq!(state.current_pet_id, "system:copet-neo");
     assert!(!state.onboarding_complete);
     assert_eq!(state.agent_message_display, AgentMessageDisplay::All);
-    assert!(state.pets.iter().any(|pet| pet.id == "system:copet"));
+    assert!(state.pets.iter().any(|pet| pet.id == "system:copet-neo"));
     assert!(store.root().join("config.json").exists());
     assert!(store.root().join("runtime").exists());
     // Built-in pets are not copied to the user dir under the new architecture.
-    assert!(!store.root().join("pets/copet").exists());
+    assert!(!store.root().join("pets/copet-neo").exists());
     assert!(!store
         .root()
         .join("pets")
@@ -54,7 +56,8 @@ fn list_pets_exposes_all_builtin_packages_from_resource_dir() {
         .find(|pet| pet.id == format!("system:{NON_DEFAULT_BUILTIN_PET_ID}"))
         .unwrap();
 
-    assert!(ids.contains(&"system:copet"));
+    assert!(ids.contains(&"system:copet-neo"));
+    assert!(ids.contains(&"system:copet-nia"));
     assert!(ids.contains(&format!("system:{NON_DEFAULT_BUILTIN_PET_ID}").as_str()));
     assert!(dragon.built_in);
 }
@@ -72,18 +75,18 @@ fn list_pets_returns_user_imports_alongside_builtins() {
         .iter()
         .find(|pet| pet.id == "user:desk-cat")
         .unwrap();
-    let copet = state
+    let copet_neo = state
         .pets
         .iter()
-        .find(|pet| pet.id == "system:copet")
+        .find(|pet| pet.id == "system:copet-neo")
         .unwrap();
 
     assert!(!desk_cat.built_in);
-    assert!(copet.built_in);
+    assert!(copet_neo.built_in);
 }
 
 #[test]
-fn list_pets_orders_copet_then_user_imports_then_builtins() {
+fn list_pets_orders_copet_neo_then_copet_nia_then_user_imports_then_builtins() {
     let temp = tempfile::tempdir().unwrap();
     let store = make_store(&temp);
     store.ensure_ready().unwrap();
@@ -92,7 +95,8 @@ fn list_pets_orders_copet_then_user_imports_then_builtins() {
 
     let pets = store.list_pets().unwrap();
 
-    assert_eq!(pets.first().unwrap().id, "system:copet");
+    assert_eq!(pets[0].id, "system:copet-neo");
+    assert_eq!(pets[1].id, format!("system:{SECONDARY_BUILTIN_PET_ID}"));
 
     let user_indices = pets
         .iter()
@@ -103,11 +107,12 @@ fn list_pets_orders_copet_then_user_imports_then_builtins() {
         .iter()
         .enumerate()
         .filter_map(|(idx, pet)| {
-            (pet.built_in && pet.id != "system:copet").then_some((idx, pet.id.as_str()))
+            (pet.built_in && pet.id != "system:copet-neo" && pet.id != "system:copet-nia")
+                .then_some((idx, pet.id.as_str()))
         })
         .collect::<Vec<_>>();
 
-    // Every user import must come before any non-copet built-in.
+    // Every user import must come before any non-priority built-in.
     let max_user_idx = user_indices.iter().map(|(idx, _)| *idx).max().unwrap();
     let min_builtin_idx = builtin_non_copet_indices
         .iter()
@@ -126,15 +131,15 @@ fn ensure_ready_preserves_user_pet_that_shadows_builtin_id() {
     let temp = tempfile::tempdir().unwrap();
     let store = make_store(&temp);
     fs::create_dir_all(store.root().join("pets")).unwrap();
-    create_user_pet(store.root(), "copet", "User CoPet");
+    create_user_pet(store.root(), PRIMARY_BUILTIN_PET_ID, "User CoPet Neo");
     create_user_pet(store.root(), "desk-cat", "Desk Cat");
 
     let state = store.ensure_ready().unwrap();
 
-    assert!(store.root().join("pets/copet").exists());
+    assert!(store.root().join("pets/copet-neo").exists());
     assert!(store.root().join("pets/desk-cat").exists());
-    assert!(state.pets.iter().any(|pet| pet.id == "system:copet"));
-    assert!(state.pets.iter().any(|pet| pet.id == "user:copet"));
+    assert!(state.pets.iter().any(|pet| pet.id == "system:copet-neo"));
+    assert!(state.pets.iter().any(|pet| pet.id == "user:copet-neo"));
 }
 
 #[test]
@@ -306,7 +311,7 @@ fn remove_pet_deletes_user_pet_and_falls_back_when_current() {
 
     let state = store.remove_pet("user:desk-cat").unwrap();
 
-    assert_eq!(state.current_pet_id, "system:copet");
+    assert_eq!(state.current_pet_id, "system:copet-neo");
     assert!(!state.pets.iter().any(|pet| pet.id == "user:desk-cat"));
     assert!(!store.root().join("pets/desk-cat").exists());
 }
@@ -317,7 +322,7 @@ fn remove_pet_rejects_built_in_pet() {
     let store = make_store(&temp);
     store.ensure_ready().unwrap();
 
-    let error = store.remove_pet("system:copet").unwrap_err();
+    let error = store.remove_pet("system:copet-neo").unwrap_err();
 
     assert!(error.to_string().contains("built-in"));
 }
@@ -464,7 +469,7 @@ fn list_pets_hides_broken_user_packages_without_crashing() {
     let pets = store.list_pets().unwrap();
     let ids = pets.iter().map(|pet| pet.id.as_str()).collect::<Vec<_>>();
 
-    assert!(ids.contains(&"system:copet"));
+    assert!(ids.contains(&"system:copet-neo"));
     assert!(ids.contains(&"user:good-pet"));
     assert!(!ids.contains(&"user:broken-pet"));
 }
@@ -790,8 +795,8 @@ fn app_state_exposes_namespaced_runtime_pet_ids() {
 
     let state = store.ensure_ready().unwrap();
 
-    assert_eq!(state.current_pet_id, "system:copet");
-    assert!(state.pets.iter().any(|pet| pet.id == "system:copet"));
+    assert_eq!(state.current_pet_id, "system:copet-neo");
+    assert!(state.pets.iter().any(|pet| pet.id == "system:copet-neo"));
     assert!(state
         .pets
         .iter()
@@ -840,7 +845,7 @@ fn removing_system_pet_is_rejected_by_namespace() {
     let store = make_store(&temp);
     store.ensure_ready().unwrap();
 
-    let error = store.remove_pet("system:copet").unwrap_err();
+    let error = store.remove_pet("system:copet-neo").unwrap_err();
 
     assert!(error.to_string().contains("built-in"));
 }

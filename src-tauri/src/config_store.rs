@@ -9,7 +9,7 @@ use crate::{
         collect_pet_sounds, find_sprite_path, parse_runtime_pet_id, system_pet_id, user_pet_id,
         PetManifest, PetNamespace, PetPackage, PetSummary,
     },
-    pet_registry::BUILTIN_PET_ID,
+    pet_registry::{BUILTIN_PET_ID, BUILTIN_SOUND_PACK_ID, PRIORITY_BUILTIN_PET_IDS},
     sound_pack::{
         parse_runtime_sound_pack_id, scan_sound_packs_with_storage_ids, system_sound_pack_id,
         SoundPack, SoundPackNamespace, SoundPackSummary,
@@ -717,6 +717,7 @@ fn sort_pet_summaries(pets: &mut [PetSummary]) {
         sort_group(left)
             .cmp(&sort_group(right))
             .then_with(|| left.display_name.cmp(&right.display_name))
+            .then_with(|| left.id.cmp(&right.id))
     });
 }
 
@@ -730,7 +731,7 @@ fn sort_sound_pack_summaries(packs: &mut [SoundPackSummary]) {
 }
 
 fn sound_pack_sort_group(pack: &SoundPackSummary) -> u8 {
-    if pack.id == system_sound_pack_id(BUILTIN_PET_ID) {
+    if pack.id == system_sound_pack_id(BUILTIN_SOUND_PACK_ID) {
         0
     } else if pack.built_in {
         1
@@ -740,13 +741,28 @@ fn sound_pack_sort_group(pack: &SoundPackSummary) -> u8 {
 }
 
 fn sort_group(pet: &PetSummary) -> u8 {
-    if pet.id == system_pet_id(BUILTIN_PET_ID) {
-        0
+    if let Some(rank) = priority_builtin_pet_rank(pet) {
+        rank as u8
     } else if !pet.built_in {
-        1
-    } else {
         2
+    } else {
+        3
     }
+}
+
+fn priority_builtin_pet_rank(pet: &PetSummary) -> Option<usize> {
+    if !pet.built_in {
+        return None;
+    }
+
+    let (namespace, raw_id) = parse_runtime_pet_id(&pet.id)?;
+    if namespace != PetNamespace::System {
+        return None;
+    }
+
+    PRIORITY_BUILTIN_PET_IDS
+        .iter()
+        .position(|priority_id| *priority_id == raw_id)
 }
 
 fn resolve_current_pet_id(current_pet_id: &str, pets: &[PetSummary]) -> Option<String> {
@@ -780,7 +796,7 @@ fn resolve_current_sound_pack_id(
         return Some(current_sound_pack_id.to_string());
     }
 
-    let default_id = system_sound_pack_id(BUILTIN_PET_ID);
+    let default_id = system_sound_pack_id(BUILTIN_SOUND_PACK_ID);
     if sound_packs.iter().any(|pack| pack.id == default_id) {
         return Some(default_id);
     }
@@ -942,7 +958,7 @@ impl Default for StoredConfig {
 }
 
 fn default_current_sound_pack_id() -> String {
-    system_sound_pack_id(BUILTIN_PET_ID)
+    system_sound_pack_id(BUILTIN_SOUND_PACK_ID)
 }
 
 fn default_agent_message_visible() -> bool {

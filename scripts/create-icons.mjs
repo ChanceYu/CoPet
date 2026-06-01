@@ -10,6 +10,7 @@ const outputDir = join(repoRoot, "src-tauri", "icons");
 const workDir = mkdtempSync(join(tmpdir(), "copet-icons-"));
 const roundedIcon = join(workDir, "app-icon-rounded.png");
 const trayIcon = join(outputDir, "tray.png");
+const mobileIconDirs = [join(outputDir, "android"), join(outputDir, "ios")];
 
 function run(command, args) {
   const result = spawnSync(command, args, {
@@ -53,7 +54,12 @@ try {
   ]);
 
   run("pnpm", ["exec", "tauri", "icon", roundedIcon, "-o", outputDir]);
+  for (const mobileIconDir of mobileIconDirs) {
+    rmSync(mobileIconDir, { recursive: true, force: true });
+  }
 
+  // macOS renders tray icons as template masks. Keep the 36px menu-bar mark
+  // mostly solid, with translucent eye whites and solid pupils.
   run("magick", [
     sourceIcon,
     "-alpha",
@@ -73,17 +79,44 @@ try {
     "-trim",
     "+repage",
     "-resize",
-    "30x30",
+    "32x32",
     "-background",
     "none",
     "-gravity",
     "center",
     "-extent",
     "36x36",
+    "-alpha",
+    "extract",
+    "-level",
+    "4%,100%",
+    "-fill",
+    "gray35",
+    "-draw",
+    "ellipse 12.9,22.6 2.25,2.55 0,360",
+    "-draw",
+    "ellipse 25.2,20.6 2.25,2.55 0,360",
+    "-fill",
+    "white",
+    "-draw",
+    "ellipse 14.0,23.0 0.9,1.1 0,360",
+    "-draw",
+    "ellipse 25.1,21.0 0.9,1.1 0,360",
+    "(",
+    "-size",
+    "36x36",
+    "xc:black",
+    ")",
+    "+swap",
+    "-alpha",
+    "off",
+    "-compose",
+    "CopyOpacity",
+    "-composite",
     `PNG32:${trayIcon}`,
   ]);
 
-  console.log("Generated app icons from src/assets/logo.png");
+  console.log("Generated app icons and macOS tray template from src/assets/logo.png");
 } finally {
   rmSync(workDir, { recursive: true, force: true });
 }

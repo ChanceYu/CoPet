@@ -378,8 +378,8 @@ fn commit_import_previews_imports_only_selected_previews() {
 fn commit_import_previews_allows_system_id_collision() {
     let temp = tempfile::tempdir().unwrap();
     let store = make_store(&temp);
-    let source_dir = temp.path().join("copet");
-    create_pet_package(temp.path(), "copet", "copet", "Local CoPet");
+    let source_dir = temp.path().join("copet-neo");
+    create_pet_package(temp.path(), "copet-neo", "copet-neo", "Local CoPet Neo");
 
     let session = create_import_session(&store).unwrap();
     let batch = preview_folder_imports(&store, &session.session_id, &[source_dir]).unwrap();
@@ -392,9 +392,17 @@ fn commit_import_previews_allows_system_id_collision() {
     .unwrap();
 
     assert_eq!(result.imported.len(), 1);
-    assert!(result.state.pets.iter().any(|pet| pet.id == "system:copet"));
-    assert!(result.state.pets.iter().any(|pet| pet.id == "user:copet"));
-    assert!(store.root().join("pets/copet/pet.json").exists());
+    assert!(result
+        .state
+        .pets
+        .iter()
+        .any(|pet| pet.id == "system:copet-neo"));
+    assert!(result
+        .state
+        .pets
+        .iter()
+        .any(|pet| pet.id == "user:copet-neo"));
+    assert!(store.root().join("pets/copet-neo/pet.json").exists());
 }
 
 #[test]
