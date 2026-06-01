@@ -1,6 +1,6 @@
 [package]
 name = "copet"
-version = "0.1.2"
+version = "0.1.3"
 description = "Local desktop pet companion for Agent CLI workflows"
 authors = ["CoPet contributors"]
 edition = "2021"
