@@ -3,7 +3,6 @@ import { useState } from "react";
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 
 import type { PetSummary } from "../lib/appTypes";
-import { PetPreviewPopover } from "./PetPreviewPopover";
 import { PetSprite } from "./PetSprite";
 import { Checkbox } from "./ui/checkbox";
 
@@ -37,14 +36,9 @@ export function PetPackageCard({
   secondaryText,
   strings,
 }: PetPackageCardProps) {
-  const [previewAnchor, setPreviewAnchor] = useState<HTMLElement | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
   const cardComposed = {
-    bodySpriteRow: active ? "waving" : "idle",
-    emotionOverlay: null,
-    dragging: false,
-  } as const;
-  const previewComposed = {
-    bodySpriteRow: "waving",
+    bodySpriteRow: active || isHovered ? "waving" : "idle",
     emotionOverlay: null,
     dragging: false,
   } as const;
@@ -72,8 +66,8 @@ export function PetPackageCard({
       data-active={active}
       data-mode={mode}
       data-pet-id={pet.id}
-      onPointerEnter={(event) => setPreviewAnchor(event.currentTarget)}
-      onPointerLeave={() => setPreviewAnchor(null)}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
     >
       <div className="pet-card-top-row">
         <span className="pet-card-preview-identity">
@@ -124,7 +118,7 @@ export function PetPackageCard({
       >
         <span className="pet-card-preview">
           <PetSprite
-            animated={false}
+            animated={isHovered}
             pet={pet}
             composed={cardComposed}
             scale={0.34}
@@ -147,11 +141,6 @@ export function PetPackageCard({
           </span>
         </span>
       </button>
-      <PetPreviewPopover
-        anchor={previewAnchor}
-        composed={previewComposed}
-        pet={pet}
-      />
     </article>
   );
 }
