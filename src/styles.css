@@ -108,8 +108,10 @@ select {
   min-width: var(--pet-agent-message-min-width, 0);
   max-width: min(220px, calc(100vw - 20px));
   padding: 3px 5px;
-  border: 0 solid transparent;
-  box-shadow: 0 0 0 0.25px hsl(var(--border) / 0.25);
+  border: 0;
+  box-shadow:
+    0 4px 16px hsl(var(--foreground) / 0.12),
+    0 1px 4px hsl(var(--foreground) / 0.10);
   border-radius: 5px;
   background: hsl(var(--card) / 0.92);
   color: hsl(var(--foreground));
@@ -131,7 +133,7 @@ select {
   transform: translateX(-50%);
   background: inherit;
   clip-path: polygon(0 0, 100% 0, 50% 100%);
-  filter: drop-shadow(0 1px 0.5px hsl(var(--border) / 0.25));
+  filter: drop-shadow(0 2px 4px hsl(var(--foreground) / 0.10));
 }
 
 .pet-agent-message {
