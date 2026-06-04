@@ -92,7 +92,10 @@ pub fn resize_pet_window_from_center(
 }
 
 pub fn place_window_bottom_right(window: &WebviewWindow) -> tauri::Result<()> {
-    let Some(monitor) = window.current_monitor()? else {
+    let monitor = window
+        .current_monitor()?
+        .or_else(|| window.primary_monitor().ok().flatten());
+    let Some(monitor) = monitor else {
         return Ok(());
     };
     let window_size = window.outer_size()?;
@@ -106,7 +109,10 @@ pub fn animate_pet_window_from_offscreen_right(
     window: &WebviewWindow,
     duration_ms: u64,
 ) -> tauri::Result<bool> {
-    let Some(monitor) = window.current_monitor()? else {
+    let monitor = window
+        .current_monitor()?
+        .or_else(|| window.primary_monitor().ok().flatten());
+    let Some(monitor) = monitor else {
         return Ok(true);
     };
     let window_size = window.outer_size()?;

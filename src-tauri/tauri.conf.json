@@ -15,8 +15,8 @@
       {
         "label": "pet",
         "title": "CoPet",
-        "width": 260,
-        "height": 300,
+        "width": 164,
+        "height": 189,
         "resizable": false,
         "fullscreen": false,
         "transparent": true,
@@ -63,7 +63,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "dmg",
+    "targets": ["dmg", "nsis"],
     "macOS": {
       "hardenedRuntime": true
     },

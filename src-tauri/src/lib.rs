@@ -64,6 +64,27 @@ fn resolve_builtin_sounds_dir(app: &tauri::App) -> Option<PathBuf> {
     dev_path.is_dir().then_some(dev_path)
 }
 
+/// Resolve built-in asset directories from the executable's location before
+/// the Tauri app is built. This is critical because the webview loads and the
+/// frontend calls `get_app_state` → `list_pets()` before `setup()` runs.
+/// Without this early init, `scan_builtin_pets()` finds nothing because the
+/// OnceLock hasn't been populated yet, and the pet window renders with zero
+/// pets — no sprite, no animation, and the window collapses to a 72px-tall sliver.
+fn init_builtin_dirs_from_exe() {
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(exe_dir) = exe.parent() {
+            let pets = exe_dir.join("assets").join("pets");
+            if pets.is_dir() {
+                set_builtin_pets_dir(pets);
+            }
+            let sounds = exe_dir.join("assets").join("sounds");
+            if sounds.is_dir() {
+                set_builtin_sounds_dir(sounds);
+            }
+        }
+    }
+}
+
 const TRAY_MENU_BRAND_HEADER_ID: &str = "brand-header";
 const TRAY_MENU_VISIBILITY_ID: &str = "toggle-visibility";
 const TRAY_MENU_MESSAGES_ID: &str = "toggle-messages";
@@ -929,6 +950,13 @@ fn repair_agent_adapter(adapter_id: String) -> Result<AdapterOperationResult, St
 }
 
 pub fn run() {
+    // CRITICAL: built-in asset dirs must be set before the Tauri app is built.
+    // The webview loads and frontend JS calls get_app_state → list_pets() before
+    // setup() runs. If the OnceLock for builtin dirs is empty at that point,
+    // scan_builtin_pets() returns nothing, and the pet window starts with zero
+    // pets — the pet sprite never renders, the startup animation never triggers,
+    // and the window ends up as a tiny sliver.
+    init_builtin_dirs_from_exe();
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init());
@@ -973,6 +1001,10 @@ pub fn run() {
             schedule_pet_window_z_order_reassertions(app.handle());
             let app_state = store.app_state()?;
             refresh_tray_menu(&app.handle(), &app_state);
+            // Safety net: emit the final app state so windows that loaded before
+            // setup completed (frontend JS starts before setup runs) receive the
+            // correct pet list with built-in pets populated.
+            let _ = emit_app_state_changed(app.handle(), &app_state);
             Ok(())
         })
         .on_window_event(|window, event| {
