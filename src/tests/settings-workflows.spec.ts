@@ -476,7 +476,9 @@ test("the current installed pet is marked active and cannot be removed", async (
   await expect(card.getByTitle("Remove")).toHaveCount(0);
 });
 
-test("pet package cards render animated sprite previews", async ({ browser }) => {
+test("pet package cards keep static sprites and show animated hover previews", async ({
+  browser,
+}) => {
   const harness = await createAppHarness(browser, {
     state: {
       currentPetId: copet.id,
@@ -489,8 +491,52 @@ test("pet package cards render animated sprite previews", async ({ browser }) =>
     .locator(".pet-card")
     .filter({ hasText: "Goku" })
     .locator(".pet-sprite");
+  const card = page.locator(".pet-card").filter({ hasText: "Goku" });
 
-  await expect(installedSprite).toHaveAttribute("data-animated", "true");
+  await expect(installedSprite).toHaveAttribute("data-animated", "false");
+  await expect(page.getByTestId("pet-preview-popover")).toHaveCount(0);
+
+  await card.hover();
+
+  const popover = page.getByTestId("pet-preview-popover");
+  await expect(popover).toBeVisible();
+  await expect(popover.locator(".pet-sprite")).toHaveAttribute(
+    "data-animated",
+    "true",
+  );
+  await expect(popover.locator(".pet-sprite")).toHaveAttribute(
+    "data-pet-state",
+    "waving",
+  );
+
+  await page.mouse.move(4, 4);
+  await expect(popover).toHaveCount(0);
+});
+
+test("pet hover preview stays within the viewport near an edge", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser, {
+    state: {
+      currentPetId: copet.id,
+      pets: [copet, goku],
+      onboardingComplete: false,
+    },
+  });
+  const page = await harness.openPage("settings");
+  await page.setViewportSize({ width: 520, height: 420 });
+  const card = page.locator(".pet-card").first();
+
+  await card.hover();
+
+  const box = await page.getByTestId("pet-preview-popover").boundingBox();
+  const viewport = page.viewportSize();
+  expect(box).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height);
 });
 
 test("pet window size setting uses a slider and updates the pet window", async ({

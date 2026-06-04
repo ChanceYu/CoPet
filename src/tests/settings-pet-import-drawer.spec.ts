@@ -146,6 +146,41 @@ test("codex import previews pets selected by default", async ({ browser }) => {
   });
 });
 
+test("import preview pet cards show animated hover previews", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser, {
+    codexPets: [goku],
+    importPreviews: [previewFox],
+  });
+  const page = await harness.openPage("settings");
+
+  await page.getByRole("button", { name: "Import" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Codex" }).click();
+
+  const card = page.locator(".pet-card").filter({ hasText: "Local Fox" });
+  await expect(card.locator(".pet-sprite")).toHaveAttribute(
+    "data-animated",
+    "false",
+  );
+
+  await card.hover();
+
+  const popover = page.getByTestId("pet-preview-popover");
+  await expect(popover).toBeVisible();
+  await expect(popover.locator(".pet-sprite")).toHaveAttribute(
+    "data-animated",
+    "true",
+  );
+  await expect(popover.locator(".pet-sprite")).toHaveAttribute(
+    "data-pet-state",
+    "waving",
+  );
+
+  await page.mouse.move(4, 4);
+  await expect(popover).toHaveCount(0);
+});
+
 test("select all checkbox toggles all previews", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
     codexPets: [goku],
