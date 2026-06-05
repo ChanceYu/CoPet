@@ -831,6 +831,9 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
     setCodexPets: (nextCodexPets: PetSummary[]) => {
       codexPets = nextCodexPets;
     },
+    setImportPreviews: (nextImportPreviews: PetImportPreview[]) => {
+      importPreviews = nextImportPreviews;
+    },
     state: () => state,
   };
 }

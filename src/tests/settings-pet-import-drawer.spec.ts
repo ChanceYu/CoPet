@@ -146,6 +146,51 @@ test("codex import previews pets selected by default", async ({ browser }) => {
   });
 });
 
+test("codex import preview refresh replaces prior codex previews", async ({
+  browser,
+}) => {
+  const codexFox: PetImportPreview = {
+    ...previewFox,
+    sourceLabel: "local-fox",
+  };
+  const codexPanda: PetImportPreview = {
+    ...previewPanda,
+    sourceLabel: "local-panda",
+  };
+  const refreshedFox: PetImportPreview = {
+    ...codexFox,
+    previewId: "preview-fox-refresh",
+    sourceLabel: "local-fox-refresh",
+    summary: {
+      ...codexFox.summary,
+      displayName: "Local Fox Refresh",
+    },
+  };
+  const harness = await createAppHarness(browser, {
+    codexPets: [goku],
+    importPreviews: [codexFox, codexPanda],
+  });
+  const page = await harness.openPage("settings");
+
+  await page.getByRole("button", { name: "Import" }).click();
+  const drawer = page.getByRole("dialog", { name: "Import pets" });
+  await drawer.getByRole("button", { name: "Codex" }).click();
+  await expect(drawer.getByRole("button", { name: "Local Fox" })).toBeVisible();
+  await expect(drawer.getByRole("button", { name: "Local Panda" })).toBeVisible();
+
+  harness.setImportPreviews([refreshedFox]);
+  await drawer.getByRole("button", { name: "Codex" }).click();
+
+  await expect(drawer.getByRole("button", { name: "Local Fox Refresh" })).toBeVisible();
+  await expect(
+    drawer.getByRole("button", { name: "Local Fox", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    drawer.getByRole("button", { name: "Local Panda", exact: true }),
+  ).toHaveCount(0);
+  await expect(drawer.locator(".pet-card")).toHaveCount(1);
+});
+
 test("import preview pet cards animate inline sprites while hovered", async ({
   browser,
 }) => {

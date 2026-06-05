@@ -80,7 +80,15 @@ function toMessage(error: unknown): string {
 
 type PreviewState = {
   previews: PetImportPreview[];
+  previewSourceKinds: Map<string, PetImportPreviewSourceKind>;
   selectedPreviewIds: Set<string>;
+};
+
+type PetImportPreviewSourceKind = "codex" | "folder";
+
+type ApplyBatchOptions = {
+  replaceSourceKind?: PetImportPreviewSourceKind;
+  sourceKind: PetImportPreviewSourceKind;
 };
 
 export function usePetImport(options: UsePetImportOptions = {}) {
@@ -92,6 +100,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
   const [session, setSession] = useState<PetImportSession | null>(null);
   const [previewState, setPreviewState] = useState<PreviewState>(() => ({
     previews: [],
+    previewSourceKinds: new Map(),
     selectedPreviewIds: new Set(),
   }));
   const [isBusy, setIsBusy] = useState(false);
@@ -100,6 +109,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
   const sessionPromiseRef = useRef<PetImportSessionPromise | null>(null);
   const previewStateRef = useRef<PreviewState>({
     previews: [],
+    previewSourceKinds: new Map(),
     selectedPreviewIds: new Set(),
   });
   const generationRef = useRef(0);
@@ -121,10 +131,12 @@ export function usePetImport(options: UsePetImportOptions = {}) {
       const next = updater(previewStateRef.current);
       previewStateRef.current = {
         previews: next.previews,
+        previewSourceKinds: new Map(next.previewSourceKinds),
         selectedPreviewIds: new Set(next.selectedPreviewIds),
       };
       setPreviewState({
         previews: next.previews,
+        previewSourceKinds: new Map(next.previewSourceKinds),
         selectedPreviewIds: new Set(next.selectedPreviewIds),
       });
     },
@@ -259,17 +271,39 @@ export function usePetImport(options: UsePetImportOptions = {}) {
   );
 
   const applyBatch = useCallback(
-    (operation: PetImportOperation, batch: PetImportPreviewBatch) => {
+    (
+      operation: PetImportOperation,
+      batch: PetImportPreviewBatch,
+      options: ApplyBatchOptions,
+    ) => {
       if (!isOperationCurrent(operation)) {
         return;
       }
 
       setPreviewStateSafely((current) => {
+        const replacedPreviewIds = new Set<string>();
+        const nextSourceKinds = new Map(current.previewSourceKinds);
+        const basePreviews = options.replaceSourceKind
+          ? current.previews.filter((preview) => {
+              const shouldReplace =
+                current.previewSourceKinds.get(preview.previewId) ===
+                options.replaceSourceKind;
+              if (shouldReplace) {
+                replacedPreviewIds.add(preview.previewId);
+                nextSourceKinds.delete(preview.previewId);
+              }
+              return !shouldReplace;
+            })
+          : current.previews;
         const existingIds = new Set(
-          current.previews.map((preview) => preview.previewId),
+          basePreviews.map((preview) => preview.previewId),
         );
-        const nextPreviews = [...current.previews];
-        const nextSelectedIds = new Set(current.selectedPreviewIds);
+        const nextPreviews = [...basePreviews];
+        const nextSelectedIds = new Set(
+          Array.from(current.selectedPreviewIds).filter(
+            (previewId) => !replacedPreviewIds.has(previewId),
+          ),
+        );
 
         for (const preview of batch.previews) {
           if (existingIds.has(preview.previewId)) {
@@ -277,12 +311,17 @@ export function usePetImport(options: UsePetImportOptions = {}) {
           }
           existingIds.add(preview.previewId);
           nextPreviews.push(preview);
+          nextSourceKinds.set(preview.previewId, options.sourceKind);
           if (preview.selectedByDefault) {
             nextSelectedIds.add(preview.previewId);
           }
         }
 
-        return { previews: nextPreviews, selectedPreviewIds: nextSelectedIds };
+        return {
+          previews: nextPreviews,
+          previewSourceKinds: nextSourceKinds,
+          selectedPreviewIds: nextSelectedIds,
+        };
       });
 
       reportErrors([
@@ -313,7 +352,10 @@ export function usePetImport(options: UsePetImportOptions = {}) {
         return message;
       }
 
-      applyBatch(operation, result.batch);
+      applyBatch(operation, result.batch, {
+        replaceSourceKind: "codex",
+        sourceKind: "codex",
+      });
       return null;
     });
   }, [
@@ -376,7 +418,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
         return message;
       }
 
-      applyBatch(operation, result.batch);
+      applyBatch(operation, result.batch, { sourceKind: "folder" });
       return null;
     });
   }, [
@@ -420,13 +462,16 @@ export function usePetImport(options: UsePetImportOptions = {}) {
 
         setPreviewStateSafely((current) => {
           const nextSelectedIds = new Set(current.selectedPreviewIds);
+          const nextSourceKinds = new Map(current.previewSourceKinds);
           for (const previewId of committedPreviewIds) {
             nextSelectedIds.delete(previewId);
+            nextSourceKinds.delete(previewId);
           }
           return {
             previews: current.previews.filter(
               (preview) => !committedPreviewIds.has(preview.previewId),
             ),
+            previewSourceKinds: nextSourceKinds,
             selectedPreviewIds: nextSelectedIds,
           };
         });
@@ -470,11 +515,14 @@ export function usePetImport(options: UsePetImportOptions = {}) {
     (previewId: string) => {
       setPreviewStateSafely((current) => {
         const nextSelectedIds = new Set(current.selectedPreviewIds);
+        const nextSourceKinds = new Map(current.previewSourceKinds);
         nextSelectedIds.delete(previewId);
+        nextSourceKinds.delete(previewId);
         return {
           previews: current.previews.filter(
             (preview) => preview.previewId !== previewId,
           ),
+          previewSourceKinds: nextSourceKinds,
           selectedPreviewIds: nextSelectedIds,
         };
       });
@@ -528,6 +576,7 @@ export function usePetImport(options: UsePetImportOptions = {}) {
     setSessionState(null);
     setPreviewStateSafely(() => ({
       previews: [],
+      previewSourceKinds: new Map(),
       selectedPreviewIds: new Set(),
     }));
 
