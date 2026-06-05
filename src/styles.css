@@ -1864,13 +1864,14 @@ select {
 
 .pet-toolbar {
   display: inline-flex;
+  height: 34px;
   flex: 0 0 auto;
   align-items: center;
   justify-content: flex-end;
   gap: 2px;
   width: fit-content;
   max-width: 100%;
-  padding: 3px;
+  padding: 2px;
   border: 1px solid hsl(var(--primary) / 0.16);
   border-radius: 8px;
   background: hsl(var(--card) / 0.72);
