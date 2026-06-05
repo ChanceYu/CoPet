@@ -632,7 +632,7 @@ select {
 }
 
 .pet-source-filter .ui-select-trigger {
-  height: 34px;
+  height: 30px;
 }
 
 .pet-search {
@@ -640,7 +640,7 @@ select {
   width: 100%;
   min-width: 96px;
   max-width: 210px;
-  height: 34px;
+  height: 30px;
   flex: 1 1 104px;
   align-items: center;
   gap: 7px;
@@ -1868,14 +1868,14 @@ select {
 
 .pet-toolbar {
   display: inline-flex;
-  height: 34px;
+  height: 30px;
   flex: 0 0 auto;
   align-items: center;
   justify-content: flex-end;
   gap: 2px;
   width: fit-content;
   max-width: 100%;
-  padding: 2px;
+  padding: 1px;
   border: 1px solid hsl(var(--primary) / 0.16);
   border-radius: 8px;
   background: hsl(var(--card) / 0.72);
