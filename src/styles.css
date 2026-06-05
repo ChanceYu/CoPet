@@ -2155,15 +2155,18 @@ select {
   height: 15px;
 }
 
-.pet-import-drawer-body [data-slot="empty"] {
+.pet-import-drawer-body [data-slot="empty"],
+[data-slot="empty"].pet-list-empty-subtle {
   color: hsl(var(--muted-foreground) / 0.72);
 }
 
-.pet-import-drawer-body [data-slot="empty-icon"] {
+.pet-import-drawer-body [data-slot="empty-icon"],
+.pet-list-empty-subtle [data-slot="empty-icon"] {
   color: hsl(var(--muted-foreground) / 0.46);
 }
 
-.pet-import-drawer-body [data-slot="empty-title"] {
+.pet-import-drawer-body [data-slot="empty-title"],
+.pet-list-empty-subtle [data-slot="empty-title"] {
   max-width: 240px;
   color: hsl(var(--muted-foreground) / 0.78);
   font-size: 11px;

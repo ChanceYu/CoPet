@@ -153,6 +153,9 @@ export function SettingsPetsSection({
 
       <PetPackageGrid
         currentPetId={currentPetId}
+        emptyClassName={
+          installedPets.length === 0 ? undefined : "pet-list-empty-subtle"
+        }
         emptyTitle={
           installedPets.length === 0 ? t("noInstalledPets") : t("noMatchingPets")
         }

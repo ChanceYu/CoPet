@@ -32,6 +32,7 @@ export function computePetGridColumns(width: number): number {
 }
 
 export type PetPackageGridProps = {
+  emptyClassName?: string;
   currentPetId?: string;
   emptyTitle: string;
   locateCurrentLabel?: string;
@@ -47,6 +48,7 @@ export type PetPackageGridProps = {
 };
 
 export function PetPackageGrid({
+  emptyClassName,
   currentPetId,
   emptyTitle,
   locateCurrentLabel,
@@ -135,7 +137,7 @@ export function PetPackageGrid({
   if (pets.length === 0) {
     return (
       <div className="pet-list-region" ref={listRegionRef}>
-        <Empty>
+        <Empty className={emptyClassName}>
           <EmptyHeader>
             <EmptyMedia>
               <PawPrint aria-hidden="true" />
