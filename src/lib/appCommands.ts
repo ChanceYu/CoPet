@@ -1,6 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import { agentMessageKey, appStore } from "./appStore";
+import {
+  beginPetWindowSizeCommand,
+  finishPetWindowSizeCommand,
+  isLatestPetWindowSizeCommand,
+} from "./appStateGuards";
 import type {
   AdapterSummary,
   AgentMessageDisplay,
@@ -79,9 +84,26 @@ export async function selectSoundPack(soundPackId: string): Promise<CommandResul
 export async function setPetWindowSize(
   size: PetWindowSize,
 ): Promise<CommandResult> {
+  const sequence = beginPetWindowSizeCommand(size);
   try {
     const next = await invoke<AppState>("set_pet_window_size", { size });
-    patchAppState(next);
+    if (isLatestPetWindowSizeCommand(sequence)) {
+      patchAppState(next);
+    }
+    return { errorMessage: null };
+  } catch (error) {
+    if (!isLatestPetWindowSizeCommand(sequence)) {
+      return { errorMessage: null };
+    }
+    return { errorMessage: toMessage(error) };
+  } finally {
+    finishPetWindowSizeCommand(sequence);
+  }
+}
+
+export async function openSettingsWindow(): Promise<CommandResult> {
+  try {
+    await invoke("open_settings_window");
     return { errorMessage: null };
   } catch (error) {
     return { errorMessage: toMessage(error) };

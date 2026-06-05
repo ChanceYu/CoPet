@@ -483,6 +483,10 @@ fn antigravity_helper_extracts_tool_call_details_from_official_payload() {
         loop {
             match listener.accept() {
                 Ok((mut stream, _addr)) => {
+                    stream.set_nonblocking(false).unwrap();
+                    stream
+                        .set_read_timeout(Some(Duration::from_secs(2)))
+                        .unwrap();
                     let mut buffer = [0_u8; 4096];
                     let size = stream.read(&mut buffer).unwrap();
                     let request = String::from_utf8_lossy(&buffer[..size]).to_string();
@@ -588,6 +592,10 @@ fn antigravity_helper_omits_empty_tool_name_from_payload() {
         loop {
             match listener.accept() {
                 Ok((mut stream, _addr)) => {
+                    stream.set_nonblocking(false).unwrap();
+                    stream
+                        .set_read_timeout(Some(Duration::from_secs(2)))
+                        .unwrap();
                     let mut buffer = [0_u8; 4096];
                     let size = stream.read(&mut buffer).unwrap();
                     let request = String::from_utf8_lossy(&buffer[..size]).to_string();

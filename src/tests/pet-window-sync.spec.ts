@@ -1077,6 +1077,25 @@ test("growing the size slider expands the pet window to max while rendering slid
     .toBeGreaterThan(maxWindowSetSizeCalls);
 });
 
+test("delayed pet slider event registration keeps one drag listener", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser, {
+    eventListenDelayMs: 50,
+    state: {
+      currentPetId: copet.id,
+      pets: [copet],
+      onboardingComplete: false,
+      petWindowSize: 30,
+    },
+  });
+  const petPage = await harness.openPage("pet");
+
+  await expect
+    .poll(() => harness.listenerCount(petPage, "pet-window-size-slider-drag"))
+    .toBe(1);
+});
+
 test("shrinking the size slider renders the smaller pet before shrinking the window", async ({
   browser,
 }) => {

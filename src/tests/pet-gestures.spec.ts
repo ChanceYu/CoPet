@@ -68,6 +68,37 @@ test("hover triggers directional looking and frame data-dragging stays false", a
   await expect(spriteFrame).toHaveAttribute("data-dragging", "false");
 });
 
+test("hover looking collapses before the delayed tilt reaction", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser, {
+    state: {
+      currentPetId: copet.id,
+      pets: [copet],
+      onboardingComplete: false,
+    },
+  });
+  const page = await harness.openPage("pet");
+  const spriteFrame = page.locator(".pet-sprite-frame");
+  const sprite = page.locator(".pet-sprite");
+
+  const box = await spriteFrame.boundingBox();
+  if (!box) throw new Error("pet sprite frame not laid out");
+
+  await spriteFrame.dispatchEvent("pointerover", {
+    clientX: box.x + box.width * 0.8,
+    clientY: box.y + box.height / 2,
+    pointerType: "mouse",
+    isPrimary: true,
+    pointerId: 1,
+    bubbles: true,
+  });
+  await expect(sprite).toHaveAttribute("data-pet-state", "running-right");
+
+  await page.waitForTimeout(600);
+  expect(await sprite.getAttribute("data-pet-state")).toBe("idle");
+});
+
 test("dragging the pet sprite triggers directional running and dragging flag", async ({
   browser,
 }) => {

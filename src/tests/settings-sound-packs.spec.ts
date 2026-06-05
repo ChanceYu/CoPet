@@ -145,6 +145,35 @@ test("sound pack dropdown opens with keyboard and closes with escape", async ({
   }
 });
 
+test("sound pack dropdown selects options with keyboard navigation", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser, {
+    state: {
+      currentPetId: copet.id,
+      currentSoundPackId: copetSoundPack.id,
+      locale: "en-US",
+      pets: [copet],
+      soundPacks: [copetSoundPack, customRetroSoundPack],
+      onboardingComplete: false,
+    },
+  });
+
+  const page = await harness.openPage("settings");
+  await page.getByRole("tab", { name: "General" }).click();
+
+  const soundPack = page.getByRole("combobox", { name: "Sound pack" });
+  await soundPack.focus();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+
+  await expect(soundPack).toContainText("Retro");
+  expect(harness.invocations("select_sound_pack").at(-1)?.args).toEqual({
+    soundPackId: "user:retro",
+  });
+});
+
 test("selecting a sound pack persists runtime id", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
     state: {

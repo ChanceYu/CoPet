@@ -1,4 +1,3 @@
-import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { X } from "lucide-react";
@@ -28,8 +27,10 @@ import {
 } from "./hooks/useAppStore";
 import {
   dismissAgentMessage,
+  openSettingsWindow,
   reloadAppStore,
   setAgentMessageVisible as setAgentMessageVisibleCommand,
+  setPetVisible as setPetVisibleCommand,
 } from "./lib/appCommands";
 import { usePetContextMenu } from "./hooks/usePetContextMenu";
 import { agentSoundKeyForPetState, usePetSounds } from "./hooks/usePetSounds";
@@ -64,6 +65,12 @@ export function PetWindow() {
 
   const setAgentMessageVisible = async (visible: boolean) => {
     const { errorMessage } = await setAgentMessageVisibleCommand(visible);
+    if (errorMessage) toast.error(errorMessage);
+  };
+  const runContextMenuCommand = async (
+    command: Promise<{ errorMessage: string | null }>,
+  ) => {
+    const { errorMessage } = await command;
     if (errorMessage) toast.error(errorMessage);
   };
   const { playInteractionSound, playAgentSound, stopAllSounds } = usePetSounds({
@@ -135,8 +142,12 @@ export function PetWindow() {
     onToggleMessages: () => {
       void setAgentMessageVisible(!agentMessageVisible);
     },
-    onOpenSettings: () => invoke("open_settings_window"),
-    onHidePet: () => invoke("toggle_pet_window_visibility"),
+    onOpenSettings: () => {
+      void runContextMenuCommand(openSettingsWindow());
+    },
+    onHidePet: () => {
+      void runContextMenuCommand(setPetVisibleCommand(false));
+    },
     onPopupFailed: notifyFailed,
   });
   const configuredPetScale = petWindowScaleFromSize(petWindowSize);
@@ -300,6 +311,7 @@ export function PetWindow() {
 
   useEffect(() => {
     let unlistenDrag: (() => void) | undefined;
+    let disposed = false;
 
     void listen<PetWindowSizeSliderDragPayload>(petWindowSizeSliderDragEvent, (event) => {
       if (event.payload.phase === "begin") {
@@ -340,10 +352,15 @@ export function PetWindow() {
         });
       }, petWindowSizeSliderResizeDelayMs);
     }).then((cleanup) => {
-      unlistenDrag = cleanup;
+      if (disposed) {
+        cleanup();
+      } else {
+        unlistenDrag = cleanup;
+      }
     });
 
     return () => {
+      disposed = true;
       unlistenDrag?.();
       if (resizeTimerRef.current !== null) {
         window.clearTimeout(resizeTimerRef.current);

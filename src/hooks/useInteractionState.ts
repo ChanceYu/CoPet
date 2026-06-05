@@ -153,7 +153,7 @@ export function useInteractionState(opts?: {
       timersRef.current.look = window.setTimeout(() => {
         timersRef.current.look = null;
         // After look duration, only collapse if still looking (not tilting yet).
-        setState((current) => (current.kind === "looking" ? current : current));
+        setState((current) => (current.kind === "looking" ? { kind: "idle" } : current));
       }, LOOK_RESET_MS);
     },
     [clearTimer, notifyActivity],

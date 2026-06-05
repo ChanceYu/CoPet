@@ -124,6 +124,19 @@ test("ArrowDown moves selection through nav items", async ({ browser }) => {
   );
 });
 
+test("delayed settings event registration keeps one navigation listener", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser, {
+    eventListenDelayMs: 50,
+  });
+  const page = await harness.openPage("settings");
+
+  await expect
+    .poll(() => harness.listenerCount(page, "copet-navigate-to-section"))
+    .toBe(1);
+});
+
 test("reopening settings returns to Pets section (non-persistent)", async ({
   browser,
 }) => {

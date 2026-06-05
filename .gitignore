@@ -6,6 +6,8 @@
 .codex/
 .agents/
 .superpowers/
+.antigravitycli/
+skills-lock.json
 docs/superpowers/
 node_modules/
 dist/

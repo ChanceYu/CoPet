@@ -548,6 +548,45 @@ test("pet window size setting uses a slider and updates the pet window", async (
   await expect(sizeSlider).toHaveValue("90");
 });
 
+test("pet window size slider keeps the latest value when commands resolve out of order", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser, {
+    commandDelayMs: {
+      set_pet_window_size: [250, 0],
+    },
+    state: {
+      currentPetId: copet.id,
+      pets: [copet],
+      onboardingComplete: false,
+      petWindowSize: 40,
+    },
+  });
+  const settings = await harness.openPage("settings");
+  await settings.getByRole("tab", { name: "General" }).click();
+  const sizeSlider = settings.getByRole("slider", { name: "Size" });
+
+  await sizeSlider.evaluate((node) => {
+    const input = node as HTMLInputElement;
+    const valueSetter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set;
+    valueSetter?.call(input, "30");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    valueSetter?.call(input, "90");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+
+  await expect(sizeSlider).toHaveValue("90");
+  await settings.waitForTimeout(300);
+  await expect(sizeSlider).toHaveValue("90");
+  expect(harness.invocations("set_pet_window_size").map((call) => call.args)).toEqual([
+    { size: 30 },
+    { size: 90 },
+  ]);
+});
+
 test("import pets drawer opens a native directory preview dialog", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
     dialogOpenPaths: [["/tmp/dialog-pet"]],

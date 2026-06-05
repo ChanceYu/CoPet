@@ -130,12 +130,18 @@ export function SettingsWindow() {
 
   useEffect(() => {
     let dispose: (() => void) | undefined;
+    let disposed = false;
     void listen<SettingsSectionId>("copet-navigate-to-section", (event) => {
       setActiveSection(event.payload);
     }).then((cleanup) => {
-      dispose = cleanup;
+      if (disposed) {
+        cleanup();
+      } else {
+        dispose = cleanup;
+      }
     });
     return () => {
+      disposed = true;
       dispose?.();
     };
   }, []);

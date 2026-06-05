@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fs, io,
     io::{Read, Write},
     net::{SocketAddr, TcpListener, TcpStream},
@@ -227,6 +227,7 @@ pub struct RuntimeCore {
     queue: BoundedEventQueue,
     bucket: TokenBucket,
     messages: Vec<AgentMessage>,
+    active_agents: HashSet<String>,
     logger: Option<RotatingLog>,
     accepted_events: u64,
     rejected_events: u64,
@@ -240,6 +241,7 @@ impl RuntimeCore {
             queue: BoundedEventQueue::new(50),
             bucket: TokenBucket::new(30, 60),
             messages: Vec::new(),
+            active_agents: HashSet::new(),
             logger: None,
             accepted_events: 0,
             rejected_events: 0,
@@ -290,15 +292,27 @@ impl RuntimeCore {
         }
 
         let event = normalize_runtime_event(event);
-        let message = agent_message_for_event(&event, now_ms);
-        if let Some(message) = message.clone() {
-            self.upsert_message(message);
+        let suppress_event = self.should_suppress_event(&event);
+        let message = if suppress_event {
+            None
+        } else {
+            self.message_for_event(&event, now_ms)
+        };
+        if !suppress_event {
+            if let Some(message) = message.clone() {
+                self.upsert_message(message);
+            }
         }
-        self.queue.push(event.clone());
         let mut latest = self.engine.current();
-        while let Some(event) = self.queue.pop_front() {
-            latest = self.engine.apply_event(event, now_ms);
+        if suppress_event {
             self.accepted_events += 1;
+        } else {
+            self.queue.push(event.clone());
+            while let Some(event) = self.queue.pop_front() {
+                latest = self.engine.apply_event(event, now_ms);
+                self.accepted_events += 1;
+            }
+            self.record_agent_activity(&event);
         }
         self.log_event("accepted", &event, now_ms, message.as_ref(), Some(&latest));
         dev_log_runtime(
@@ -369,6 +383,29 @@ impl RuntimeCore {
 
         self.messages.push(message);
     }
+
+    fn message_for_event(&self, event: &RuntimeEvent, now_ms: u64) -> Option<AgentMessage> {
+        if self.should_suppress_event(event) {
+            return None;
+        }
+
+        agent_message_for_event(event, now_ms)
+    }
+
+    fn should_suppress_event(&self, event: &RuntimeEvent) -> bool {
+        is_session_stop_kind(&event.kind) && !self.active_agents.contains(&event.agent)
+    }
+
+    fn record_agent_activity(&mut self, event: &RuntimeEvent) {
+        if is_agent_activity_start_kind(&event.kind) {
+            self.active_agents.insert(event.agent.clone());
+            return;
+        }
+
+        if is_session_stop_kind(&event.kind) || event.kind == "session.error" {
+            self.active_agents.remove(&event.agent);
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -423,6 +460,17 @@ fn agent_message_for_event(event: &RuntimeEvent, now_ms: u64) -> Option<AgentMes
     })
 }
 
+fn is_session_stop_kind(kind: &str) -> bool {
+    matches!(kind, "session.stop" | "session.end")
+}
+
+fn is_agent_activity_start_kind(kind: &str) -> bool {
+    matches!(
+        kind,
+        "user.prompt" | "tool.before" | "permission.waiting" | "session.waiting"
+    )
+}
+
 fn format_agent_message(event: &RuntimeEvent) -> Option<String> {
     match event.kind.as_str() {
         "user.prompt" => Some(
@@ -430,7 +478,7 @@ fn format_agent_message(event: &RuntimeEvent) -> Option<String> {
                 .unwrap_or_else(|| "Thinking...".to_string()),
         ),
         "permission.waiting" | "session.waiting" => Some("Waiting for you...".to_string()),
-        "session.stop" | "session.end" => Some("Done.".to_string()),
+        kind if is_session_stop_kind(kind) => Some("Done.".to_string()),
         "session.error" => Some(
             subject_message("Error", event.tool_input.as_ref())
                 .unwrap_or_else(|| "Error.".to_string()),

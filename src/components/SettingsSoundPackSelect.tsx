@@ -25,8 +25,16 @@ export function SettingsSoundPackSelect({
   const [pending, setPending] = useState(false);
   const builtInPacks = soundPacks.filter((pack) => pack.builtIn);
   const customPacks = soundPacks.filter((pack) => !pack.builtIn);
+  const selectablePacks = [...builtInPacks, ...customPacks];
   const selectedPack = soundPacks.find((pack) => pack.id === currentSoundPackId);
+  const selectedIndex = Math.max(
+    0,
+    selectablePacks.findIndex((pack) => pack.id === currentSoundPackId),
+  );
+  const [activeIndex, setActiveIndex] = useState(selectedIndex);
   const disabled = soundPacks.length === 0 || pending;
+  const label =
+    selectedPack?.displayName ?? soundPacks[0]?.displayName ?? t("noSoundPacks");
 
   useEffect(() => {
     if (!open) {
@@ -44,21 +52,22 @@ export function SettingsSoundPackSelect({
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [open]);
 
-  const label = selectedPack?.displayName ?? soundPacks[0]?.displayName ?? t("noSoundPacks");
+  const optionId = (index: number) => `${listboxId}-option-${index}`;
 
-  const handleTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === "Escape") {
-      setOpen(false);
+  const openAtSelected = () => {
+    setActiveIndex(selectedIndex);
+    setOpen(true);
+  };
+
+  const moveActive = (offset: number) => {
+    if (selectablePacks.length === 0) {
       return;
     }
-
-    if (
-      !disabled &&
-      (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ")
-    ) {
-      event.preventDefault();
-      setOpen(true);
-    }
+    setOpen(true);
+    setActiveIndex((current) => {
+      const base = open ? current : selectedIndex;
+      return (base + offset + selectablePacks.length) % selectablePacks.length;
+    });
   };
 
   const handleSelect = async (soundPackId: string) => {
@@ -75,6 +84,73 @@ export function SettingsSoundPackSelect({
     }
   };
 
+  const handleTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "Escape") {
+      setOpen(false);
+      return;
+    }
+
+    if (disabled) {
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (!open) {
+        openAtSelected();
+        return;
+      }
+      moveActive(1);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!open) {
+        openAtSelected();
+        return;
+      }
+      moveActive(-1);
+      return;
+    }
+
+    if (open && event.key === "Home") {
+      event.preventDefault();
+      setActiveIndex(0);
+      return;
+    }
+
+    if (open && event.key === "End") {
+      event.preventDefault();
+      setActiveIndex(selectablePacks.length - 1);
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      if (open) {
+        const activePack = selectablePacks[activeIndex];
+        if (activePack) {
+          void handleSelect(activePack.id);
+        }
+        return;
+      }
+      openAtSelected();
+    }
+  };
+
+  const handleTriggerClick = () => {
+    if (disabled) {
+      return;
+    }
+    setOpen((visible) => {
+      if (!visible) {
+        setActiveIndex(selectedIndex);
+      }
+      return !visible;
+    });
+  };
+
   const renderGroup = (heading: string, packs: SoundPackSummary[]) => {
     if (packs.length === 0) {
       return null;
@@ -83,22 +159,30 @@ export function SettingsSoundPackSelect({
     return (
       <div className="ui-select-group" role="group" aria-label={heading}>
         <div className="ui-select-group-label">{heading}</div>
-        {packs.map((pack) => (
-          <button
-            aria-selected={pack.id === currentSoundPackId}
-            className="ui-select-option"
-            data-selected={pack.id === currentSoundPackId}
-            disabled={pending}
-            key={pack.id}
-            onClick={() => {
-              void handleSelect(pack.id);
-            }}
-            role="option"
-            type="button"
-          >
-            {pack.displayName}
-          </button>
-        ))}
+        {packs.map((pack) => {
+          const optionIndex = selectablePacks.findIndex(
+            (candidate) => candidate.id === pack.id,
+          );
+          return (
+            <button
+              aria-selected={pack.id === currentSoundPackId}
+              className="ui-select-option"
+              data-active={optionIndex === activeIndex}
+              data-selected={pack.id === currentSoundPackId}
+              disabled={pending}
+              id={optionId(optionIndex)}
+              key={pack.id}
+              onClick={() => {
+                void handleSelect(pack.id);
+              }}
+              onPointerEnter={() => setActiveIndex(optionIndex)}
+              role="option"
+              type="button"
+            >
+              {pack.displayName}
+            </button>
+          );
+        })}
       </div>
     );
   };
@@ -106,6 +190,7 @@ export function SettingsSoundPackSelect({
   return (
     <div className="ui-select sound-pack-select" ref={rootRef}>
       <button
+        aria-activedescendant={open ? optionId(activeIndex) : undefined}
         aria-controls={listboxId}
         aria-expanded={open}
         aria-haspopup="listbox"
@@ -113,11 +198,7 @@ export function SettingsSoundPackSelect({
         className="ui-select-trigger"
         disabled={disabled}
         id={selectId}
-        onClick={() => {
-          if (!disabled) {
-            setOpen((visible) => !visible);
-          }
-        }}
+        onClick={handleTriggerClick}
         onKeyDown={handleTriggerKeyDown}
         role="combobox"
         type="button"

@@ -7,6 +7,7 @@ import {
   appStore,
   type AppStoreSnapshot,
 } from "../lib/appStore";
+import { shouldApplyIncomingAppState } from "../lib/appStateGuards";
 import type {
   AdapterSummary,
   AgentMessage,
@@ -106,6 +107,9 @@ export function useBootstrapAppStore(): void {
     });
 
     subscribe<AppState>(APP_STATE_CHANGED_EVENT, (payload) => {
+      if (!shouldApplyIncomingAppState(payload)) {
+        return;
+      }
       appStore.patch({ appState: payload });
     });
 

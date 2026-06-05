@@ -98,11 +98,12 @@ export type AppHarnessOptions = {
   adapters?: AdapterSummary[];
   codexPets?: PetSummary[];
   commandErrors?: Partial<Record<string, string>>;
-  commandDelayMs?: Partial<Record<string, number>>;
+  commandDelayMs?: Partial<Record<string, number | number[]>>;
   commandResults?: Partial<Record<string, unknown>>;
   dialogOpenPaths?: Array<string | string[] | null>;
   dialogOpenPath?: string | null;
   downloadsDir?: string | null;
+  eventListenDelayMs?: number;
   importPreviews?: PetImportPreview[];
   monitor?: HarnessMonitor;
   monitorFromPointReturnsNull?: boolean;
@@ -382,7 +383,10 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
       "__copetInvoke",
       async (source, command: string, args: Record<string, unknown> = {}) => {
         calls.push({ command, args });
-        const delayMs = options.commandDelayMs?.[command] ?? 0;
+        const configuredDelayMs = options.commandDelayMs?.[command] ?? 0;
+        const delayMs = Array.isArray(configuredDelayMs)
+          ? (configuredDelayMs.shift() ?? 0)
+          : configuredDelayMs;
         if (delayMs > 0) {
           await new Promise((resolve) => setTimeout(resolve, delayMs));
         }
@@ -669,7 +673,7 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
       },
     );
 
-    await page.addInitScript((currentLabel) => {
+    await page.addInitScript(({ currentLabel, eventListenDelayMs }) => {
       type Listener = {
         event: string;
         handlerId: number;
@@ -717,6 +721,9 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
         convertFileSrc: (filePath: string) => filePath,
         invoke: async (command: string, args: Record<string, unknown> = {}) => {
           if (command === "plugin:event|listen") {
+            if (eventListenDelayMs > 0) {
+              await new Promise((resolve) => setTimeout(resolve, eventListenDelayMs));
+            }
             listeners.push({
               event: args.event as string,
               handlerId: args.handler as number,
@@ -740,6 +747,8 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
           return window.__copetInvoke(command, args);
         },
       };
+      window.__copetTestListenerCount = (event: string) =>
+        listeners.filter((listener) => listener.event === event).length;
       window.__copetTestEmit = (event: string, payload: unknown) => {
         for (const listener of listeners) {
           if (listener.event !== event) {
@@ -760,7 +769,7 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
           });
         }
       };
-    }, label);
+    }, { currentLabel: label, eventListenDelayMs: options.eventListenDelayMs ?? 0 });
 
     await page.goto("/");
     return page;
@@ -815,6 +824,8 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
     },
     emitRuntimeUpdate,
     invocations: (command: string) => calls.filter((call) => call.command === command),
+    listenerCount: (page: Page, event: string) =>
+      page.evaluate((targetEvent) => window.__copetTestListenerCount(targetEvent), event),
     openPage,
     playedSoundUrls,
     setCodexPets: (nextCodexPets: PetSummary[]) => {
@@ -842,6 +853,7 @@ declare global {
     __copetInvoke: (command: string, args?: Record<string, unknown>) => Promise<unknown>;
     __copetPlayedSoundUrls: string[];
     __copetScrolledPetIds: string[];
+    __copetTestListenerCount: (event: string) => number;
     __copetTestEmit: (event: string, payload: unknown) => void;
   }
 }

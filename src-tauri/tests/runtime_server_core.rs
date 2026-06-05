@@ -242,6 +242,92 @@ fn runtime_core_keeps_antigravity_tool_detail_when_post_tool_lacks_payload() {
 }
 
 #[test]
+fn runtime_core_does_not_create_message_for_stop_without_prior_agent_activity() {
+    let mut core = RuntimeCore::new("secret".to_string());
+
+    core.handle_event(
+        Some("Bearer secret"),
+        RuntimeEvent {
+            agent: "antigravity".to_string(),
+            kind: "session.stop".to_string(),
+            tool: None,
+            tool_input: None,
+            session_id: None,
+            timestamp: None,
+        },
+        100,
+    )
+    .unwrap();
+
+    let status = core.status();
+
+    assert_eq!(status.accepted_events, 1);
+    assert_eq!(status.current_state.state, PetStateId::Idle);
+    assert!(status
+        .messages
+        .iter()
+        .all(|message| message.agent != "antigravity"));
+}
+
+#[test]
+fn runtime_core_updates_existing_message_for_stop_after_agent_activity() {
+    let mut core = RuntimeCore::new("secret".to_string());
+
+    core.handle_event(
+        Some("Bearer secret"),
+        RuntimeEvent {
+            agent: "antigravity".to_string(),
+            kind: "user.prompt".to_string(),
+            tool: None,
+            tool_input: Some(json!({ "subject": "implement settings polish" })),
+            session_id: None,
+            timestamp: None,
+        },
+        100,
+    )
+    .unwrap();
+    core.handle_event(
+        Some("Bearer secret"),
+        RuntimeEvent {
+            agent: "antigravity".to_string(),
+            kind: "session.stop".to_string(),
+            tool: None,
+            tool_input: None,
+            session_id: None,
+            timestamp: None,
+        },
+        200,
+    )
+    .unwrap();
+    core.handle_event(
+        Some("Bearer secret"),
+        RuntimeEvent {
+            agent: "antigravity".to_string(),
+            kind: "session.stop".to_string(),
+            tool: None,
+            tool_input: None,
+            session_id: None,
+            timestamp: None,
+        },
+        300,
+    )
+    .unwrap();
+
+    let status = core.status();
+    let message = status
+        .messages
+        .iter()
+        .find(|message| message.agent == "antigravity")
+        .unwrap();
+
+    assert_eq!(message.display_name, "Antigravity");
+    assert_eq!(message.text, "Done.");
+    assert_eq!(message.updated_at_ms, 200);
+    assert_eq!(status.accepted_events, 3);
+    assert_eq!(status.current_state.state, PetStateId::Waving);
+}
+
+#[test]
 fn runtime_core_normalizes_agent_aliases_and_raw_cli_event_kinds_for_messages() {
     let mut core = RuntimeCore::new("secret".to_string());
 
