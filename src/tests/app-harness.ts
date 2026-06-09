@@ -118,6 +118,10 @@ export type AppHarnessOptions = {
   windowSizes?: Partial<Record<"pet" | "settings", { height: number; width: number }>>;
 };
 
+type OpenPageOptions = {
+  initialSettingsSection?: string;
+};
+
 type HarnessMonitor = {
   name: string;
   position: { x: number; y: number };
@@ -368,8 +372,20 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
     );
   }
 
-  async function openPage(label: "pet" | "settings") {
+  async function openPage(
+    label: "pet" | "settings",
+    pageOptions: OpenPageOptions = {},
+  ) {
     const page = await context.newPage();
+    if (pageOptions.initialSettingsSection) {
+      await page.addInitScript((section) => {
+        (
+          window as typeof window & {
+            __COPET_INITIAL_SETTINGS_SECTION__?: string;
+          }
+        ).__COPET_INITIAL_SETTINGS_SECTION__ = section;
+      }, pageOptions.initialSettingsSection);
+    }
     if (options.windowSizes?.[label]) {
       await page.setViewportSize(options.windowSizes[label]);
     }

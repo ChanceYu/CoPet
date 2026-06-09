@@ -20,6 +20,24 @@ test("default section is Pets on first open", async ({ browser }) => {
   await expect(page.getByRole("switch", { name: "Codex" })).toHaveCount(0);
 });
 
+test("initial settings section can be injected for a recreated window", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser, {
+    adapters: [codexAdapter],
+  });
+  const page = await harness.openPage("settings", {
+    initialSettingsSection: "agents",
+  });
+
+  await expect(page.getByRole("tab", { name: "Agents" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.getByRole("switch", { name: "Codex" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Refresh" })).toHaveCount(0);
+});
+
 test("clicking Agents shows agent switches and hides pet list", async ({
   browser,
 }) => {

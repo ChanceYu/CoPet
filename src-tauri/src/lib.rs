@@ -27,7 +27,7 @@ use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu},
     path::BaseDirectory,
     tray::{TrayIcon, TrayIconBuilder},
-    AppHandle, Emitter, EventTarget, Manager, Wry,
+    AppHandle, Emitter, EventTarget, Manager, WebviewWindow, WebviewWindowBuilder, Wry,
 };
 #[cfg(target_os = "macos")]
 use tauri_nspanel::WebviewWindowExt;
@@ -104,6 +104,7 @@ const SETTINGS_SECTION_PREFERENCES: &str = "preferences";
 const SETTINGS_SECTION_ABOUT: &str = "about";
 
 const SETTINGS_NAVIGATE_EVENT: &str = "copet-navigate-to-section";
+const SETTINGS_INITIAL_SECTION_GLOBAL: &str = "__COPET_INITIAL_SETTINGS_SECTION__";
 // One vsync frame at 60 Hz, plus a small pad for IPC + React commit. The
 // webview receives the navigate event and paints the target tab within this
 // window on a hot React tree; if it doesn't, a brief flicker is the worst
@@ -380,18 +381,7 @@ fn handle_set_locale(app: &AppHandle, preference: LocalePreference) -> Result<()
 }
 
 fn navigate_to_settings_section(app: &AppHandle, section: &'static str) -> Result<(), String> {
-    // Emit the navigate event first so the (already-running) webview can
-    // process it and paint the target tab concurrently. After one frame's
-    // worth of delay the painted surface reflects the new state, so the OS
-    // `show` reveals the correct tab — no flicker, no IPC ack round trip.
-    app.emit_to(
-        EventTarget::webview_window("settings"),
-        SETTINGS_NAVIGATE_EVENT,
-        section,
-    )
-    .map_err(|error| error.to_string())?;
-    std::thread::sleep(SETTINGS_NAVIGATE_PAINT_DELAY);
-    show_settings_window(app)
+    show_settings_window_with_initial_section(app, Some(section))
 }
 
 fn spawn_navigate_to_settings_section(app: &AppHandle, section: &'static str) {
@@ -668,10 +658,56 @@ fn emit_runtime_update(app: &tauri::AppHandle, state: RuntimeUpdate) {
     }
 }
 
-fn show_settings_window(app: &tauri::AppHandle) -> Result<(), String> {
-    let Some(window) = app.get_webview_window("settings") else {
-        return Err(t(current_locale(), MessageKey::SettingsWindowNotFound).to_string());
-    };
+fn settings_window_not_found_message() -> String {
+    t(current_locale(), MessageKey::SettingsWindowNotFound).to_string()
+}
+
+fn settings_initial_section_script(section: &str) -> String {
+    let section_json = serde_json::to_string(section).unwrap_or_else(|_| "\"pets\"".to_string());
+    format!("window.{SETTINGS_INITIAL_SECTION_GLOBAL} = {section_json};")
+}
+
+fn settings_window_config(
+    app: &tauri::AppHandle,
+) -> Result<tauri::utils::config::WindowConfig, String> {
+    app.config()
+        .app
+        .windows
+        .iter()
+        .find(|config| config.label == "settings")
+        .cloned()
+        .ok_or_else(settings_window_not_found_message)
+}
+
+fn get_or_create_settings_window(
+    app: &tauri::AppHandle,
+    initial_section: Option<&str>,
+) -> Result<(WebviewWindow<Wry>, bool), String> {
+    if let Some(window) = app.get_webview_window("settings") {
+        return Ok((window, false));
+    }
+
+    let config = settings_window_config(app)?;
+    let mut builder = WebviewWindowBuilder::from_config(app, &config)
+        .map_err(|error| error.to_string())?
+        .visible(false);
+    if let Some(section) = initial_section {
+        builder = builder.initialization_script(settings_initial_section_script(section));
+    }
+
+    match builder.build() {
+        Ok(window) => Ok((window, true)),
+        Err(error) => app
+            .get_webview_window("settings")
+            .map(|window| (window, false))
+            .ok_or_else(|| error.to_string()),
+    }
+}
+
+fn reveal_settings_window(
+    app: &tauri::AppHandle,
+    window: &WebviewWindow<Wry>,
+) -> Result<(), String> {
     window.show().map_err(|error| error.to_string())?;
     prepare_settings_window_for_interaction(app);
     window.set_focus().map_err(|error| error.to_string())?;
@@ -679,8 +715,33 @@ fn show_settings_window(app: &tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+fn show_settings_window_with_initial_section(
+    app: &tauri::AppHandle,
+    initial_section: Option<&str>,
+) -> Result<(), String> {
+    let (window, created) = get_or_create_settings_window(app, initial_section)?;
+    if !created {
+        if let Some(section) = initial_section {
+            // Existing settings webviews already have a listener. Emit before
+            // showing so the target tab can paint before the OS reveals it.
+            app.emit_to(
+                EventTarget::webview_window("settings"),
+                SETTINGS_NAVIGATE_EVENT,
+                section,
+            )
+            .map_err(|error| error.to_string())?;
+            std::thread::sleep(SETTINGS_NAVIGATE_PAINT_DELAY);
+        }
+    }
+    reveal_settings_window(app, &window)
+}
+
+fn show_settings_window(app: &tauri::AppHandle) -> Result<(), String> {
+    show_settings_window_with_initial_section(app, None)
+}
+
 #[tauri::command]
-fn open_settings_window(app: tauri::AppHandle) -> Result<(), String> {
+async fn open_settings_window(app: tauri::AppHandle) -> Result<(), String> {
     show_settings_window(&app)
 }
 
@@ -1024,7 +1085,7 @@ pub fn run() {
                 match window.label() {
                     "settings" => {
                         api.prevent_close();
-                        let _ = window.hide();
+                        let _ = window.destroy();
                         schedule_pet_window_z_order_reassertions(window.app_handle());
                     }
                     "pet" => {

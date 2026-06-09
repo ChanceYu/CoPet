@@ -49,6 +49,21 @@ const NAV_ITEMS: SettingsNavItem[] = [
   { id: "about", icon: Info, labelKey: "navAbout" },
 ];
 
+declare global {
+  interface Window {
+    __COPET_INITIAL_SETTINGS_SECTION__?: unknown;
+  }
+}
+
+function isSettingsSectionId(value: unknown): value is SettingsSectionId {
+  return typeof value === "string" && NAV_ITEMS.some((item) => item.id === value);
+}
+
+function initialSettingsSection(): SettingsSectionId {
+  const section = window.__COPET_INITIAL_SETTINGS_SECTION__;
+  return isSettingsSectionId(section) ? section : "pets";
+}
+
 export function SettingsWindow() {
   const loadState = useLoadState();
   const appState = useAppState();
@@ -126,7 +141,7 @@ export function SettingsWindow() {
   };
 
   const [activeSection, setActiveSection] =
-    useState<SettingsSectionId>("pets");
+    useState<SettingsSectionId>(initialSettingsSection);
 
   useEffect(() => {
     let dispose: (() => void) | undefined;

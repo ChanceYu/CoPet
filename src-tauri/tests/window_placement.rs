@@ -338,6 +338,37 @@ mod subject {
     }
 
     #[test]
+    fn settings_close_request_destroys_window_instead_of_hiding() {
+        let source = include_str!("../src/lib.rs");
+        let close_requested_handler = source
+            .split("if let tauri::WindowEvent::CloseRequested")
+            .nth(1)
+            .and_then(|rest| rest.split(".on_menu_event").next())
+            .expect("window close handler should exist");
+        let settings_branch = close_requested_handler
+            .split("\"settings\" => {")
+            .nth(1)
+            .and_then(|rest| rest.split("\"pet\" => {").next())
+            .expect("settings close branch should exist");
+
+        assert!(settings_branch.contains("window.destroy()"));
+        assert!(!settings_branch.contains("window.hide()"));
+    }
+
+    #[test]
+    fn settings_window_show_can_recreate_destroyed_window() {
+        let source = include_str!("../src/lib.rs");
+        let settings_show_path = source
+            .split("fn show_settings_window")
+            .nth(1)
+            .and_then(|rest| rest.split("#[tauri::command]").next())
+            .expect("settings show path should exist");
+
+        assert!(source.contains("WebviewWindowBuilder::from_config"));
+        assert!(settings_show_path.contains("get_or_create_settings_window"));
+    }
+
+    #[test]
     fn calculates_resize_position_from_existing_window_center() {
         let position = center_anchored_position(
             PhysicalPosition { x: 100, y: 200 },
