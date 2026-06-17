@@ -7,7 +7,7 @@ import geminiIconUrl from "../assets/agents/gemini.svg";
 import openCodeIconUrl from "../assets/agents/opencode.svg";
 import piIconUrl from "../assets/agents/pi.svg";
 
-export const agentIconUrls: Record<string, string> = {
+const agentIconUrls: Record<string, string> = {
   antigravity: antigravityIconUrl,
   "claude-code": claudeCodeIconUrl,
   copilot: copilotIconUrl,

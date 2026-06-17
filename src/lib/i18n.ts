@@ -199,13 +199,8 @@ const messages = {
 
 export type MessageKey = keyof (typeof messages)["en-US"];
 
-export function normalizeLocale(locale: string | null | undefined): Locale {
+function normalizeLocale(locale: string | null | undefined): Locale {
   return locale?.toLowerCase().startsWith("zh") ? "zh-CN" : "en-US";
-}
-
-export function detectBrowserLocale(): Locale {
-  const preferred = navigator.languages?.[0] ?? navigator.language;
-  return normalizeLocale(preferred);
 }
 
 export function createTranslator(locale: string | null | undefined) {

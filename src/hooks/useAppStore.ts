@@ -137,10 +137,6 @@ export function usePetState(): PetStateId {
   return useAppSlice((s) => s.petState);
 }
 
-export function useRawAgentMessages(): AgentMessage[] {
-  return useAppSlice((s) => s.agentMessages);
-}
-
 export function useAgentMessages(): AgentMessage[] {
   const messages = useAppSlice((s) => s.agentMessages);
   const dismissed = useAppSlice((s) => s.dismissedAgentMessageKeys);

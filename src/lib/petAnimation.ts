@@ -126,7 +126,7 @@ function emotionId(state: Exclude<EmotionState, { kind: "none" }>): EmotionOverl
 
 // ---------- Composer ----------
 
-export function isCriticalAgent(state: AgentState): boolean {
+function isCriticalAgent(state: AgentState): boolean {
   return state.kind === "hurt" || state.kind === "awaitingApproval";
 }
 

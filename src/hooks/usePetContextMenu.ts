@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useCallback, useEffect, useRef } from "react";
 
-export const PET_CONTEXT_MENU_ACTION_EVENT = "copet-pet-context-menu-action";
+const PET_CONTEXT_MENU_ACTION_EVENT = "copet-pet-context-menu-action";
 
 export type PetContextMenuLabels = {
   messages: string;
