@@ -62,23 +62,23 @@ CoPet is not limited to built-in pets. The [CoPet Skill series](./skills/README.
 - [`copet-gen`](./skills/copet-gen/SKILL.md) generates and installs custom CoPet pet packages with `pet.json` and `spritesheet.webp`, so your own pet can react to Agent activity.
 - [`copet-sound`](./skills/copet-sound/SKILL.md) creates matching 11-clip MP3 sound packs for clicks, gestures, waiting, success, and error states.
 
-Install CoPet Skills into any agent or model with image-generation support — Claude Code, Codex, Cursor, and others — with either method.
+Install CoPet Skills into Codex with either method.
 
 From a terminal:
 
 ```bash
-npx skills add ChanceYu/CoPet --skill '*'
+npx skills add ChanceYu/CoPet --skill '*' -a codex
 ```
 
-Inside any supported agent:
+Inside Codex:
 
 ```text
 $skill-installer install all CoPet skills from https://github.com/ChanceYu/CoPet/tree/main/skills
 ```
 
-Restart the agent if the newly installed Skills do not appear.
+Restart Codex if the newly installed Skills do not appear.
 
-> **Recommended runtime: Codex.** `copet-gen` delegates pet generation to the upstream `$hatch-pet` / `$imagegen` chain. Codex ships the built-in `image_gen` tool that satisfies `$imagegen` out of the box, so generation works with no API key. Other agents (Claude Code, Cursor, …) fall through to `$imagegen`'s CLI fallback, which requires `OPENAI_API_KEY` and a one-time user confirmation.
+> **Codex only.** `copet-gen` delegates pet generation to the upstream `$hatch-pet` / `$imagegen` chain, which depends on Codex's built-in `image_gen` tool. Claude Code, Cursor, and other agents do not ship this tool, so the Skill is not supported there.
 
 ## Supported agents
 
