@@ -30,15 +30,24 @@ function patchAppState(next: AppState): void {
   appStore.patch({ appState: next });
 }
 
+function visibleMessagesForAdapters(
+  messages: RuntimeStatus["messages"],
+  adapters: AdapterSummary[],
+): RuntimeStatus["messages"] {
+  const disabledAgentIds = new Set(
+    adapters
+      .filter((adapter) => !adapter.installed)
+      .map((adapter) => adapter.id),
+  );
+  return messages.filter((message) => !disabledAgentIds.has(message.agent));
+}
+
 export async function reloadAppStore(): Promise<CommandResult> {
   appStore.patch({ loadStatus: "loading", loadError: null });
   try {
-    const [app, runtime, adapters, codex, visible] = await Promise.all([
+    const [app, runtime] = await Promise.all([
       invoke<AppState>("get_app_state"),
       invoke<RuntimeStatus>("get_runtime_status"),
-      invoke<AdapterSummary[]>("list_agent_adapters"),
-      invoke<PetSummary[]>("list_codex_pets"),
-      invoke<boolean>("get_pet_window_visible"),
     ]);
     appStore.patch({
       loadStatus: "ready",
@@ -46,9 +55,6 @@ export async function reloadAppStore(): Promise<CommandResult> {
       appState: app,
       petState: runtime.currentState.state,
       agentMessages: runtime.messages,
-      adapters,
-      codexPets: codex,
-      petVisible: visible,
     });
     return { errorMessage: null };
   } catch (error) {
@@ -163,12 +169,13 @@ export async function setPetInteractions(
 }
 
 export async function setPetVisible(visible: boolean): Promise<CommandResult> {
-  if (visible === appStore.get().petVisible) {
+  const snapshot = appStore.get();
+  if (snapshot.petVisibleLoaded && visible === snapshot.petVisible) {
     return { errorMessage: null };
   }
   try {
     const next = await invoke<boolean>("toggle_pet_window_visibility");
-    appStore.patch({ petVisible: next });
+    appStore.patch({ petVisible: next, petVisibleLoaded: true });
     return { errorMessage: null };
   } catch (error) {
     return { errorMessage: toMessage(error) };
@@ -191,7 +198,8 @@ export async function runAdapterAction(
     ]);
     appStore.patch({
       adapters: agentAdapters,
-      agentMessages: runtime.messages,
+      adaptersLoaded: true,
+      agentMessages: visibleMessagesForAdapters(runtime.messages, agentAdapters),
     });
     return { errorMessage: null };
   } catch (error) {
@@ -202,7 +210,8 @@ export async function runAdapterAction(
       ]);
       appStore.patch({
         adapters: agentAdapters,
-        agentMessages: runtime.messages,
+        adaptersLoaded: true,
+        agentMessages: visibleMessagesForAdapters(runtime.messages, agentAdapters),
       });
     } catch {
       // best-effort refresh on failure path
@@ -215,11 +224,8 @@ export async function runAdapterAction(
 
 async function refreshPetListsInternal(): Promise<CommandResult> {
   try {
-    const [next, codexPets] = await Promise.all([
-      invoke<AppState>("get_app_state"),
-      invoke<PetSummary[]>("list_codex_pets"),
-    ]);
-    appStore.patch({ appState: next, codexPets });
+    const next = await invoke<AppState>("get_app_state");
+    appStore.patch({ appState: next });
     return { errorMessage: null };
   } catch (error) {
     return { errorMessage: toMessage(error) };

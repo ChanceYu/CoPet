@@ -22,9 +22,9 @@ test("PetWindow bootstrap issues exactly one logical fetch (no dual-instance)", 
   // indicates a regression worth investigating.
   expect(harness.invocations("get_app_state")).toHaveLength(2);
   expect(harness.invocations("get_runtime_status")).toHaveLength(2);
-  expect(harness.invocations("list_agent_adapters")).toHaveLength(2);
-  expect(harness.invocations("list_codex_pets")).toHaveLength(2);
-  expect(harness.invocations("get_pet_window_visible")).toHaveLength(2);
+  expect(harness.invocations("list_agent_adapters")).toHaveLength(0);
+  expect(harness.invocations("list_codex_pets")).toHaveLength(0);
+  expect(harness.invocations("get_pet_window_visible")).toHaveLength(0);
 });
 
 test("dismissed agent message stays dismissed across pet-state events", async ({

@@ -48,52 +48,49 @@ test("import pets opens a simple drawer", async ({ browser }) => {
   );
   await expect(drawer.getByRole("button", { name: "Choose folders" })).toHaveCount(0);
   await expect(drawer.getByRole("button", { name: "Choose zip" })).toHaveCount(0);
+  expect(harness.invocations("list_codex_pets")).toHaveLength(0);
 });
 
-test("codex import button is disabled with empty Codex pets and shows the empty hint", async ({
+test("codex import scans Codex pets only when clicked", async ({
   browser,
 }) => {
   const harness = await createAppHarness(browser, {
-    codexPets: [],
+    importPreviews: [],
   });
   const page = await harness.openPage("settings");
 
   await page.getByRole("button", { name: "Import" }).click();
   const drawer = page.getByRole("dialog", { name: "Import pets" });
   const codexButton = drawer.getByRole("button", { name: "Codex" });
-  const codexAction = drawer.locator(".pet-import-source-action").filter({
-    hasText: "Codex",
-  });
 
-  await expect(codexButton).toBeDisabled();
-  await codexAction.hover();
+  await expect(codexButton).toBeEnabled();
+  expect(harness.invocations("list_codex_pets")).toHaveLength(0);
 
-  await expect(
-    drawer.getByRole("tooltip", {
-      name: "No preview pets yet. Choose a source to show them here.",
-    }),
-  ).toBeVisible();
+  await codexButton.click();
+
+  expect(harness.invocations("list_codex_pets")).toHaveLength(0);
+  expect(harness.invocations("preview_codex_pet_imports")).toHaveLength(1);
   await expect(drawer.locator('[data-slot="empty-title"]')).toContainText(
     "No preview pets yet.",
   );
 });
 
-test("codex import availability is refreshed every time the drawer opens", async ({
+test("codex import previews are refreshed every time Codex is clicked", async ({
   browser,
 }) => {
   const harness = await createAppHarness(browser, {
-    codexPets: [],
     importPreviews: [previewFox],
   });
   const page = await harness.openPage("settings");
 
   await page.getByRole("button", { name: "Import" }).click();
   let drawer = page.getByRole("dialog", { name: "Import pets" });
-  await expect(drawer.getByRole("button", { name: "Codex" })).toBeDisabled();
+  await drawer.getByRole("button", { name: "Codex" }).click();
+  await expect(drawer.getByRole("button", { name: "Local Fox" })).toBeVisible();
   await drawer.getByRole("button", { name: "Close" }).click();
   await expect(drawer).toHaveCount(0);
 
-  harness.setCodexPets([goku]);
+  harness.setImportPreviews([previewPanda]);
   await page.getByRole("button", { name: "Import" }).click();
   drawer = page.getByRole("dialog", { name: "Import pets" });
   const codexButton = drawer.getByRole("button", { name: "Codex" });
@@ -101,13 +98,13 @@ test("codex import availability is refreshed every time the drawer opens", async
   await expect(codexButton).toBeEnabled();
   await codexButton.click();
 
-  await expect(drawer.getByRole("button", { name: "Local Fox" })).toBeVisible();
-  expect(harness.invocations("list_codex_pets").length).toBeGreaterThan(2);
+  await expect(drawer.getByRole("button", { name: "Local Panda" })).toBeVisible();
+  expect(harness.invocations("list_codex_pets")).toHaveLength(0);
+  expect(harness.invocations("preview_codex_pet_imports")).toHaveLength(2);
 });
 
 test("codex import previews pets selected by default", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
-    codexPets: [goku],
     importPreviews: [previewFox, previewPanda],
   });
   const page = await harness.openPage("settings");
@@ -167,7 +164,6 @@ test("codex import preview refresh replaces prior codex previews", async ({
     },
   };
   const harness = await createAppHarness(browser, {
-    codexPets: [goku],
     importPreviews: [codexFox, codexPanda],
   });
   const page = await harness.openPage("settings");
@@ -195,7 +191,6 @@ test("import preview pet cards animate inline sprites while hovered", async ({
   browser,
 }) => {
   const harness = await createAppHarness(browser, {
-    codexPets: [goku],
     importPreviews: [previewFox],
   });
   const page = await harness.openPage("settings");
@@ -220,7 +215,6 @@ test("import preview pet cards animate inline sprites while hovered", async ({
 
 test("select all checkbox toggles all previews", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
-    codexPets: [goku],
     importPreviews: [previewFox, previewPanda],
   });
   const page = await harness.openPage("settings");
@@ -259,7 +253,6 @@ test("select all checkbox toggles all previews", async ({ browser }) => {
 
 test("codex preview failure shows toast without inline error", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
-    codexPets: [goku],
     commandErrors: {
       preview_codex_pet_imports: "Codex preview failed",
     },
@@ -278,7 +271,6 @@ test("codex preview failure shows toast without inline error", async ({ browser 
 
 test("import failure shows toast without inline error", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
-    codexPets: [goku],
     commandErrors: {
       commit_pet_import_previews: "Import commit failed",
     },
@@ -299,7 +291,6 @@ test("import failure shows toast without inline error", async ({ browser }) => {
 
 test("preview rows can be unselected removed and imported", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
-    codexPets: [goku],
     importPreviews: [previewFox, previewPanda],
   });
   const page = await harness.openPage("settings");
@@ -344,7 +335,6 @@ test("duplicate preview summary ids render and act independently", async ({ brow
     },
   };
   const harness = await createAppHarness(browser, {
-    codexPets: [goku],
     importPreviews: [firstSharedPreview, secondSharedPreview],
   });
   const page = await harness.openPage("settings");
@@ -379,7 +369,6 @@ test("duplicate preview summary ids render and act independently", async ({ brow
 
 test("all previews can be imported together", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
-    codexPets: [goku],
     importPreviews: [previewFox, previewPanda],
   });
   const page = await harness.openPage("settings");
@@ -399,7 +388,6 @@ test("all previews can be imported together", async ({ browser }) => {
 
 test("closing the drawer is ignored while preview commit is active", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
-    codexPets: [goku],
     commandDelayMs: {
       commit_pet_import_previews: 250,
     },
@@ -449,7 +437,6 @@ test("closing the drawer is ignored while preview commit is active", async ({ br
 
 test("remove preview only deletes the drawer row", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
-    codexPets: [goku],
     importPreviews: [previewFox],
   });
   const page = await harness.openPage("settings");
@@ -468,7 +455,6 @@ test("remove preview only deletes the drawer row", async ({ browser }) => {
 
 test("closing the drawer discards the preview session", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
-    codexPets: [goku],
     importPreviews: [previewFox],
   });
   const page = await harness.openPage("settings");

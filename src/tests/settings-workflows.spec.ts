@@ -38,6 +38,41 @@ test("agent integration switch installs and uninstalls an adapter", async ({ bro
   });
 });
 
+test("turning off an agent clears its pet window message", async ({ browser }) => {
+  const harness = await createAppHarness(browser, {
+    adapters: [
+      {
+        ...codexAdapter,
+        installed: true,
+        healthy: true,
+        message: "CoPet hook installed",
+      },
+    ],
+  });
+  const petPage = await harness.openPage("pet");
+  await expect(petPage.getByRole("img", { name: "CoPet" })).toBeVisible();
+  await harness.emitRuntimeUpdate(petPage, {
+    currentState: { state: "running" },
+    messages: [
+      {
+        agent: "codex",
+        displayName: "Codex",
+        text: "Running pnpm build",
+        updatedAtMs: 1_000,
+      },
+    ],
+  });
+  await expect(petPage.getByTestId("pet-agent-message")).toHaveText(
+    "Running pnpm build",
+  );
+
+  const settingsPage = await harness.openPage("settings");
+  await settingsPage.getByRole("tab", { name: "Agents" }).click();
+  await settingsPage.getByRole("switch", { name: "Codex" }).click();
+
+  await expect(petPage.getByTestId("pet-agent-message")).toHaveCount(0);
+});
+
 test("agent integration switch stays off and shows a toast when install fails", async ({
   browser,
 }) => {
@@ -408,7 +443,6 @@ test("refresh list reloads settings data", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
     commandDelayMs: {
       get_app_state: 1_000,
-      list_codex_pets: 1_000,
     },
     state: {
       currentPetId: copet.id,
@@ -435,6 +469,7 @@ test("refresh list reloads settings data", async ({ browser }) => {
   await expect
     .poll(() => harness.calls.filter((call) => call.command === "get_app_state").length)
     .toBeGreaterThan(initialLoads);
+  expect(harness.invocations("list_codex_pets")).toHaveLength(0);
   await expect(refreshButton).toHaveAttribute("aria-busy", "false");
   await expect(refreshIcon).toHaveAttribute("data-loading", "false");
 });

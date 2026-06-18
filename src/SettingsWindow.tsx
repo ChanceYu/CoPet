@@ -23,6 +23,7 @@ import {
   useAdapters,
   useAppState,
   useCodexPets,
+  useDeferredAdaptersWarmup,
   useIsSelecting,
   useLoadState,
   usePetVisible,
@@ -148,10 +149,8 @@ const startSettingsDrag = (event: ReactPointerEvent<HTMLElement>) => {
 export function SettingsWindow() {
   const loadState = useLoadState();
   const appState = useAppState();
-  const { adapters, busyId: adapterBusyId } = useAdapters();
   const { busyId: petBusyId } = useCodexPets();
   const isSelecting = useIsSelecting();
-  const petVisible = usePetVisible();
   const reportedLoadErrorRef = useRef<string | null>(null);
 
   const reportLoadError = (errorMessage: string) => {
@@ -161,6 +160,9 @@ export function SettingsWindow() {
 
   const [activeSection, setActiveSection] =
     useState<SettingsSectionId>(initialSettingsSection);
+  const { adapters, busyId: adapterBusyId } =
+    useAdapters(activeSection === "agents");
+  const petVisible = usePetVisible(activeSection === "preferences");
 
   useEffect(() => {
     let dispose: (() => void) | undefined;
@@ -189,6 +191,8 @@ export function SettingsWindow() {
     window.addEventListener("contextmenu", suppress);
     return () => window.removeEventListener("contextmenu", suppress);
   }, []);
+
+  useDeferredAdaptersWarmup(loadState.status === "ready");
 
   const t = useMemo(
     () => createTranslator(appState?.locale),

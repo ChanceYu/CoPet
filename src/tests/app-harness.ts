@@ -350,7 +350,7 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
       },
     } satisfies HarnessMonitor);
   const windowPositions = new Map<string, { x: number; y: number }>();
-  const runtimeStatus =
+  let runtimeStatus =
     options.runtimeStatus ??
     ({
       port: 8765,
@@ -367,6 +367,23 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
         targetPage.evaluate(
           ({ event, payload }) => window.__copetTestEmit(event, payload),
           { event: appStateChangedEvent, payload: state },
+        ),
+      ),
+    );
+  }
+
+  async function emitRuntimeStatus() {
+    await Promise.all(
+      pages.map((targetPage) =>
+        targetPage.evaluate(
+          ({ event, payload }) => window.__copetTestEmit(event, payload),
+          {
+            event: "pet-state-changed",
+            payload: {
+              currentState: runtimeStatus.currentState,
+              messages: runtimeStatus.messages,
+            },
+          },
         ),
       ),
     );
@@ -683,6 +700,15 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
                 }
               : adapter,
           );
+          if (command === "uninstall_agent_adapter") {
+            runtimeStatus = {
+              ...runtimeStatus,
+              messages: runtimeStatus.messages.filter(
+                (message) => message.agent !== args.adapterId,
+              ),
+            };
+            await emitRuntimeStatus();
+          }
           return { adapter: adapters.find((adapter) => adapter.id === args.adapterId) };
         }
         return null;
@@ -805,6 +831,11 @@ export async function createAppHarness(browser: Browser, options: AppHarnessOpti
         idleAfterMs: update.currentState.idleAfterMs ?? null,
       },
       messages: update.messages ?? [],
+    };
+    runtimeStatus = {
+      ...runtimeStatus,
+      currentState: payload.currentState,
+      messages: payload.messages,
     };
     await page.evaluate(
       ({ event, payload: data }) => window.__copetTestEmit(event, data),

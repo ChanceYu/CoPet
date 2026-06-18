@@ -190,7 +190,6 @@ export function SettingsPetsSection({
       <SettingsPetImportDrawer
         onOpenChange={setImportDrawerOpen}
         open={importDrawerOpen}
-        refreshPetLists={refreshPetLists}
         t={t}
       />
     </div>

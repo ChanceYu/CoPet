@@ -18,6 +18,30 @@ test("default section is Pets on first open", async ({ browser }) => {
   );
   await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
   await expect(page.getByRole("switch", { name: "Codex" })).toHaveCount(0);
+  await expect
+    .poll(() => harness.invocations("list_agent_adapters").length)
+    .toBe(1);
+  expect(harness.invocations("get_pet_window_visible")).toHaveLength(0);
+});
+
+test("default Settings render does not wait for agent adapter warmup", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser, {
+    adapters: [codexAdapter],
+    commandDelayMs: {
+      list_agent_adapters: 1_000,
+    },
+  });
+  const page = await harness.openPage("settings");
+
+  await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible({
+    timeout: 500,
+  });
+  await expect
+    .poll(() => harness.invocations("list_agent_adapters").length)
+    .toBe(1);
+  expect(harness.invocations("get_pet_window_visible")).toHaveLength(0);
 });
 
 test("initial settings section can be injected for a recreated window", async ({
@@ -36,6 +60,8 @@ test("initial settings section can be injected for a recreated window", async ({
   );
   await expect(page.getByRole("switch", { name: "Codex" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Refresh" })).toHaveCount(0);
+  expect(harness.invocations("list_agent_adapters")).toHaveLength(1);
+  expect(harness.invocations("get_pet_window_visible")).toHaveLength(0);
 });
 
 test("clicking Agents shows agent switches and hides pet list", async ({
@@ -54,6 +80,8 @@ test("clicking Agents shows agent switches and hides pet list", async ({
   );
   await expect(page.getByRole("button", { name: "Refresh" })).toHaveCount(0);
   await expect(page.getByRole("switch", { name: "Codex" })).toBeVisible();
+  expect(harness.invocations("list_agent_adapters")).toHaveLength(1);
+  expect(harness.invocations("get_pet_window_visible")).toHaveLength(0);
 });
 
 test("General exposes display count, language, size, and reset position controls", async ({
@@ -70,6 +98,7 @@ test("General exposes display count, language, size, and reset position controls
   await expect(
     page.getByRole("button", { name: "Reset position" }),
   ).toBeVisible();
+  expect(harness.invocations("get_pet_window_visible")).toHaveLength(1);
 });
 
 test("Reset position invokes reset_pet_window_position and shows success toast", async ({

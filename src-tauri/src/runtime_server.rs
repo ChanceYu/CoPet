@@ -210,6 +210,13 @@ impl RuntimeManager {
             rejected_events: status.rejected_events,
         }
     }
+
+    pub fn clear_agent_messages(&self, agent: &str) -> RuntimeUpdate {
+        self.core
+            .lock()
+            .expect("runtime core poisoned")
+            .clear_agent_messages(agent)
+    }
 }
 
 impl Drop for RuntimeManager {
@@ -337,6 +344,15 @@ impl RuntimeCore {
             messages: self.messages.clone(),
             accepted_events: self.accepted_events,
             rejected_events: self.rejected_events,
+        }
+    }
+
+    pub fn clear_agent_messages(&mut self, agent: &str) -> RuntimeUpdate {
+        self.messages.retain(|message| message.agent != agent);
+        self.active_agents.remove(agent);
+        RuntimeUpdate {
+            current_state: self.engine.current(),
+            messages: self.messages.clone(),
         }
     }
 

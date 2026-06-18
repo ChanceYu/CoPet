@@ -120,6 +120,44 @@ fn runtime_core_tracks_latest_message_per_agent() {
 }
 
 #[test]
+fn runtime_core_clears_messages_for_one_agent() {
+    let mut core = RuntimeCore::new("secret".to_string());
+
+    core.handle_event(
+        Some("Bearer secret"),
+        RuntimeEvent {
+            agent: "codex".to_string(),
+            kind: "tool.before".to_string(),
+            tool: Some("Read".to_string()),
+            tool_input: Some(json!({ "file_path": "/repo/src/App.tsx" })),
+            session_id: None,
+            timestamp: None,
+        },
+        100,
+    )
+    .unwrap();
+    core.handle_event(
+        Some("Bearer secret"),
+        RuntimeEvent {
+            agent: "cursor".to_string(),
+            kind: "tool.before".to_string(),
+            tool: Some("Bash".to_string()),
+            tool_input: Some(json!({ "command": "pnpm build" })),
+            session_id: None,
+            timestamp: None,
+        },
+        200,
+    )
+    .unwrap();
+
+    let update = core.clear_agent_messages("codex");
+
+    assert_eq!(update.messages.len(), 1);
+    assert_eq!(update.messages[0].agent, "cursor");
+    assert_eq!(core.status().messages, update.messages);
+}
+
+#[test]
 fn runtime_core_includes_prompt_subject_in_user_prompt_message() {
     let mut core = RuntimeCore::new("secret".to_string());
 

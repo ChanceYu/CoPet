@@ -27,6 +27,109 @@ import { copetDevLog } from "../lib/devLogger";
 const APP_STATE_CHANGED_EVENT = "copet-app-state-changed";
 const PET_WINDOW_VISIBILITY_CHANGED_EVENT = "copet-pet-window-visibility-changed";
 
+let adaptersLoadPromise: Promise<void> | null = null;
+let petVisibleLoadPromise: Promise<void> | null = null;
+
+type IdleCallback = (deadline: {
+  didTimeout: boolean;
+  timeRemaining: () => number;
+}) => void;
+
+type IdleWindow = Window & {
+  requestIdleCallback?: (
+    callback: IdleCallback,
+    options?: { timeout?: number },
+  ) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
+
+function scheduleAfterFirstPaint(callback: () => void): () => void {
+  let cancelled = false;
+  let firstFrameId: number | null = null;
+  let secondFrameId: number | null = null;
+  let timerId: number | null = null;
+  let idleId: number | null = null;
+
+  const run = () => {
+    if (!cancelled) {
+      callback();
+    }
+  };
+
+  firstFrameId = window.requestAnimationFrame(() => {
+    firstFrameId = null;
+    secondFrameId = window.requestAnimationFrame(() => {
+      secondFrameId = null;
+      const idleWindow = window as IdleWindow;
+      if (typeof idleWindow.requestIdleCallback === "function") {
+        idleId = idleWindow.requestIdleCallback(run, { timeout: 500 });
+      } else {
+        timerId = window.setTimeout(run, 0);
+      }
+    });
+  });
+
+  return () => {
+    cancelled = true;
+    if (firstFrameId !== null) {
+      window.cancelAnimationFrame(firstFrameId);
+    }
+    if (secondFrameId !== null) {
+      window.cancelAnimationFrame(secondFrameId);
+    }
+    if (timerId !== null) {
+      window.clearTimeout(timerId);
+    }
+    if (idleId !== null) {
+      (window as IdleWindow).cancelIdleCallback?.(idleId);
+    }
+  };
+}
+
+function loadAdaptersOnce(): Promise<void> {
+  if (appStore.get().adaptersLoaded) {
+    return Promise.resolve();
+  }
+  if (adaptersLoadPromise) {
+    return adaptersLoadPromise;
+  }
+
+  adaptersLoadPromise = invoke<AdapterSummary[]>("list_agent_adapters")
+    .then((adapters) => {
+      appStore.patch({ adapters, adaptersLoaded: true });
+    })
+    .catch(() => {
+      // Retry the next time the Agents section is activated.
+    })
+    .finally(() => {
+      adaptersLoadPromise = null;
+    });
+
+  return adaptersLoadPromise;
+}
+
+function loadPetVisibleOnce(): Promise<void> {
+  if (appStore.get().petVisibleLoaded) {
+    return Promise.resolve();
+  }
+  if (petVisibleLoadPromise) {
+    return petVisibleLoadPromise;
+  }
+
+  petVisibleLoadPromise = invoke<boolean>("get_pet_window_visible")
+    .then((petVisible) => {
+      appStore.patch({ petVisible, petVisibleLoaded: true });
+    })
+    .catch(() => {
+      // Retry the next time Preferences is activated.
+    })
+    .finally(() => {
+      petVisibleLoadPromise = null;
+    });
+
+  return petVisibleLoadPromise;
+}
+
 export function useAppSlice<T>(selector: (s: AppStoreSnapshot) => T): T {
   return useSyncExternalStore(
     appStore.subscribe,
@@ -42,12 +145,9 @@ export function useBootstrapAppStore(): void {
 
     void (async () => {
       try {
-        const [app, runtime, adapters, codex, visible] = await Promise.all([
+        const [app, runtime] = await Promise.all([
           invoke<AppState>("get_app_state"),
           invoke<RuntimeStatus>("get_runtime_status"),
-          invoke<AdapterSummary[]>("list_agent_adapters"),
-          invoke<PetSummary[]>("list_codex_pets"),
-          invoke<boolean>("get_pet_window_visible"),
         ]);
         if (cancelled) return;
         appStore.patch({
@@ -56,9 +156,6 @@ export function useBootstrapAppStore(): void {
           appState: app,
           petState: runtime.currentState.state,
           agentMessages: runtime.messages,
-          adapters,
-          codexPets: codex,
-          petVisible: visible,
         });
         copetDevLog("frontend.snapshot.loaded", {
           currentState: runtime.currentState,
@@ -114,7 +211,7 @@ export function useBootstrapAppStore(): void {
     });
 
     subscribe<boolean>(PET_WINDOW_VISIBILITY_CHANGED_EVENT, (payload) => {
-      appStore.patch({ petVisible: payload });
+      appStore.patch({ petVisible: payload, petVisibleLoaded: true });
     });
 
     return () => {
@@ -199,17 +296,38 @@ export function usePetInteractions(): PetInteractionPrefs {
   );
 }
 
-export function usePetVisible(): boolean {
-  return useAppSlice((s) => s.petVisible);
+export function usePetVisible(enabled = false): boolean {
+  const petVisible = useAppSlice((s) => s.petVisible);
+  const petVisibleLoaded = useAppSlice((s) => s.petVisibleLoaded);
+  useEffect(() => {
+    if (!enabled || petVisibleLoaded) return;
+    void loadPetVisibleOnce();
+  }, [enabled, petVisibleLoaded]);
+  return petVisible;
 }
 
-export function useAdapters(): {
+export function useAdapters(enabled = false): {
   adapters: AdapterSummary[];
   busyId: string | null;
 } {
   const adapters = useAppSlice((s) => s.adapters);
+  const adaptersLoaded = useAppSlice((s) => s.adaptersLoaded);
   const busyId = useAppSlice((s) => s.adapterBusyId);
+  useEffect(() => {
+    if (!enabled || adaptersLoaded) return;
+    void loadAdaptersOnce();
+  }, [enabled, adaptersLoaded]);
   return useMemo(() => ({ adapters, busyId }), [adapters, busyId]);
+}
+
+export function useDeferredAdaptersWarmup(enabled = false): void {
+  const adaptersLoaded = useAppSlice((s) => s.adaptersLoaded);
+  useEffect(() => {
+    if (!enabled || adaptersLoaded) return;
+    return scheduleAfterFirstPaint(() => {
+      void loadAdaptersOnce();
+    });
+  }, [enabled, adaptersLoaded]);
 }
 
 export function useCodexPets(): {

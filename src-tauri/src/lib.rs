@@ -997,11 +997,18 @@ fn install_agent_adapter(adapter_id: String) -> Result<AdapterOperationResult, S
 }
 
 #[tauri::command]
-fn uninstall_agent_adapter(adapter_id: String) -> Result<AdapterOperationResult, String> {
+fn uninstall_agent_adapter(
+    app: tauri::AppHandle,
+    adapter_id: String,
+) -> Result<AdapterOperationResult, String> {
     let store = ConfigStore::from_home().map_err(localize_store_error)?;
-    AgentManager::from_home(store.root())
+    let result = AgentManager::from_home(store.root())
         .and_then(|manager| manager.uninstall(&adapter_id))
-        .map_err(localize_adapter_error)
+        .map_err(localize_adapter_error)?;
+    if let Some(runtime) = app.try_state::<RuntimeManager>() {
+        emit_runtime_update(&app, runtime.clear_agent_messages(&adapter_id));
+    }
+    Ok(result)
 }
 
 #[tauri::command]

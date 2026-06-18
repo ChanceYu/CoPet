@@ -14,7 +14,9 @@ export type AppStoreSnapshot = {
   petState: PetStateId;
   agentMessages: AgentMessage[];
   petVisible: boolean;
+  petVisibleLoaded: boolean;
   adapters: AdapterSummary[];
+  adaptersLoaded: boolean;
   codexPets: PetSummary[];
 
   dismissedAgentMessageKeys: Set<string>;
@@ -30,7 +32,9 @@ const INITIAL_SNAPSHOT: AppStoreSnapshot = {
   petState: "idle",
   agentMessages: [],
   petVisible: true,
+  petVisibleLoaded: false,
   adapters: [],
+  adaptersLoaded: false,
   codexPets: [],
   dismissedAgentMessageKeys: new Set<string>(),
   adapterBusyId: null,
