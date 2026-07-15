@@ -176,10 +176,16 @@ fn localize_adapter_error(error: AdapterError) -> String {
 }
 
 #[tauri::command]
-fn get_app_state() -> Result<AppState, String> {
-    ConfigStore::from_home()
-        .and_then(|store| store.app_state())
-        .map_err(localize_store_error)
+async fn get_app_state() -> Result<AppState, String> {
+    // Pet and sound-pack discovery performs synchronous filesystem work. Keep
+    // it off the main thread so the transparent settings window can paint.
+    tauri::async_runtime::spawn_blocking(|| {
+        ConfigStore::from_home()
+            .and_then(|store| store.app_state())
+            .map_err(localize_store_error)
+    })
+    .await
+    .map_err(|error| error.to_string())?
 }
 
 #[tauri::command]
@@ -745,9 +751,7 @@ async fn open_settings_window(app: tauri::AppHandle) -> Result<(), String> {
     show_settings_window(&app)
 }
 
-fn install_tray_menu(app: &mut tauri::App) -> tauri::Result<()> {
-    let locale = current_locale();
-
+fn install_tray_menu(app: &mut tauri::App, locale: Locale) -> tauri::Result<()> {
     let brand_text = format!(
         "{} · v{}",
         t(locale, MessageKey::TrayBrand),
@@ -1047,11 +1051,14 @@ pub fn run() {
                 set_builtin_sounds_dir(dir);
             }
             let store = ConfigStore::from_home()?;
-            store.ensure_ready()?;
+            // ensure_ready already builds the complete startup snapshot. Reuse
+            // it for window sizing, menus, and the initial frontend event so
+            // startup does not enumerate every pet and sound pack again.
+            let startup_app_state = store.ensure_ready()?;
             let manager = AgentManager::from_home(store.root())?;
             let _ = run_agent_auto_install_once(&store, &manager)?;
-            install_tray_menu(app)?;
-            install_app_menu(app, current_locale())?;
+            install_tray_menu(app, startup_app_state.locale)?;
+            install_app_menu(app, startup_app_state.locale)?;
             let handle = app.handle().clone();
             let runtime = RuntimeManager::start(&store.runtime_dir(), move |state| {
                 emit_runtime_update(&handle, state);
@@ -1067,17 +1074,15 @@ pub fn run() {
                 {
                     let _ = window.set_shadow(false);
                 }
-                let state = store.app_state()?;
-                apply_pet_window_size_for_startup(&window, state.pet_window_size)?;
+                apply_pet_window_size_for_startup(&window, startup_app_state.pet_window_size)?;
             }
             install_pet_window_z_order_guard(app.handle());
             schedule_pet_window_z_order_reassertions(app.handle());
-            let app_state = store.app_state()?;
-            refresh_tray_menu(app.handle(), &app_state);
+            refresh_tray_menu(app.handle(), &startup_app_state);
             // Safety net: emit the final app state so windows that loaded before
             // setup completed (frontend JS starts before setup runs) receive the
             // correct pet list with built-in pets populated.
-            let _ = emit_app_state_changed(app.handle(), &app_state);
+            let _ = emit_app_state_changed(app.handle(), &startup_app_state);
             Ok(())
         })
         .on_window_event(|window, event| {
