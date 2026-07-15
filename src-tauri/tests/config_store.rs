@@ -88,6 +88,39 @@ fn list_pets_returns_user_imports_alongside_builtins() {
 }
 
 #[test]
+fn list_pets_infers_eleven_rows_for_v2_spritesheets() {
+    let temp = tempfile::tempdir().unwrap();
+    let store = make_store(&temp);
+    store.ensure_ready().unwrap();
+    let pet_dir = store.root().join("pets/maid-deepseek-whale.codex-pet");
+    fs::create_dir_all(&pet_dir).unwrap();
+    fs::write(
+        pet_dir.join("pet.json"),
+        r#"{
+  "id": "maid-deepseek-whale",
+  "displayName": "Maid-DeepSeek-Whale",
+  "spritesheetPath": "spritesheet.webp",
+  "spriteVersionNumber": 2,
+  "kind": "object"
+}"#,
+    )
+    .unwrap();
+    fs::write(pet_dir.join("spritesheet.webp"), b"sprite").unwrap();
+
+    let pet = store
+        .list_pets()
+        .unwrap()
+        .into_iter()
+        .find(|pet| pet.id == "user:maid-deepseek-whale.codex-pet")
+        .unwrap();
+
+    assert_eq!(pet.frame_width, 192);
+    assert_eq!(pet.frame_height, 208);
+    assert_eq!(pet.grid_columns, 8);
+    assert_eq!(pet.grid_rows, 11);
+}
+
+#[test]
 fn list_pets_orders_brand_pets_then_user_imports_then_other_builtins() {
     let temp = tempfile::tempdir().unwrap();
     let store = make_store(&temp);

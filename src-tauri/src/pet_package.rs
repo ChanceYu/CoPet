@@ -10,6 +10,7 @@ pub const DEFAULT_FRAME_WIDTH: u32 = 192;
 pub const DEFAULT_FRAME_HEIGHT: u32 = 208;
 pub const DEFAULT_GRID_COLUMNS: u32 = 8;
 pub const DEFAULT_GRID_ROWS: u32 = 9;
+const SPRITE_V2_GRID_ROWS: u32 = 11;
 pub const MAX_PET_SOUND_BYTES: u64 = 16 * 1024 * 1024;
 pub const SYSTEM_PET_PREFIX: &str = "system:";
 pub const USER_PET_PREFIX: &str = "user:";
@@ -66,14 +67,28 @@ pub struct PetManifest {
     pub frame_height: u32,
     #[serde(default = "default_grid_columns")]
     pub grid_columns: u32,
-    #[serde(default = "default_grid_rows")]
-    pub grid_rows: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub grid_rows: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sprite_version_number: Option<u32>,
     #[serde(default)]
     pub built_in: bool,
     #[serde(default)]
     pub copet: Option<CoPetMetadata>,
     #[serde(flatten)]
     pub extra: BTreeMap<String, serde_json::Value>,
+}
+
+impl PetManifest {
+    fn resolved_grid_rows(&self) -> u32 {
+        self.grid_rows.unwrap_or_else(|| {
+            if self.sprite_version_number == Some(2) {
+                SPRITE_V2_GRID_ROWS
+            } else {
+                DEFAULT_GRID_ROWS
+            }
+        })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -152,6 +167,7 @@ pub struct PetPackage {
 
 impl PetPackage {
     pub fn summary(self, namespace: PetNamespace, storage_id: &str) -> PetSummary {
+        let grid_rows = self.manifest.resolved_grid_rows();
         let slug = if self.manifest.slug.is_empty() {
             storage_id.to_string()
         } else {
@@ -166,7 +182,7 @@ impl PetPackage {
             frame_width: self.manifest.frame_width,
             frame_height: self.manifest.frame_height,
             grid_columns: self.manifest.grid_columns,
-            grid_rows: self.manifest.grid_rows,
+            grid_rows,
             built_in: matches!(namespace, PetNamespace::System),
             sprite_path: self.sprite_path.to_string_lossy().into_owned(),
             sounds: self.sounds,
@@ -383,8 +399,4 @@ fn default_frame_height() -> u32 {
 
 fn default_grid_columns() -> u32 {
     DEFAULT_GRID_COLUMNS
-}
-
-fn default_grid_rows() -> u32 {
-    DEFAULT_GRID_ROWS
 }
