@@ -7,6 +7,7 @@
 .agents/
 .superpowers/
 .antigravitycli/
+.codegraph
 skills-lock.json
 docs/superpowers/
 node_modules/
