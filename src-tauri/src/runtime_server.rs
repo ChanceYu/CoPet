@@ -482,7 +482,7 @@ fn is_session_stop_kind(kind: &str) -> bool {
 fn is_agent_activity_start_kind(kind: &str) -> bool {
     matches!(
         kind,
-        "user.prompt" | "tool.before" | "permission.waiting" | "session.waiting"
+        "user.prompt" | "thinking" | "tool.before" | "permission.waiting" | "session.waiting"
     )
 }
 
@@ -496,7 +496,7 @@ fn is_agent_activity_start_event(event: &RuntimeEvent) -> bool {
 
 fn format_agent_message(event: &RuntimeEvent) -> Option<String> {
     match event.kind.as_str() {
-        "user.prompt" => Some(
+        "user.prompt" | "thinking" => Some(
             subject_message("Thinking", event.tool_input.as_ref())
                 .unwrap_or_else(|| "Thinking...".to_string()),
         ),

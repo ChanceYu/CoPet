@@ -134,6 +134,23 @@ test("agent state transition plays mapped agent sound once", async ({ browser })
   expect(await harness.playedSoundUrls(page)).toEqual([]);
 });
 
+test("thinking state plays the thinking agent sound", async ({ browser }) => {
+  const harness = await createAppHarness(browser, {
+    state: soundState(),
+  });
+  const page = await harness.openPage("pet");
+  await expect(page.locator(".pet-sprite")).toHaveAttribute("data-pet-state", "idle");
+
+  await harness.emitRuntimeUpdate(page, {
+    currentState: { state: "thinking" },
+    messages: [{ agent: "codex", displayName: "Codex", text: "Thinking...", updatedAtMs: 1 }],
+  });
+
+  await expect.poll(() => harness.playedSoundUrls(page)).toEqual([
+    "/sounds/copet/hmm.mp3",
+  ]);
+});
+
 test("hidden agent messages do not play agent sounds", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
     state: soundState({ agentMessageVisible: false }),

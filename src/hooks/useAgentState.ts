@@ -19,7 +19,9 @@ function translate(petState: PetStateId, agentMessages: AgentMessage[]): AgentSt
   const agent = agentMessages[0]?.agent ?? "unknown";
   switch (petState) {
     case "jumping":
-      return { kind: "thinking", agent };
+      return { kind: "thinking", agent, phase: "prompt" };
+    case "thinking":
+      return { kind: "thinking", agent, phase: "processing" };
     case "running":
       return { kind: "editing", agent };
     case "review":

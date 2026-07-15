@@ -15,6 +15,7 @@ export type AgentSoundKey = keyof PetAgentSounds;
 export function agentSoundKeyForPetState(state: PetStateId): AgentSoundKey | null {
   switch (state) {
     case "jumping":
+    case "thinking":
       return "thinking";
     case "running":
       return "editing";

@@ -50,6 +50,33 @@ fn maps_runtime_events_to_pet_states() {
             .state,
         PetStateId::Failed
     );
+    assert_eq!(
+        engine.apply_event(event("thinking", None), 2_400).state,
+        PetStateId::Thinking
+    );
+}
+
+#[test]
+fn thinking_uses_extended_automatic_idle_timeout() {
+    let mut engine = EventStateEngine::new();
+
+    let thinking = engine.apply_event(event("thinking", None), 1_000);
+
+    assert_eq!(thinking.state, PetStateId::Thinking);
+    assert_eq!(thinking.idle_after_ms, Some(31_000));
+    assert_eq!(engine.advance_time(30_999).state, PetStateId::Thinking);
+    assert_eq!(engine.advance_time(31_000).state, PetStateId::Idle);
+}
+
+#[test]
+fn thinking_coalesces_an_immediate_tool_after_event() {
+    let mut engine = EventStateEngine::new();
+
+    engine.apply_event(event("thinking", None), 1_000);
+    let after = engine.apply_event(event("tool.after", None), 1_050);
+
+    assert_eq!(after.state, PetStateId::Thinking);
+    assert_eq!(after.idle_after_ms, Some(1_200));
 }
 
 #[test]

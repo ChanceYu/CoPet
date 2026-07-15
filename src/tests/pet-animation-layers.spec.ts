@@ -39,6 +39,27 @@ test("user.prompt → waiting row + loading-bubble overlay", async ({ browser })
   await expect(page.locator('[data-testid="pet-emotion-overlay"]')).toBeVisible();
 });
 
+test("thinking → review row + loading-bubble overlay", async ({ browser }) => {
+  const harness = await createAppHarness(browser, {
+    state: { currentPetId: copet.id, pets: [copet], onboardingComplete: false },
+  });
+  const page = await harness.openPage("pet");
+  await expect(page.locator(".pet-sprite")).toHaveAttribute("data-pet-state", "idle");
+
+  await harness.emitRuntimeUpdate(page, {
+    currentState: { state: "thinking" },
+    messages: [
+      { agent: "codex", displayName: "Codex", text: "Thinking...", updatedAtMs: 1 },
+    ],
+  });
+
+  await expect(page.locator(".pet-sprite")).toHaveAttribute("data-pet-state", "review");
+  await expect(page.locator(".pet-sprite-frame")).toHaveAttribute(
+    "data-emotion",
+    "loading-bubble",
+  );
+});
+
 test("tool.before with Edit → running row", async ({ browser }) => {
   const harness = await createAppHarness(browser, {
     state: { currentPetId: copet.id, pets: [copet], onboardingComplete: false },
@@ -277,7 +298,7 @@ test("critical agent state (awaitingApproval) is not preempted by input click", 
 test("non-critical agent (thinking) IS preempted by input click", () => {
   const view = composeLayers({
     base: { kind: "blink" },
-    agent: { kind: "thinking", agent: "claude" },
+    agent: { kind: "thinking", agent: "claude", phase: "processing" },
     input: { kind: "happy" },
     motion: { kind: "anchored" },
     emotion: { kind: "loadingBubble" },

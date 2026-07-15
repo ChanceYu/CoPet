@@ -7,7 +7,8 @@ export type PetStateId =
   | "failed"
   | "waiting"
   | "running"
-  | "review";
+  | "review"
+  | "thinking";
 
 export type PetState = {
   id: PetStateId;

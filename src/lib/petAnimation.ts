@@ -9,7 +9,7 @@ export type BaseState =
 
 export type AgentState =
   | { kind: "none" }
-  | { kind: "thinking"; agent: string }
+  | { kind: "thinking"; agent: string; phase: "processing" | "prompt" }
   | { kind: "editing"; agent: string; tool?: string }
   | { kind: "inspecting"; agent: string; tool?: string }
   | { kind: "awaitingApproval"; agent: string }
@@ -65,7 +65,7 @@ function baseSpriteRow(_state: BaseState): PetStateId {
 function agentSpriteRow(state: AgentState): PetStateId {
   switch (state.kind) {
     case "thinking":
-      return "waiting";
+      return state.phase === "processing" ? "review" : "waiting";
     case "editing":
       return "running";
     case "inspecting":

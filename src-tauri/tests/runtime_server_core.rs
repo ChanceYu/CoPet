@@ -69,6 +69,48 @@ fn runtime_core_accepts_authorized_events_and_updates_status() {
 }
 
 #[test]
+fn runtime_core_normalizes_thinking_and_tracks_it_as_agent_activity() {
+    let mut core = RuntimeCore::new("secret".to_string());
+
+    let thinking = core
+        .handle_event(
+            Some("Bearer secret"),
+            RuntimeEvent {
+                agent: "codex".to_string(),
+                kind: " Thinking ".to_string(),
+                tool: None,
+                tool_input: None,
+                session_id: None,
+                timestamp: None,
+            },
+            100,
+        )
+        .unwrap();
+
+    assert_eq!(thinking.state, PetStateId::Thinking);
+    assert_eq!(thinking.idle_after_ms, Some(30_100));
+    assert_eq!(core.status().messages[0].text, "Thinking...");
+
+    let stopped = core
+        .handle_event(
+            Some("Bearer secret"),
+            RuntimeEvent {
+                agent: "codex".to_string(),
+                kind: "session.stop".to_string(),
+                tool: None,
+                tool_input: None,
+                session_id: None,
+                timestamp: None,
+            },
+            200,
+        )
+        .unwrap();
+
+    assert_eq!(stopped.state, PetStateId::Waving);
+    assert_eq!(core.status().messages[0].text, "Done.");
+}
+
+#[test]
 fn runtime_core_tracks_latest_message_per_agent() {
     let mut core = RuntimeCore::new("secret".to_string());
 

@@ -15,6 +15,7 @@ pub enum PetStateId {
     Waiting,
     Running,
     Review,
+    Thinking,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -52,6 +53,24 @@ impl DerivedPetState {
 
 const MIN_DWELL_MS: u64 = 200;
 const TEMP_STATE_IDLE_AFTER_MS: u64 = 1_500;
+const THINKING_IDLE_AFTER_MS: u64 = 30_000;
+
+impl PetStateId {
+    fn automatic_idle_delay_ms(self) -> Option<u64> {
+        match self {
+            Self::Idle => None,
+            Self::Thinking => Some(THINKING_IDLE_AFTER_MS),
+            Self::RunningRight
+            | Self::RunningLeft
+            | Self::Waving
+            | Self::Jumping
+            | Self::Failed
+            | Self::Waiting
+            | Self::Running
+            | Self::Review => Some(TEMP_STATE_IDLE_AFTER_MS),
+        }
+    }
+}
 
 pub struct EventStateEngine {
     current: DerivedPetState,
@@ -80,7 +99,10 @@ impl EventStateEngine {
             return self.request_idle(now_ms);
         }
 
-        self.set_state(next, now_ms, Some(now_ms + TEMP_STATE_IDLE_AFTER_MS))
+        let idle_after_ms = next
+            .automatic_idle_delay_ms()
+            .map(|delay_ms| now_ms.saturating_add(delay_ms));
+        self.set_state(next, now_ms, idle_after_ms)
     }
 
     pub fn advance_time(&mut self, now_ms: u64) -> DerivedPetState {
@@ -100,7 +122,10 @@ impl EventStateEngine {
             return self.current();
         }
 
-        if !matches!(self.current.state, PetStateId::Running | PetStateId::Review) {
+        if !matches!(
+            self.current.state,
+            PetStateId::Running | PetStateId::Review | PetStateId::Thinking
+        ) {
             return self.set_state(PetStateId::Idle, now_ms, None);
         }
 
@@ -163,6 +188,7 @@ pub fn canonical_event_kind(kind: &str) -> Option<&'static str> {
     match kind.trim().to_ascii_lowercase().as_str() {
         "user.prompt" | "userpromptsubmit" | "beforeagent" | "beforesubmitprompt"
         | "before_agent_start" | "tui.prompt.append" => Some("user.prompt"),
+        "thinking" => Some("thinking"),
         "tool.before" | "pretooluse" | "beforetool" | "tool.execute.before" | "tool_call" => {
             Some("tool.before")
         }
@@ -236,6 +262,7 @@ fn map_event_to_state(event: &RuntimeEvent) -> Option<PetStateId> {
         "permission.waiting" | "session.waiting" => Some(PetStateId::Waiting),
         "session.stop" | "session.end" => Some(PetStateId::Waving),
         "session.error" => Some(PetStateId::Failed),
+        "thinking" => Some(PetStateId::Thinking),
         _ => None,
     }
 }
