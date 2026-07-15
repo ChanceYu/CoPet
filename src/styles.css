@@ -2693,6 +2693,11 @@ select {
   color: hsl(var(--foreground));
 }
 
+.settings-section > .app-shell {
+  width: 100%;
+  min-height: 100%;
+}
+
 .error-shell {
   grid-template-rows: auto auto auto auto;
   align-content: center;

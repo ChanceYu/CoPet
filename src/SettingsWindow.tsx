@@ -149,6 +149,9 @@ const startSettingsDrag = (event: ReactPointerEvent<HTMLElement>) => {
 export function SettingsWindow() {
   const loadState = useLoadState();
   const appState = useAppState();
+  const [activeSection, setActiveSection] =
+    useState<SettingsSectionId>(initialSettingsSection);
+  const isReady = loadState.status === "ready" && appState !== null;
   const { busyId: petBusyId } = useCodexPets();
   const isSelecting = useIsSelecting();
   const reportedLoadErrorRef = useRef<string | null>(null);
@@ -158,11 +161,11 @@ export function SettingsWindow() {
     toast.error(errorMessage, { id: "settings-load-error" });
   };
 
-  const [activeSection, setActiveSection] =
-    useState<SettingsSectionId>(initialSettingsSection);
   const { adapters, busyId: adapterBusyId } =
-    useAdapters(activeSection === "agents");
-  const petVisible = usePetVisible(activeSection === "preferences");
+    useAdapters(isReady && activeSection === "agents");
+  const petVisible = usePetVisible(
+    isReady && activeSection === "preferences",
+  );
 
   useEffect(() => {
     let dispose: (() => void) | undefined;
@@ -192,10 +195,10 @@ export function SettingsWindow() {
     return () => window.removeEventListener("contextmenu", suppress);
   }, []);
 
-  useDeferredAdaptersWarmup(loadState.status === "ready");
+  useDeferredAdaptersWarmup(isReady);
 
   const t = useMemo(
-    () => createTranslator(appState?.locale),
+    () => createTranslator(appState?.locale ?? navigator.language),
     [appState?.locale],
   );
 
@@ -219,29 +222,82 @@ export function SettingsWindow() {
     }
   };
 
-  if (loadState.status === "loading") {
-    return <LoadingView />;
-  }
+  const renderActiveSection = () => {
+    if (loadState.status === "error") {
+      return (
+        <ErrorView
+          embedded
+          onRetry={() => void retryLoad()}
+          retryLabel={t("retry")}
+        />
+      );
+    }
 
-  if (loadState.status === "error") {
-    return (
-      <>
-        <ErrorView onRetry={() => void retryLoad()} retryLabel={t("retry")} />
-        <Toaster />
-      </>
-    );
-  }
+    if (!appState) {
+      return <LoadingView embedded />;
+    }
 
-  if (!appState) {
-    return <LoadingView />;
-  }
+    const installedPets = appState.pets ?? emptyPetSummaries;
+    const currentPetId = appState.currentPetId ?? "";
+    const petWindowSize = appState.petWindowSize ?? defaultPetWindowSize;
 
-  const installedPets = appState.pets ?? emptyPetSummaries;
-  const currentPetId = appState.currentPetId ?? "";
-  const petWindowSize = appState.petWindowSize ?? defaultPetWindowSize;
+    switch (activeSection) {
+      case "pets":
+        return (
+          <SettingsPetsSection
+            currentPetId={currentPetId}
+            installedPets={installedPets}
+            isSelecting={isSelecting}
+            petBusyId={petBusyId}
+            refreshPetLists={refreshPetLists}
+            removePet={removePet}
+            selectPet={selectPet}
+            t={t}
+          />
+        );
+      case "agents":
+        return (
+          <SettingsAgentsSection
+            adapterBusyId={adapterBusyId}
+            adapters={adapters}
+            runAdapterAction={runAdapterAction}
+            t={t}
+          />
+        );
+      case "preferences":
+        return (
+          <SettingsPreferencesSection
+            agentMessageDisplay={appState.agentMessageDisplay}
+            soundPacks={appState.soundPacks ?? []}
+            currentSoundPackId={appState.currentSoundPackId ?? ""}
+            locale={appState.locale === "zh-CN" ? "zh-CN" : "en-US"}
+            agentMessageVisible={appState.agentMessageVisible}
+            petInteractions={
+              appState.petInteractions ?? defaultPetInteractionPrefs
+            }
+            petVisible={petVisible}
+            petWindowSize={petWindowSize}
+            resetPetWindowPosition={resetPetWindowPosition}
+            setAgentMessageDisplay={setAgentMessageDisplay}
+            setAgentMessageVisible={setAgentMessageVisible}
+            setLocalePreference={setLocalePreference}
+            setPetInteractions={setPetInteractions}
+            setPetVisible={setPetVisible}
+            setPetWindowSize={setPetWindowSize}
+            selectSoundPack={selectSoundPack}
+            t={t}
+          />
+        );
+      case "about":
+        return <SettingsAboutSection t={t} />;
+    }
+  };
 
   return (
-    <main className="settings-window">
+    <main
+      aria-busy={loadState.status === "loading"}
+      className="settings-window"
+    >
       <div className="settings-shell">
         <aside
           className="settings-sidebar"
@@ -288,48 +344,7 @@ export function SettingsWindow() {
           activeSection={activeSection}
           id={SETTINGS_PANEL_ID}
         >
-          {activeSection === "pets" && (
-            <SettingsPetsSection
-              currentPetId={currentPetId}
-              installedPets={installedPets}
-              isSelecting={isSelecting}
-              petBusyId={petBusyId}
-              refreshPetLists={refreshPetLists}
-              removePet={removePet}
-              selectPet={selectPet}
-              t={t}
-            />
-          )}
-          {activeSection === "agents" && (
-            <SettingsAgentsSection
-              adapterBusyId={adapterBusyId}
-              adapters={adapters}
-              runAdapterAction={runAdapterAction}
-              t={t}
-            />
-          )}
-          {activeSection === "preferences" && (
-            <SettingsPreferencesSection
-              agentMessageDisplay={appState.agentMessageDisplay}
-              soundPacks={appState.soundPacks ?? []}
-              currentSoundPackId={appState.currentSoundPackId ?? ""}
-              locale={appState.locale === "zh-CN" ? "zh-CN" : "en-US"}
-              agentMessageVisible={appState.agentMessageVisible}
-              petInteractions={appState.petInteractions ?? defaultPetInteractionPrefs}
-              petVisible={petVisible}
-              petWindowSize={petWindowSize}
-              resetPetWindowPosition={resetPetWindowPosition}
-              setAgentMessageDisplay={setAgentMessageDisplay}
-              setAgentMessageVisible={setAgentMessageVisible}
-              setLocalePreference={setLocalePreference}
-              setPetInteractions={setPetInteractions}
-              setPetVisible={setPetVisible}
-              setPetWindowSize={setPetWindowSize}
-              selectSoundPack={selectSoundPack}
-              t={t}
-            />
-          )}
-          {activeSection === "about" && <SettingsAboutSection t={t} />}
+          {renderActiveSection()}
         </SettingsSectionHost>
       </div>
       <Toaster />

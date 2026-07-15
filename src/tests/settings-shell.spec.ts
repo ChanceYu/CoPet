@@ -44,6 +44,29 @@ test("default Settings render does not wait for agent adapter warmup", async ({
   expect(harness.invocations("get_pet_window_visible")).toHaveLength(0);
 });
 
+test("settings shell paints while app state is still loading", async ({
+  browser,
+}) => {
+  const harness = await createAppHarness(browser, {
+    commandDelayMs: {
+      get_app_state: 1_000,
+    },
+  });
+  const page = await harness.openPage("settings");
+  const settingsWindow = page.locator("main.settings-window");
+
+  await expect(settingsWindow).toBeVisible({ timeout: 500 });
+  await expect(settingsWindow).toHaveAttribute("aria-busy", "true");
+  await expect(page.getByRole("tab", { name: "Pets" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.locator(".loading-shell")).toBeVisible();
+
+  await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
+  await expect(settingsWindow).toHaveAttribute("aria-busy", "false");
+});
+
 test("initial settings section can be injected for a recreated window", async ({
   browser,
 }) => {
